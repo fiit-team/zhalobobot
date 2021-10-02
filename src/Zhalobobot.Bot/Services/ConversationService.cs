@@ -96,11 +96,9 @@ namespace Zhalobobot.Bot.Services
             {
                 await this.SendUrgentFeedback(value.Message);
             }
-            else
-            {
-                await this.FeedbackRepository.AddFeedbackInfoAsync(value);
-                this.Logger.LogInformation($"Saved feedback in repository.");
-            }
+
+            await this.FeedbackRepository.AddFeedbackInfoAsync(value);
+            this.Logger.LogInformation($"Saved feedback in repository.");
 
             this.Conversations.Remove(chatId);
         }

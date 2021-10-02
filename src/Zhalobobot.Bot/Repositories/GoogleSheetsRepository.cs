@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Zhalobobot.Bot.Extensions;
 using Zhalobobot.Bot.Models;
 
 namespace Zhalobobot.Bot.Repositories
@@ -31,18 +32,21 @@ namespace Zhalobobot.Bot.Repositories
 
             var objectList = new List<object>() {
                 ekbTime.ToString(),
-                feedbackInfo.Subject ?? "Общая",
+                feedbackInfo.Type.GetString(),
+                feedbackInfo.Subject,
                 feedbackInfo.Message,                 
             };
 
             var valueRange = new ValueRange() { Values = new List<IList<object>> { objectList } };
 
-            var range = "Feedback!A:C";
+            var range = "Feedback!A:D";
 
             var appendRequest = this.Resource.Values.Append(valueRange, this.Settings.SpreadSheetId, range);
             appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
 
             var _ = await appendRequest.ExecuteAsync();
         }
+
+        
     }
 }
