@@ -1,0 +1,19 @@
+﻿{
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:8443",
+      "sslPort": 44357
+    }
+  },
+  "profiles": {
+    "Zhalobobot.Bot": {
+      "commandName": "Project",
+      "applicationUrl": "http://localhost:8443",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
