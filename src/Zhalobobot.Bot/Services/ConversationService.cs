@@ -5,107 +5,97 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Zhalobobot.Bot.Models;
-using Zhalobobot.Bot.Repositories;
+using Zhalobobot.Common.Clients.Core;
+using Zhalobobot.Common.Models.Feedback;
 
 namespace Zhalobobot.Bot.Services
 {
     public class ConversationService : IConversationService
     {
         private ITelegramBotClient BotClient { get; }
-        private IFeedbackRepository FeedbackRepository { get; }
+        private IZhalobobotApiClient Client { get; }
         private Settings Settings { get; }
         private ILogger Logger { get; }
 
-        private IDictionary<long, FeedbackInfo> Conversations { get; }
-            = new ConcurrentDictionary<long, FeedbackInfo>();
+        private IDictionary<long, Feedback> Conversations { get; }
+            = new ConcurrentDictionary<long, Feedback>();
 
         public ConversationService(
             ITelegramBotClient botClient,
-            IFeedbackRepository feedbackRepository,
+            IZhalobobotApiClient client,
             Settings settings,
             ILogger<ConversationService> logger)
         {
-            this.BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
-            this.FeedbackRepository = feedbackRepository
-                ?? throw new ArgumentNullException(nameof(feedbackRepository));
-            this.Settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            this.Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
+            Client = client ?? throw new ArgumentNullException(nameof(client));
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void SaveFeedback(long chatId, string message)
         {
-            if (!this.Conversations.TryGetValue(chatId, out var value))
+            if (!Conversations.TryGetValue(chatId, out var value))
             {
-                this.Logger.LogError($"Conversation not found. ChatId {chatId}.");
+                Logger.LogError($"Conversation not found. ChatId {chatId}.");
                 throw new Exception($"Conversation not found. ChatId {chatId}.");
-            }
+            } 
+            
+            Conversations[chatId] = value with {Message = message};
 
-            value.Message = message;
-
-            this.Logger.LogInformation($"Feedback saved successfully. ChatId {chatId}");
+            Logger.LogInformation($"Feedback saved successfully. ChatId {chatId}");
         }
 
         public void StopConversation(long chatId)
         {
-            this.Conversations.Remove(chatId);
+            Conversations.Remove(chatId);
 
-            this.Logger.LogInformation($"Conversation stopped successfully. ChatId {chatId}");
+            Logger.LogInformation($"Conversation stopped successfully. ChatId {chatId}");
         }
 
         public void StartUrgentFeedback(long chatId)
         {
-            this.Conversations[chatId] = new FeedbackInfo
-            {
-                Type = FeedbackType.UrgentFeedback
-            };
+            Conversations[chatId] = Feedback.Urgent;
 
-            this.Logger.LogInformation($"Urgent feedback started successfully. ChatId {chatId}");
+            Logger.LogInformation($"Urgent feedback started successfully. ChatId {chatId}");
         }
 
         public void StartGeneralFeedback(long chatId)
         {
-            this.Conversations[chatId] = new FeedbackInfo
-            {
-                Type = FeedbackType.GeneralFeedback
-            };
+            Conversations[chatId] = Feedback.General;
 
-            this.Logger.LogInformation($"General feedback started successfully. ChatId {chatId}");
+            Logger.LogInformation($"General feedback started successfully. ChatId {chatId}");
         }
 
         public void StartSubjectFeedback(long chatId, string subjectName)
         {
-            this.Conversations[chatId] = new FeedbackInfo
-            {
-                Type = FeedbackType.SubjectFeedback,
-                Subject = subjectName
-            };
+            Conversations[chatId] = Feedback.Subj with { Subject = new Subject(subjectName) };
 
-            this.Logger.LogInformation($"Subject feedback started successfully. ChatId {chatId}, Subject {subjectName}");
+            Logger.LogInformation($"Subject feedback started successfully. ChatId {chatId}, Subject {subjectName}");
         }
 
         public async Task SendFeedbackAsync(long chatId)
         {
-            if (!this.Conversations.TryGetValue(chatId, out var value)
+            if (!Conversations.TryGetValue(chatId, out var value)
                 && value?.Message is null)
             {
-                this.Logger.LogError($"Chat not found or no feedback message. ChatId {chatId}");
+                Logger.LogError($"Chat not found or no feedback message. ChatId {chatId}");
                 throw new Exception($"Chat not found or no feedback message. ChatId {chatId}");
             }
-
+            
             if (value.Type == FeedbackType.UrgentFeedback)
             {
-                await this.SendUrgentFeedback(value.Message);
+                await SendUrgentFeedback(value.Message);
             }
 
-            await this.FeedbackRepository.AddFeedbackInfoAsync(value);
-            this.Logger.LogInformation($"Saved feedback in repository.");
+            await Client.Feedback.AddFeedback(value);
+            Logger.LogInformation($"Saved feedback in repository.");
 
-            this.Conversations.Remove(chatId);
+            Conversations.Remove(chatId);
         }
 
         public ConversationStatus GetConversationStatus(long chatId)
         {
-            return this.Conversations.TryGetValue(chatId, out var value)
+            return Conversations.TryGetValue(chatId, out var value)
                 ? value.Message is null
                     ? ConversationStatus.AwaitingFeedback
                     : ConversationStatus.AwaitingConfirmation
@@ -117,9 +107,9 @@ namespace Zhalobobot.Bot.Services
             var text = $"Алерт! Кто-то оставил срочную обратную связь:\n\n" +
                         $"\"{message}\"";
 
-            await this.BotClient.SendTextMessageAsync(this.Settings.UrgentFeedbackChatId, text);
+            await BotClient.SendTextMessageAsync(Settings.UrgentFeedbackChatId, text);
 
-            this.Logger.LogInformation("Sent urgent feedback successfully.");
+            Logger.LogInformation("Sent urgent feedback successfully.");
         }
     }
 }

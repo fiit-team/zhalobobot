@@ -1,6 +1,6 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
-namespace Zhalobobot.Bot.Models
+namespace Zhalobobot.Common.Models.Feedback
 {
     public enum FeedbackType
     {

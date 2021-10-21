@@ -7,32 +7,33 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using Zhalobobot.Common.Clients.Core;
 
 namespace Zhalobobot.Bot.Services
 {
     public class HandleUpdateService
     {
         private ITelegramBotClient BotClient { get; }
-        private ISubjectsService SubjectsService { get; }
+        private IZhalobobotApiClient Client { get; }
         private IConversationService ConversationService { get; }
         private ILogger<HandleUpdateService> Logger { get; }
 
         public HandleUpdateService(ITelegramBotClient botClient,
-            ISubjectsService subjectsService,
+            IZhalobobotApiClient client,
             IConversationService conversationService,
             ILogger<HandleUpdateService> logger)
         {
-            this.BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
-            this.SubjectsService = subjectsService ?? throw new ArgumentNullException(nameof(subjectsService));
-            this.ConversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
-            this.Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
+            Client = client ?? throw new ArgumentNullException(nameof(client));
+            ConversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task EchoAsync(Update update)
         {
             var handler = update.Type switch
             {
-                UpdateType.Message => this.BotOnMessageReceived(update.Message),
+                UpdateType.Message => BotOnMessageReceived(update.Message),
                 //UpdateType.EditedMessage => BotOnMessageReceived(update.EditedMessage),
                 UpdateType.CallbackQuery => BotOnCallbackQueryReceived(update.CallbackQuery),
                 _ => UnknownUpdateHandlerAsync(update)
@@ -50,40 +51,40 @@ namespace Zhalobobot.Bot.Services
 
         private async Task BotOnMessageReceived(Message message)
         {
-            this.Logger.LogInformation($"Receive message type: {message.Type}");
+            Logger.LogInformation($"Receive message type: {message.Type}");
 
             if (message.Type != MessageType.Text)
                 return;
 
-            var conversationStatus = this.ConversationService.GetConversationStatus(message.Chat.Id);
+            var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
             var action = message.Text.Split(' ').First() switch
             {
-                "/alert" => this.HandleAlertFeedbackAsync(this.BotClient, message),
-                "/list" => this.SendFeedbackKeyboardAsync(this.BotClient, message),
-                "/general" => this.HandleGeneralFeedbackAsync(this.BotClient, message),
-                "Отправить" => this.SendFeedbackAsync(this.BotClient, message),
-                "Отменить" => this.CancelFeedbackAsync(this.BotClient, message),
+                "/alert" => HandleAlertFeedbackAsync(BotClient, message),
+                "/list" => SendFeedbackKeyboardAsync(BotClient, message),
+                "/general" => HandleGeneralFeedbackAsync(BotClient, message),
+                "Отправить" => SendFeedbackAsync(BotClient, message),
+                "Отменить" => CancelFeedbackAsync(BotClient, message),
                 _ => conversationStatus == Models.ConversationStatus.Default
-                    ? Usage(this.BotClient, message)
-                    : this.SaveFeedbackAsync(this.BotClient, message)
+                    ? Usage(BotClient, message)
+                    : SaveFeedbackAsync(BotClient, message)
             };
 
             var sentMessage = await action;
-            this.Logger.LogInformation($"The message was sent with id: {sentMessage.MessageId}");
+            Logger.LogInformation($"The message was sent with id: {sentMessage.MessageId}");
         }
 
         private async Task<Message> HandleAlertFeedbackAsync(ITelegramBotClient bot, Message message)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
-            this.ConversationService.StartUrgentFeedback(message.Chat.Id);
+            ConversationService.StartUrgentFeedback(message.Chat.Id);
 
             var text = "Ты выбрал срочную обратную связь. Напиши сообщение.";
 
-            return await this.BotClient.SendTextMessageAsync(
-                chatId: message.Chat.Id,
-                text: text,
+            return await BotClient.SendTextMessageAsync(
+                message.Chat.Id,
+                text,
                 replyMarkup: new ReplyKeyboardRemove());
         }
 
@@ -91,23 +92,24 @@ namespace Zhalobobot.Bot.Services
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
-            this.ConversationService.StartGeneralFeedback(message.Chat.Id);
+            ConversationService.StartGeneralFeedback(message.Chat.Id);
 
             var text = "Ты выбрал общую обратную связь. Напиши сообщение.";
 
-            return await bot.SendTextMessageAsync(chatId: message.Chat.Id, text: text);
+            return await bot.SendTextMessageAsync(message.Chat.Id, text);
         }
 
         private async Task<Message> SendFeedbackKeyboardAsync(ITelegramBotClient bot, Message message)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
-            var inlineKeyboard = new InlineKeyboardMarkup(this.SubjectsService.GetSubjects()
-                .Select(subject => new[] { InlineKeyboardButton.WithCallbackData(subject.Name, subject.Name) }));
+            var subjects = (await Client.Subject.GetSubjects()).Result;
+            
+            var inlineKeyboard = new InlineKeyboardMarkup(subjects.Select(subject => new[] { InlineKeyboardButton.WithCallbackData(subject.Name, subject.Name) }));
 
             return await bot.SendTextMessageAsync(
-                chatId: message.Chat.Id,
-                text: "Выбери предмет.",
+                message.Chat.Id,
+                "Выбери предмет.",
                 replyMarkup: inlineKeyboard);
         }
 
@@ -115,7 +117,7 @@ namespace Zhalobobot.Bot.Services
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
-            this.ConversationService.SaveFeedback(message.Chat.Id, message.Text);
+            ConversationService.SaveFeedback(message.Chat.Id, message.Text);
 
             var replyKeyboardMarkup = new ReplyKeyboardMarkup(
                 new[]
@@ -131,8 +133,8 @@ namespace Zhalobobot.Bot.Services
                        "Что мне с ним сделать?\n\n" +
                        "Ты также можешь написать новое сообщение.";
             return await bot.SendTextMessageAsync(
-                chatId: message.Chat.Id,
-                text: text,
+                message.Chat.Id,
+                text,
                 replyMarkup: replyKeyboardMarkup);
         }
 
@@ -140,7 +142,7 @@ namespace Zhalobobot.Bot.Services
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
                
-            var conversationStatus = this.ConversationService.GetConversationStatus(message.Chat.Id);
+            var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
             string text;
             if (conversationStatus != Models.ConversationStatus.AwaitingConfirmation)
@@ -149,13 +151,13 @@ namespace Zhalobobot.Bot.Services
             }
             else
             {
-                await this.ConversationService.SendFeedbackAsync(message.Chat.Id);
+                await ConversationService.SendFeedbackAsync(message.Chat.Id);
                 text = "Спасибо за обратную связь! :)";
             }
 
             return await bot.SendTextMessageAsync(
-                chatId: message.Chat.Id,
-                text: text,
+                message.Chat.Id,
+                text,
                 replyMarkup: new ReplyKeyboardRemove());
         }
 
@@ -163,7 +165,7 @@ namespace Zhalobobot.Bot.Services
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
-            var conversationStatus = this.ConversationService.GetConversationStatus(message.Chat.Id);
+            var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
             string text;
             if (conversationStatus != Models.ConversationStatus.AwaitingConfirmation)
@@ -172,13 +174,13 @@ namespace Zhalobobot.Bot.Services
             }
             else
             {
-                this.ConversationService.StopConversation(message.Chat.Id);
+                ConversationService.StopConversation(message.Chat.Id);
                 text = "Что ж, может, в другой раз. :(";
             }
 
             return await bot.SendTextMessageAsync(
-                chatId: message.Chat.Id,
-                text: text,
+                message.Chat.Id,
+                text,
                 replyMarkup: new ReplyKeyboardRemove());
         }
 
@@ -186,17 +188,17 @@ namespace Zhalobobot.Bot.Services
         {
             var chatId = callbackQuery.Message.Chat.Id;
 
-            await this.BotClient.SendChatActionAsync(chatId, ChatAction.Typing);
+            await BotClient.SendChatActionAsync(chatId, ChatAction.Typing);
 
-            this.ConversationService.StartSubjectFeedback(chatId, callbackQuery.Data);
+            ConversationService.StartSubjectFeedback(chatId, callbackQuery.Data);
 
-            await this.BotClient.DeleteMessageAsync(chatId, callbackQuery.Message.MessageId);
+            await BotClient.DeleteMessageAsync(chatId, callbackQuery.Message.MessageId);
 
             var text = $"Ты выбрал обратную связь по предмету \"{callbackQuery.Data}\". Напиши сообщение.";
 
-            await this.BotClient.SendTextMessageAsync(
-                chatId: chatId,
-                text: text,
+            await BotClient.SendTextMessageAsync(
+                chatId,
+                text,
                 replyMarkup: new ReplyKeyboardRemove());
         }
 
@@ -208,14 +210,14 @@ namespace Zhalobobot.Bot.Services
                                  "/general  - Общая обратная связь";
 
             return await bot.SendTextMessageAsync(
-                chatId: message.Chat.Id,
-                text: usage,
+                message.Chat.Id,
+                usage,
                 replyMarkup: new ReplyKeyboardRemove());
         }
 
         private Task UnknownUpdateHandlerAsync(Update update)
         {
-            this.Logger.LogInformation($"Unknown update type: {update.Type}");
+            Logger.LogInformation($"Unknown update type: {update.Type}");
             return Task.CompletedTask;
         }
 
@@ -227,7 +229,7 @@ namespace Zhalobobot.Bot.Services
                 _ => exception.ToString()
             };
 
-            this.Logger.LogInformation(errorMessage);
+            Logger.LogInformation(errorMessage);
             return Task.CompletedTask;
         }
     }

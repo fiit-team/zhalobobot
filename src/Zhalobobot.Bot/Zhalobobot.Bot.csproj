@@ -15,5 +15,10 @@
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	</None>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Zhalobobot.Common.Clients\Zhalobobot.Common.Clients.csproj" />
+    <ProjectReference Include="..\..\Zhalobobot.Common.Models\Zhalobobot.Common.Models.csproj" />
+  </ItemGroup>
 	
 </Project>

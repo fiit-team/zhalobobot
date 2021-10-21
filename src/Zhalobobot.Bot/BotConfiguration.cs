@@ -1,6 +1,4 @@
-﻿using Telegram.Bot.Types;
-
-namespace Zhalobobot.Bot
+﻿namespace Zhalobobot.Bot
 {
     public class BotConfiguration
     {

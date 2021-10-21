@@ -1,6 +1,6 @@
-﻿using Zhalobobot.Bot.Models;
+﻿using Zhalobobot.Common.Models.Feedback;
 
-namespace Zhalobobot.Bot.Extensions
+namespace Zhalobobot.Common.Models.Helpers
 {
     public static class FeedbackTypeExtensions
     {
