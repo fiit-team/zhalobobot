@@ -32,9 +32,9 @@ namespace Zhalobobot.Bot.Services
             var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
             var webhookAddress = @$"{this.BotConfig.HostAddress}/bot/{this.BotConfig.BotToken}";
-            this.Logger.LogInformation("Setting webhook: ", webhookAddress);
+            Logger.LogInformation("Setting webhook: {}", webhookAddress);
             await botClient.SetWebhookAsync(
-                url: webhookAddress,
+                webhookAddress,
                 allowedUpdates: Array.Empty<UpdateType>(),
                 cancellationToken: cancellationToken);
         }
@@ -44,7 +44,7 @@ namespace Zhalobobot.Bot.Services
             using var scope = this.Services.CreateScope();
             var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
-            this.Logger.LogInformation("Removing webhook");
+            Logger.LogInformation("Removing webhook");
             await botClient.DeleteWebhookAsync(cancellationToken: cancellationToken);
         }
     }

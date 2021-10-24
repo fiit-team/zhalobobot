@@ -96,7 +96,7 @@ namespace Zhalobobot.Bot.Services
         public ConversationStatus GetConversationStatus(long chatId)
         {
             return Conversations.TryGetValue(chatId, out var value)
-                ? value.Message is null
+                ? string.IsNullOrEmpty(value.Message)
                     ? ConversationStatus.AwaitingFeedback
                     : ConversationStatus.AwaitingConfirmation
                 : ConversationStatus.Default;

@@ -34,7 +34,8 @@ namespace Zhalobobot.Bot
             services.AddSingleton<IConversationService, ConversationService>();
             services.AddScoped<HandleUpdateService>();
             
-            services.AddSingleton<IZhalobobotApiClient, ZhalobobotApiClient>();
+            services.AddSingleton<IZhalobobotApiClient>(
+                new ZhalobobotApiClient(Settings.ServerAddress));
 
             services.AddControllers()
                     .AddNewtonsoftJson();
