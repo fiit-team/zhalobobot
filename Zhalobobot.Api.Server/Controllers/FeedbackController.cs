@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Zhalobobot.Api.Server.Repositories;
+using Zhalobobot.Api.Server.Repositories.Feedback;
 using Zhalobobot.Common.Models.Feedback;
 
 namespace Zhalobobot.Api.Server.Controllers
@@ -8,9 +8,9 @@ namespace Zhalobobot.Api.Server.Controllers
     [Route("feedback")]
     public class FeedbackController
     {
-        private readonly IGoogleSheetsRepository repository;
+        private readonly IFeedbackRepository repository;
 
-        public FeedbackController(IGoogleSheetsRepository repository)
+        public FeedbackController(IFeedbackRepository repository)
         {
             this.repository = repository;
         }
@@ -18,8 +18,6 @@ namespace Zhalobobot.Api.Server.Controllers
         [HttpPost]
         [Consumes("application/json")]
         public async Task Add([FromBody] Feedback feedback)
-        {
-            await repository.AddFeedbackInfo(feedback);
-        }
+            => await repository.AddFeedback(feedback);
     }
 }

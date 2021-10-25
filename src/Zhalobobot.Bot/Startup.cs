@@ -28,7 +28,7 @@ namespace Zhalobobot.Bot
 
             services.AddHttpClient("tgwebhook")
                     .AddTypedClient<ITelegramBotClient>(httpClient
-                        => new TelegramBotClient(BotConfig.BotToken, httpClient));
+                        => new TelegramBotClient(BotConfig.TelegramBotToken, httpClient));
 
             services.AddSingleton(Settings);
             services.AddSingleton<IConversationService, ConversationService>();
@@ -52,10 +52,10 @@ namespace Zhalobobot.Bot
 
             app.UseEndpoints(endpoints =>
             {
-                var token = this.BotConfig.BotToken;
+                var token = BotConfig.TelegramBotToken;
                 endpoints.MapControllerRoute(
-                    name: "tgwebhook",
-                    pattern: $"bot/{token}",
+                    "tgwebhook",
+                    $"bot/{token}",
                     new { controller = "Webhook", action = "Post" });
                 endpoints.MapControllers();
             });

@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using FluentAssertions;
 using NUnit.Framework;
-using Zhalobobot.Common.Clients.Feedback;
+using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Feedback;
 
 namespace Zhalobobot.Tests
@@ -9,12 +9,11 @@ namespace Zhalobobot.Tests
     [TestFixture]
     public class FeedbackClientTests
     {
-        private IFeedbackClient client = null!;
-        
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+        private readonly IZhalobobotApiClient client;
+
+        public FeedbackClientTests(IZhalobobotApiClient client)
         {
-            client = new FeedbackClient();
+            this.client = client;
         }
 
         [Test]
@@ -22,7 +21,7 @@ namespace Zhalobobot.Tests
         {
             var feedback = Feedback.General with {Subject = new Subject("Subject"), Message = "Message"};
             
-            var result = await client.AddFeedback(feedback);
+            var result = await client.Feedback.AddFeedback(feedback);
 
             result.IsSuccessful.Should().BeTrue();
         }

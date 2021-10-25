@@ -21,17 +21,17 @@ namespace Zhalobobot.Bot.Services
             IServiceProvider serviceProvider,
             IConfiguration configuration)
         {
-            this.Logger = logger;
-            this.Services = serviceProvider;
-            this.BotConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>();
+            Logger = logger;
+            Services = serviceProvider;
+            BotConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>();
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            using var scope = this.Services.CreateScope();
+            using var scope = Services.CreateScope();
             var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
-            var webhookAddress = @$"{this.BotConfig.HostAddress}/bot/{this.BotConfig.BotToken}";
+            var webhookAddress = @$"{BotConfig.HostAddress}/bot/{BotConfig.TelegramBotToken}";
             Logger.LogInformation("Setting webhook: {}", webhookAddress);
             await botClient.SetWebhookAsync(
                 webhookAddress,
@@ -41,7 +41,7 @@ namespace Zhalobobot.Bot.Services
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            using var scope = this.Services.CreateScope();
+            using var scope = Services.CreateScope();
             var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
 
             Logger.LogInformation("Removing webhook");

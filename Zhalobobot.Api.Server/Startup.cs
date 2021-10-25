@@ -1,14 +1,11 @@
-using System.IO;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Services;
-using Google.Apis.Sheets.v4;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using Zhalobobot.Api.Server.Repositories;
+using Zhalobobot.Api.Server.Repositories.Feedback;
+using Zhalobobot.Api.Server.Repositories.Subjects;
 using Zhalobobot.Common.Clients.Core;
 
 namespace Zhalobobot.Api.Server
@@ -16,12 +13,10 @@ namespace Zhalobobot.Api.Server
     public class Startup
     {
         public IConfiguration Configuration { get; }
-        private Settings Settings { get; }
 
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            Settings = configuration.GetSection("Settings").Get<Settings>();
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -35,7 +30,6 @@ namespace Zhalobobot.Api.Server
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Zhalobobot.Api.Server", Version = "v1" });
             });
             
-            services.AddSingleton(Settings);
             services.AddSingleton<IZhalobobotApiClient, ZhalobobotApiClient>();
 
             ConfigureRepositories(services);
@@ -60,26 +54,10 @@ namespace Zhalobobot.Api.Server
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
         
-        private void ConfigureRepositories(IServiceCollection services)
+        private static void ConfigureRepositories(IServiceCollection services)
         {
-            var scopes = new[] { SheetsService.Scope.Spreadsheets };
-
-            GoogleCredential credential;
-
-            using (var stream = new FileStream(Settings.CredentialsFilePath, FileMode.Open, FileAccess.Read))
-            {
-                credential = GoogleCredential.FromStream(stream)
-                    .CreateScoped(scopes);
-            }
-
-            var service = new SheetsService(new BaseClientService.Initializer()
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = Settings.ApplicationName,
-            });
-
-            services.AddSingleton(service.Spreadsheets);
-            services.AddSingleton<IGoogleSheetsRepository, GoogleSheetsRepository>();
+            services.AddSingleton<IFeedbackRepository, FeedbackRepository>();
+            services.AddSingleton<ISubjectsRepository, SubjectsRepository>();
         }
     }
 }

@@ -1,8 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
-    </PropertyGroup>
+        <Nullable>enable</Nullable>
+      <UserSecretsId>440a9857-0851-4d8e-8ffa-8680b449a853</UserSecretsId>
+  </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
