@@ -7,6 +7,7 @@ using Telegram.Bot;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Feedback;
+using Zhalobobot.Common.Models.Student;
 
 namespace Zhalobobot.Bot.Services
 {
@@ -73,21 +74,21 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"Subject feedback started successfully. ChatId {chatId}, Subject {subjectName}");
         }
 
-        public async Task SendFeedbackAsync(long chatId)
+        public async Task SendFeedbackAsync(long chatId, AbTestStudent student)
         {
-            if (!Conversations.TryGetValue(chatId, out var value)
-                && value?.Message is null)
+            if (!Conversations.TryGetValue(chatId, out var feedback)
+                && feedback?.Message is null)
             {
                 Logger.LogError($"Chat not found or no feedback message. ChatId {chatId}");
                 throw new Exception($"Chat not found or no feedback message. ChatId {chatId}");
             }
             
-            if (value.Type == FeedbackType.UrgentFeedback)
+            if (feedback.Type == FeedbackType.UrgentFeedback)
             {
-                await SendUrgentFeedback(value.Message);
+                await SendUrgentFeedback(feedback.Message);
             }
 
-            await Client.Feedback.AddFeedback(value);
+            await Client.Feedback.AddFeedback(feedback with { Student = student });
             Logger.LogInformation($"Saved feedback in repository.");
 
             Conversations.Remove(chatId);

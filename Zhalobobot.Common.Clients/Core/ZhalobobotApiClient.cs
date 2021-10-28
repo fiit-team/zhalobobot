@@ -1,4 +1,5 @@
 using Zhalobobot.Common.Clients.Feedback;
+using Zhalobobot.Common.Clients.Student;
 using Zhalobobot.Common.Clients.Subject;
 
 namespace Zhalobobot.Common.Clients.Core
@@ -9,9 +10,11 @@ namespace Zhalobobot.Common.Clients.Core
         {
             Feedback = new FeedbackClient(serverUri);
             Subject = new SubjectClient(serverUri);
+            Student = new StudentClient(serverUri);
         }
         
         public IFeedbackClient Feedback { get; }
         public ISubjectClient Subject { get; }
+        public IStudentClient Student { get; }
     }
 }

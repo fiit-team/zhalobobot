@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Zhalobobot.Bot.Models;
+using Zhalobobot.Common.Models.Student;
 
 namespace Zhalobobot.Bot.Services
 {
@@ -15,7 +16,7 @@ namespace Zhalobobot.Bot.Services
 
         public void SaveFeedback(long chatId, string message);
 
-        public Task SendFeedbackAsync(long chatId);
+        public Task SendFeedbackAsync(long chatId, AbTestStudent student);
 
         public ConversationStatus GetConversationStatus(long chatId);
     }

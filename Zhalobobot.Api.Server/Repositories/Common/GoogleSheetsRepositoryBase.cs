@@ -10,15 +10,15 @@ namespace Zhalobobot.Api.Server.Repositories.Common
 {
     public abstract class GoogleSheetsRepositoryBase
     {
+        protected Func<DateTime> EkbTime { get; } 
         private SpreadsheetsResource Resource { get; }
-        protected DateTime EkbTime { get; }
         private string SpreadSheetId { get; }
         private IConfiguration Configuration { get; }
 
-        protected GoogleSheetsRepositoryBase(IConfiguration configuration, string spreadSheetId, string credentialsSecretName)
+        protected GoogleSheetsRepositoryBase(IConfiguration configuration, string spreadSheetId)
         {
             SpreadSheetId = spreadSheetId;
-            EkbTime = GetEkbTime();
+            EkbTime = GetEkbTime;
             Resource = GetSpreadsheetsResource();
             Configuration = configuration;
 
@@ -34,7 +34,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                 var scopes = new[] { SheetsService.Scope.Spreadsheets };
 
                 GoogleCredential credential = GoogleCredential
-                    .FromJson(configuration.GetSection(credentialsSecretName).Get<Credentials>().ToJson())
+                    .FromJson(configuration.GetSection("CREDENTIALS").Get<Credentials>().ToJson())
                     .CreateScoped(scopes);
 
                 var service = new SheetsService(new BaseClientService.Initializer
@@ -47,6 +47,6 @@ namespace Zhalobobot.Api.Server.Repositories.Common
         }
 
         protected GoogleSheetsRequest StartGoogleSheetsRequest()
-            => GoogleSheetsRequestBuilder.InitializeSpreadSheetId(Configuration["FeedbackSpreadSheetId"], Resource);
+            => GoogleSheetsRequestBuilder.InitializeSpreadSheetId(SpreadSheetId, Resource);
     }
 }

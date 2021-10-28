@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Common.Clients.Core;
+using Zhalobobot.Common.Models.Student;
 
 namespace Zhalobobot.Bot.Services
 {
@@ -17,6 +19,7 @@ namespace Zhalobobot.Bot.Services
         private IZhalobobotApiClient Client { get; }
         private IConversationService ConversationService { get; }
         private ILogger<HandleUpdateService> Logger { get; }
+        private Dictionary<string, AbTestStudent> Students { get; }
 
         public HandleUpdateService(ITelegramBotClient botClient,
             IZhalobobotApiClient client,
@@ -27,6 +30,7 @@ namespace Zhalobobot.Bot.Services
             Client = client ?? throw new ArgumentNullException(nameof(client));
             ConversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            Students = new Dictionary<string, AbTestStudent>();
         }
 
         public async Task EchoAsync(Update update)
@@ -53,6 +57,18 @@ namespace Zhalobobot.Bot.Services
         {
             Logger.LogInformation($"Receive message type: {message.Type}");
 
+            var userName = $"@{message.From.Username}";
+            
+            AbTestStudent student;
+
+            if (Students.ContainsKey(userName))
+                student = Students[userName];
+            else
+            {
+                student = (await Client.Student.GetAbTestStudent(userName)).Result;
+                Students[userName] = student;
+            }
+
             if (message.Type != MessageType.Text)
                 return;
 
@@ -63,7 +79,7 @@ namespace Zhalobobot.Bot.Services
                 "/alert" => HandleAlertFeedbackAsync(BotClient, message),
                 "/list" => SendFeedbackKeyboardAsync(BotClient, message),
                 "/general" => HandleGeneralFeedbackAsync(BotClient, message),
-                "Отправить" => SendFeedbackAsync(BotClient, message),
+                "Отправить" => SendFeedbackAsync(BotClient, message, student),
                 "Отменить" => CancelFeedbackAsync(BotClient, message),
                 _ => conversationStatus == Models.ConversationStatus.Default
                     ? Usage(BotClient, message)
@@ -138,7 +154,7 @@ namespace Zhalobobot.Bot.Services
                 replyMarkup: replyKeyboardMarkup);
         }
 
-        private async Task<Message> SendFeedbackAsync(ITelegramBotClient bot, Message message)
+        private async Task<Message> SendFeedbackAsync(ITelegramBotClient bot, Message message, AbTestStudent student)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
                
@@ -151,7 +167,7 @@ namespace Zhalobobot.Bot.Services
             }
             else
             {
-                await ConversationService.SendFeedbackAsync(message.Chat.Id);
+                await ConversationService.SendFeedbackAsync(message.Chat.Id, student);
                 text = "Спасибо за обратную связь! :)";
             }
 

@@ -1,7 +1,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Zhalobobot.Api.Server.Repositories.Common;
 using Zhalobobot.Common.Models.Feedback;
 
@@ -9,15 +8,12 @@ namespace Zhalobobot.Api.Server.Repositories.Subjects
 {
     public class SubjectsRepository : GoogleSheetsRepositoryBase, ISubjectsRepository
     {
-        private ILogger<ISubjectsRepository> Logger { get; }
         private IConfiguration Configuration { get; }
 
         public SubjectsRepository(
-            ILogger<ISubjectsRepository> logger, 
             IConfiguration configuration)
-        : base(configuration, configuration["FeedbackSpreadSheetId"], "FEEDBACK_SPREADSHEET_CREDENTIALS")
+        : base(configuration, configuration["FeedbackSpreadSheetId"])
         {
-            Logger = logger;
             Configuration = configuration;
         }
         

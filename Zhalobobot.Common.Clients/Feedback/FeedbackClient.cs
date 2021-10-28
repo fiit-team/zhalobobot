@@ -1,5 +1,4 @@
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Helpers.Extensions;
