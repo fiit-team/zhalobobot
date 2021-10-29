@@ -39,13 +39,9 @@ namespace Zhalobobot.Bot.Services
                 cancellationToken: cancellationToken);
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken)
+        public Task StopAsync(CancellationToken cancellationToken)
         {
-            using var scope = Services.CreateScope();
-            var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
-
-            Logger.LogInformation("Removing webhook");
-            await botClient.DeleteWebhookAsync(cancellationToken: cancellationToken);
+            return Task.CompletedTask;
         }
     }
 }
