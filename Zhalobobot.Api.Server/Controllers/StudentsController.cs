@@ -15,7 +15,7 @@ namespace Zhalobobot.Api.Server.Controllers
             this.abTestRepository = abTestRepository;
         }
 
-        [HttpGet("abTest/{telegramId}")]
+        [HttpGet("ab-test/{telegramId}")]
         public async Task<AbTestStudent> GetAbTestStudent([FromRoute] string telegramId)
         {
             return await abTestRepository.Get(telegramId);

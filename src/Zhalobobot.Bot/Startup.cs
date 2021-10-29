@@ -52,10 +52,9 @@ namespace Zhalobobot.Bot
 
             app.UseEndpoints(endpoints =>
             {
-                var token = BotConfig.TelegramBotToken;
                 endpoints.MapControllerRoute(
                     "tgwebhook",
-                    $"bot/{token}",
+                    $"bot/{BotConfig.TelegramBotToken}",
                     new { controller = "Webhook", action = "Post" });
                 endpoints.MapControllers();
             });

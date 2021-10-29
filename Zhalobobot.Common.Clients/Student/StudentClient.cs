@@ -20,7 +20,7 @@ namespace Zhalobobot.Common.Clients.Student
 
         public async Task<ZhalobobotResult<AbTestStudent>> GetAbTestStudent(string telegramId)
         {
-            var response = await client.GetAsync($"{serverUri}/students/abTest/{telegramId}");
+            var response = await client.GetAsync($"{serverUri}/students/ab-test/{telegramId}");
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception();
