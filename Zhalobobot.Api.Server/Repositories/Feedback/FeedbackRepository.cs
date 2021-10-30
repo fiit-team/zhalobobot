@@ -25,13 +25,13 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
                 EkbTime().ToString(CultureInfo.InvariantCulture),
                 feedback.Type.GetString(),
                 feedback.Subject.Name,
-                feedback.Message ?? "",
+                feedback.Message ?? string.Empty,
                 feedback.Student!.InGroupA ? "A" : "B",
                 feedback.Student!.TelegramId,
-                feedback.Student!.Name!.ToString(),
-                feedback.Student!.GroupNumber!,
-                feedback.Student!.SubgroupNumber!,
-                feedback.Student!.AdmissionYear!
+                feedback.Student!.Name?.ToString() ?? string.Empty,
+                feedback.Student!.GroupNumber?.ToString() ?? string.Empty,
+                feedback.Student!.SubgroupNumber?.ToString() ?? string.Empty,
+                feedback.Student!.AdmissionYear?.ToString() ?? string.Empty
             };
             
             await StartGoogleSheetsRequest()

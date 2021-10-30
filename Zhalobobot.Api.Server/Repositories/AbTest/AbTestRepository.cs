@@ -4,7 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Zhalobobot.Api.Server.Repositories.Common;
 using Zhalobobot.Common.Helpers.Helpers;
 using Zhalobobot.Common.Models.Student;
-using Zhalobobot.Common.Models.UserCommon;
 
 namespace Zhalobobot.Api.Server.Repositories.AbTest
 {
@@ -36,6 +35,4 @@ namespace Zhalobobot.Api.Server.Repositories.AbTest
                 student[7] as string == "TRUE");
         }
     }
-    
-    
 }
