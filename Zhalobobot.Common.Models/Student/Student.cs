@@ -7,5 +7,17 @@ namespace Zhalobobot.Common.Models.Student
         Name? Name,
         int? AdmissionYear,
         int? GroupNumber,
-        int? SubgroupNumber);
+        int? SubgroupNumber)
+    {
+        public string? GetGroup()
+        {
+            string? group = null;
+            if (GroupNumber != null)
+                group = $"тр-{GroupNumber}";
+            if (SubgroupNumber != null)
+                group += $"0{SubgroupNumber}";
+
+            return group;
+        }
+    }
 }

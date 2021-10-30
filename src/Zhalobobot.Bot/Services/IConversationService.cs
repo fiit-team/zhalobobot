@@ -14,7 +14,7 @@ namespace Zhalobobot.Bot.Services
 
         public void StartSubjectFeedback(long chatId, string subjectName);
 
-        public void SaveFeedback(long chatId, string message);
+        public void SaveMessage(long chatId, string message);
 
         public Task SendFeedbackAsync(long chatId, AbTestStudent student);
 

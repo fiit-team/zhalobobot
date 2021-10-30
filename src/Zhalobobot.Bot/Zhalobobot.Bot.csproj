@@ -3,10 +3,10 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>a6f526b1-8c88-45a5-a496-8c5670246976</UserSecretsId>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
 	<PackageReference Include="Telegram.Bot" Version="16.0.2" />
 	<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.10" />
   </ItemGroup>
