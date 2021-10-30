@@ -25,7 +25,7 @@ namespace Zhalobobot.Api.Server.Repositories.AbTest
             var student = students.Values.FirstOrDefault(v => v[6].ToString() == telegramId);
             
             if (student == null)
-                return new AbTestStudent(telegramId, Name.Empty, null, null, null, true);
+                return new AbTestStudent(telegramId, null, null, null, null, true);
 
             return new AbTestStudent(
                 telegramId,
