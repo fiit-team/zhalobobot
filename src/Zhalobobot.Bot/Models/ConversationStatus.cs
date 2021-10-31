@@ -6,8 +6,11 @@ namespace Zhalobobot.Bot.Models
     {
         [Description("Стандартное состояние.")]
         Default,
+        AwaitingRating,
+        AwaitingLikedPointsPollAnswer,
+        AwaitingUnlikedPointsPollAnswer,
         [Description("Ожидание обратной связи от пользователя.")]
-        AwaitingFeedback,
+        AwaitingMessage,
         [Description("Ожидание подтвеждения отправить обратную связь.")]
         AwaitingConfirmation
     }

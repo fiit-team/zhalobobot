@@ -21,11 +21,8 @@ namespace Zhalobobot.Bot.Services
         private Settings Settings { get; }
         private ILogger Logger { get; }
 
-        private IDictionary<long, Feedback> Conversations { get; }
-            = new ConcurrentDictionary<long, Feedback>();
-
-        private IDictionary<long, List<string>> Messages { get; }
-            = new ConcurrentDictionary<long, List<string>>();
+        private IDictionary<long, Conversation> Conversations { get; }
+            = new ConcurrentDictionary<long, Conversation>();
 
         public ConversationService(
             ITelegramBotClient botClient,
@@ -41,13 +38,13 @@ namespace Zhalobobot.Bot.Services
 
         public void SaveMessage(long chatId, string message)
         {
-            if (!Messages.TryGetValue(chatId, out var value))
+            if (!Conversations.TryGetValue(chatId, out var value))
             {
                 Logger.LogError($"Conversation not found. ChatId {chatId}.");
                 throw new Exception($"Conversation not found. ChatId {chatId}.");
             }
 
-            value.Add(message);
+            value.Messages.Add(message);
 
             Logger.LogInformation($"Message saved successfully. ChatId {chatId}");
         }
@@ -55,48 +52,59 @@ namespace Zhalobobot.Bot.Services
         public void StopConversation(long chatId)
         {
             Conversations.Remove(chatId);
-            Messages.Remove(chatId);
 
             Logger.LogInformation($"Conversation stopped successfully. ChatId {chatId}");
         }
 
         public void StartUrgentFeedback(long chatId)
         {
-            Conversations[chatId] = Feedback.Urgent;
-            Messages[chatId] = new List<string>();
+            Conversations[chatId] = new Conversation
+            {
+                Feedback = Feedback.Urgent
+            }; 
 
             Logger.LogInformation($"Urgent feedback started successfully. ChatId {chatId}");
         }
 
         public void StartGeneralFeedback(long chatId)
         {
-            Conversations[chatId] = Feedback.General;
-            Messages[chatId] = new List<string>();
+            Conversations[chatId] = new Conversation
+            {
+                Feedback = Feedback.General
+            };
 
             Logger.LogInformation($"General feedback started successfully. ChatId {chatId}");
         }
 
         public void StartSubjectFeedback(long chatId, string subjectName)
         {
-            Conversations[chatId] = Feedback.Subj with { Subject = new Subject(subjectName) };
-            Messages[chatId] = new List<string>();
+            var feedback = Feedback.Subj with
+            {
+                Subject = new Subject(subjectName),
+                SubjectSurvey = new SubjectSurvey()
+            };
+
+            Conversations[chatId] = new Conversation
+            {
+                Feedback = feedback
+            };
 
             Logger.LogInformation($"Subject feedback started successfully. ChatId {chatId}, Subject {subjectName}");
         }
 
         public async Task SendFeedbackAsync(long chatId, AbTestStudent student)
         {
-            if (!Conversations.TryGetValue(chatId, out var feedback))
+            if (!Conversations.TryGetValue(chatId, out var value))
             {
                 Logger.LogError($"Chat not found. ChatId {chatId}");
                 throw new Exception($"Chat not found. ChatId {chatId}");
             }
 
-            feedback = feedback with { Student = student };
+            var feedback = value.Feedback with { Student = student };
 
             if (feedback.Type == FeedbackType.UrgentFeedback)
             {
-                var message = string.Join("\n\n", Messages[chatId]);
+                var message = string.Join("\n", value.Messages);
                 await SendUrgentFeedback(message, student).ConfigureAwait(false);
                 await SaveUnStructuredFeedback(chatId, feedback).ConfigureAwait(false);
             }
@@ -109,21 +117,90 @@ namespace Zhalobobot.Bot.Services
             }
 
             Conversations.Remove(chatId);
-            Messages.Remove(chatId);
         }
 
         public ConversationStatus GetConversationStatus(long chatId)
         {
-            return Messages.TryGetValue(chatId, out var value)
-                ? value.Count == 0
-                    ? ConversationStatus.AwaitingFeedback
-                    : ConversationStatus.AwaitingConfirmation
-                : ConversationStatus.Default;
+            if (!Conversations.TryGetValue(chatId, out var conversation))
+                return ConversationStatus.Default;
+
+            var feedback = conversation.Feedback;
+
+            if (feedback.Type == FeedbackType.SubjectFeedback)
+            {
+                if (feedback.SubjectSurvey!.Rating == 0)
+                    return ConversationStatus.AwaitingRating;
+
+                if (feedback.SubjectSurvey!.LikedPoints.Count == 0)
+                    return ConversationStatus.AwaitingLikedPointsPollAnswer;
+
+                if (feedback.SubjectSurvey!.UnlikedPoints.Count == 0)
+                    return ConversationStatus.AwaitingUnlikedPointsPollAnswer;
+
+                return ConversationStatus.AwaitingConfirmation;
+            }
+
+            return conversation.Messages.Count == 0
+                ? ConversationStatus.AwaitingMessage
+                : ConversationStatus.AwaitingConfirmation;
+        }
+
+        public void SaveRating(long chatId, int rating)
+        {
+            if (!Conversations.TryGetValue(chatId, out var conversation))
+            {
+                Logger.LogError($"Chat not found. ChatId {chatId}");
+                throw new Exception($"Chat not found. ChatId {chatId}");
+            }
+
+            conversation.Feedback.SubjectSurvey!.Rating = rating;
+        }
+
+        public void SavePollInfo(long chatId, PollInfo pollInfo)
+        {
+            if (!Conversations.TryGetValue(chatId, out var conversation))
+            {
+                Logger.LogError($"Chat not found. ChatId {chatId}");
+                throw new Exception($"Chat not found. ChatId {chatId}");
+            }
+
+            conversation.LastPollInfo = pollInfo;
+        }
+
+        public PollInfo GetLastPollInfo(long chatId)
+        {
+            if (!Conversations.TryGetValue(chatId, out var conversation))
+            {
+                Logger.LogError($"Chat not found. ChatId {chatId}");
+                throw new Exception($"Chat not found. ChatId {chatId}");
+            }
+
+            return conversation.LastPollInfo;
+        }
+
+        public void ProcessPollAnswer(long chatId, ICollection<string> result, bool isLikedPoints = false)
+        {
+            if (!Conversations.TryGetValue(chatId, out var conversation))
+            {
+                Logger.LogError($"Chat not found. ChatId {chatId}");
+                throw new Exception($"Chat not found. ChatId {chatId}");
+            }
+
+            if (isLikedPoints)
+                conversation.Feedback.SubjectSurvey!.LikedPoints = result;
+            else
+                conversation.Feedback.SubjectSurvey!.UnlikedPoints = result;
         }
 
         private async Task SaveStructuredFeedback(long chatId, Feedback feedback)
         {
-            foreach (var entity in Messages[chatId]
+            if (!Conversations.TryGetValue(chatId, out var conversation))
+            {
+                Logger.LogError($"Chat not found. ChatId {chatId}");
+                throw new Exception($"Chat not found. ChatId {chatId}");
+            }
+
+            foreach (var entity in conversation.Messages
                 .Select(message => feedback with { Message = message }))
             {
                 await Client.Feedback.AddFeedback(entity);
@@ -134,7 +211,13 @@ namespace Zhalobobot.Bot.Services
 
         private async Task SaveUnStructuredFeedback(long chatId, Feedback feedback)
         {
-            feedback = feedback with { Message = string.Join("\n", Messages[chatId]) };
+            if (!Conversations.TryGetValue(chatId, out var conversation))
+            {
+                Logger.LogError($"Chat not found. ChatId {chatId}");
+                throw new Exception($"Chat not found. ChatId {chatId}");
+            }
+
+            feedback = feedback with { Message = string.Join("\n", conversation.Messages) };
 
             await Client.Feedback.AddFeedback(feedback);
 
@@ -147,15 +230,14 @@ namespace Zhalobobot.Bot.Services
             builder.AppendLine("Алерт! Кто-то оставил срочную обратную связь");
             builder.AppendLine();
             builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
-            builder.AppendLine();
-
+            
             var group = student.GetGroup();
             if (group != null)
             {
                 builder.AppendLine($"{group}");
-                builder.AppendLine();
             }
 
+            builder.AppendLine();
             builder.AppendLine(message);
 
             await BotClient.SendTextMessageAsync(

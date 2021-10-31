@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +11,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Student;
+using Emoji = Zhalobobot.Bot.Models.Emoji;
 
 namespace Zhalobobot.Bot.Services
 {
@@ -20,6 +20,7 @@ namespace Zhalobobot.Bot.Services
         private ITelegramBotClient BotClient { get; }
         private IZhalobobotApiClient Client { get; }
         private IConversationService ConversationService { get; }
+        private IPollService PollService { get; }
         private ILogger<HandleUpdateService> Logger { get; }
 
         private static ReplyKeyboardMarkup DefaultKeyboardMarkup { get; } = new(
@@ -37,7 +38,7 @@ namespace Zhalobobot.Bot.Services
             new KeyboardButton[]
             {
                 Buttons.Submit,
-                Buttons.Back
+                Buttons.MainMenu
             })
         {
             ResizeKeyboard = true
@@ -46,7 +47,7 @@ namespace Zhalobobot.Bot.Services
         private static ReplyKeyboardMarkup CancelKeyboardMarkup { get; } = new(
             new KeyboardButton[]
             {
-                Buttons.Back
+                Buttons.MainMenu
             })
         {
             ResizeKeyboard = true
@@ -55,11 +56,13 @@ namespace Zhalobobot.Bot.Services
         public HandleUpdateService(ITelegramBotClient botClient,
             IZhalobobotApiClient client,
             IConversationService conversationService,
+            IPollService pollService,
             ILogger<HandleUpdateService> logger)
         {
             BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             Client = client ?? throw new ArgumentNullException(nameof(client));
             ConversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
+            PollService = pollService ?? throw new ArgumentNullException(nameof(pollService));
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -70,6 +73,7 @@ namespace Zhalobobot.Bot.Services
                 UpdateType.Message => BotOnMessageReceived(update.Message),
                 //UpdateType.EditedMessage => BotOnMessageReceived(update.EditedMessage),
                 UpdateType.CallbackQuery => BotOnCallbackQueryReceived(update.CallbackQuery),
+                UpdateType.PollAnswer => BotOnPollAnswerReceived(update.PollAnswer),
                 _ => UnknownUpdateHandlerAsync(update)
             };
 
@@ -99,10 +103,10 @@ namespace Zhalobobot.Bot.Services
             var action = message.Text.Trim() switch
             {
                 Buttons.Alarm => HandleAlertFeedbackAsync(BotClient, message),
-                Buttons.Subjects => SendFeedbackKeyboardAsync(BotClient, message),
+                Buttons.Subjects => SendSubjectListAsync(BotClient, message),
                 Buttons.GeneralFeedback => HandleGeneralFeedbackAsync(BotClient, message, student),
                 Buttons.Submit => SendFeedbackAsync(BotClient, message, student),
-                Buttons.Back => CancelFeedbackAsync(BotClient, message),
+                Buttons.MainMenu => CancelFeedbackAsync(BotClient, message),
                 _ => conversationStatus == ConversationStatus.Default
                     ? Usage(BotClient, message)
                     : SaveFeedbackAsync(BotClient, message)
@@ -132,41 +136,24 @@ namespace Zhalobobot.Bot.Services
 
             ConversationService.StartGeneralFeedback(message.Chat.Id);
 
-            var builder = new StringBuilder();
-            builder.AppendLine("Расскажи про всё, что наболело и что понравилось");
-            builder.AppendLine();
-
-            if (student.InGroupA)
-            {
-                builder.AppendLine("• Пиши текстом, я пока не умею обрабатывать голосовые сообщения");
-                builder.AppendLine();
-                builder.AppendLine("• Пиши пожалуйста одну мысль в одном сообщении, чтобы админу было проще");
-            }
-            else
-            {
-                builder.AppendLine("Пиши текстом, я пока не умею обрабатывать голосовые сообщения");
-            }
-
-            builder.AppendLine();
-            builder.AppendLine(@"Как закончишь — нажимай ""Готово""");
-
             return await bot.SendTextMessageAsync(
-                message.Chat.Id, 
-                builder.ToString(),
+                message.Chat.Id,
+                BuildStartFeedbackMessage(student.InGroupA),
                 replyMarkup: CancelKeyboardMarkup);
         }
 
-        private async Task<Message> SendFeedbackKeyboardAsync(ITelegramBotClient bot, Message message)
+        private async Task<Message> SendSubjectListAsync(ITelegramBotClient bot, Message message)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
             var subjects = (await Client.Subject.GetSubjects()).Result;
 
-            var inlineKeyboard = new InlineKeyboardMarkup(subjects.Select(subject => new[] { InlineKeyboardButton.WithCallbackData(subject.Name, subject.Name) }));
+            var inlineKeyboard = new InlineKeyboardMarkup(
+                subjects.Select(subject => new[] { InlineKeyboardButton.WithCallbackData(subject.Name) }));
 
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
-                "Выбери предмет.",
+                "Выбери предмет",
                 replyMarkup: inlineKeyboard);
         }
 
@@ -192,19 +179,14 @@ namespace Zhalobobot.Bot.Services
 
             string text;
             var replyMarkup = DefaultKeyboardMarkup;
-            if (conversationStatus == ConversationStatus.Default)
-            {
-                text = "Ничего на отправку";
-            }
-            else if (conversationStatus == ConversationStatus.AwaitingFeedback)
-            {
-                text = "Напиши сообщение";
-                replyMarkup = CancelKeyboardMarkup;
-            }
-            else
+            if (conversationStatus == ConversationStatus.AwaitingConfirmation)
             {
                 await ConversationService.SendFeedbackAsync(message.Chat.Id, student);
                 text = "Спасибо, я всё записал!";
+            }
+            else
+            {
+                text = "Прости, не понял. Попробуй нажать на кнопку";
             }
 
             return await bot.SendTextMessageAsync(
@@ -231,16 +213,96 @@ namespace Zhalobobot.Bot.Services
 
             await BotClient.SendChatActionAsync(chatId, ChatAction.Typing);
 
-            ConversationService.StartSubjectFeedback(chatId, callbackQuery.Data);
+            var subjects = (await Client.Subject.GetSubjects()).Result;
 
             await BotClient.DeleteMessageAsync(chatId, callbackQuery.Message.MessageId);
 
-            var text = $"Ты выбрал обратную связь по предмету \"{callbackQuery.Data}\". Напиши сообщение.";
+            if (subjects.Any(s => s.Name == callbackQuery.Data))
+            {
+                await StartSubjectFeedback(chatId, callbackQuery.Data);
+                return;
+            }
+
+            var status = ConversationService.GetConversationStatus(chatId);
+            if (status != ConversationStatus.AwaitingRating)
+                return;
+
+            ConversationService.SaveRating(chatId, int.Parse(callbackQuery.Data));
+
+            await StartPoll(chatId, true);
+        }
+
+        private async Task StartSubjectFeedback(long chatId, string subject)
+        {
+            ConversationService.StartSubjectFeedback(chatId, subject);
+
+            await BotClient.SendTextMessageAsync(
+                chatId,
+                $"Ты выбрал {subject}",
+                replyMarkup: CancelKeyboardMarkup);
+
+            const string text = $"Оцени курс от 1 до 5 {Emoji.Star}";
+
+            var inlineKeyboard = new InlineKeyboardMarkup(Enumerable.Range(1, 5)
+                .Select(i => new[] { InlineKeyboardButton.WithCallbackData(
+                    string.Join(" ", Enumerable.Repeat(Emoji.Star, i)), i.ToString()) }));
 
             await BotClient.SendTextMessageAsync(
                 chatId,
                 text,
-                replyMarkup: new ReplyKeyboardRemove());
+                replyMarkup: inlineKeyboard);
+        }
+
+        private async Task BotOnPollAnswerReceived(PollAnswer pollAnswer)
+        {
+            if (pollAnswer.OptionIds.Length == 0)
+                return;
+
+            var chatId = pollAnswer.User.Id;
+
+            var lastPollInfo = ConversationService.GetLastPollInfo(chatId);
+
+            if (lastPollInfo is null || pollAnswer.PollId != lastPollInfo.PollId)
+                return;
+
+            await BotClient.StopPollAsync(chatId, lastPollInfo.MessageId);
+            await BotClient.DeleteMessageAsync(chatId, lastPollInfo.MessageId);
+
+            var status = ConversationService.GetConversationStatus(chatId);
+
+            if (status is ConversationStatus.AwaitingLikedPointsPollAnswer)
+            {
+                var pollResult = PollService.GetLikedPoints(pollAnswer.OptionIds);
+                ConversationService.ProcessPollAnswer(chatId, pollResult, true);
+                await StartPoll(chatId);
+            }
+
+            if (status is ConversationStatus.AwaitingUnlikedPointsPollAnswer)
+            {
+                var pollResult = PollService.GetUnlikedPoints(pollAnswer.OptionIds);
+                ConversationService.ProcessPollAnswer(chatId, pollResult);
+
+                var student = (await Client.Student.GetAbTestStudent($"@{pollAnswer.User.Username}")).Result;
+                await BotClient.SendTextMessageAsync(
+                    chatId,
+                    BuildStartFeedbackMessage(student.InGroupA, true),
+                    replyMarkup: SubmitKeyboardMarkup);
+            }
+        }
+
+        private async Task StartPoll(long chatId, bool isLikedPointsPoll = false)
+        {
+            var message = await BotClient.SendPollAsync(
+                chatId,
+                isLikedPointsPoll ? "Что понравилось?" : "Что не понравилось?",
+                isLikedPointsPoll ? PollService.GetLikedPointsPoll() : PollService.GetUnlikedPointsPoll(),
+                false,
+                allowsMultipleAnswers: true,
+                allowSendingWithoutReply: true);
+
+            ConversationService.SavePollInfo(
+                chatId,
+                new PollInfo(message.Poll.Id, message.MessageId));
         }
 
         private Task UnknownUpdateHandlerAsync(Update update)
@@ -259,6 +321,34 @@ namespace Zhalobobot.Bot.Services
 
             Logger.LogInformation(errorMessage);
             return Task.CompletedTask;
+        }
+
+        private static string BuildStartFeedbackMessage(bool isGroupA, bool isSubjectFeedback = false)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine(isSubjectFeedback
+                ? "Расскажи подробнее, что думаешь о курсе?"
+                : "Расскажи про всё, что наболело и что понравилось");
+
+            builder.AppendLine();
+
+            if (isGroupA)
+            {
+                builder.AppendLine("• Пиши текстом, я пока не умею обрабатывать голосовые сообщения");
+                builder.AppendLine();
+                builder.AppendLine("• Пиши пожалуйста одну мысль в одном сообщении, чтобы админу было проще");
+            }
+            else
+            {
+                builder.AppendLine("Пиши текстом, я пока не умею обрабатывать голосовые сообщения");
+            }
+
+            builder.AppendLine();
+            builder.AppendLine(isSubjectFeedback
+                ? @"Если ничего не хочешь сказать — жми ""Готово"""
+                : @"Как закончишь — нажимай ""Готово""");
+
+            return builder.ToString();
         }
 
         private static async Task<Message> Usage(ITelegramBotClient bot, Message message)

@@ -31,6 +31,7 @@ namespace Zhalobobot.Bot
                         => new TelegramBotClient(BotConfig.TelegramBotToken, httpClient));
 
             services.AddSingleton(Settings);
+            services.AddSingleton<IPollService, PollService>();
             services.AddSingleton<IConversationService, ConversationService>();
             services.AddScoped<HandleUpdateService>();
             

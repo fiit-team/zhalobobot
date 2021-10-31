@@ -8,5 +8,6 @@
         public const string Books = "📚";
         public const string BackArrow = "↩️";
         public const string Envelope = "✉️";
+        public const string Star = "⭐️";
     }
 }
