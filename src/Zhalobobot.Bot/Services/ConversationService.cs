@@ -237,6 +237,11 @@ namespace Zhalobobot.Bot.Services
                 builder.AppendLine($"{group}");
             }
 
+            if (student.TelegramId.Length > 1)
+            {
+                builder.AppendLine(student.TelegramId);
+            }
+
             builder.AppendLine();
             builder.AppendLine(message);
 
