@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Zhalobobot.Api.Server.Repositories.Subjects;
-using Zhalobobot.Common.Models.Feedback;
+using Zhalobobot.Common.Models.Subject;
 
 namespace Zhalobobot.Api.Server.Controllers
 {

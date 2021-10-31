@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Zhalobobot.Common.Models.Feedback
+namespace Zhalobobot.Common.Models.Subject
 {
     public class SubjectSurvey
     {

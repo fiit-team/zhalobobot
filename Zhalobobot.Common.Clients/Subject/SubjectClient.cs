@@ -17,19 +17,19 @@ namespace Zhalobobot.Common.Clients.Subject
             this.serverUri = serverUri;
         }
         
-        public async Task<ZhalobobotResult<Models.Feedback.Subject[]>> GetSubjects()
+        public async Task<ZhalobobotResult<Models.Subject.Subject[]>> GetSubjects()
         {
             var response = await client.GetAsync($"{serverUri}/subjects");
 
             if (!response.IsSuccessStatusCode)
-                return new ZhalobobotResult<Models.Feedback.Subject[]>(
-                    Array.Empty<Models.Feedback.Subject>(),
+                return new ZhalobobotResult<Models.Subject.Subject[]>(
+                    Array.Empty<Models.Subject.Subject>(),
                     response.IsSuccessStatusCode, 
                     response.StatusCode);
             
-            var subjects = (await response.Content.ReadAsStreamAsync()).FromJsonStream<Models.Feedback.Subject[]>();
+            var subjects = (await response.Content.ReadAsStreamAsync()).FromJsonStream<Models.Subject.Subject[]>();
 
-            return new ZhalobobotResult<Models.Feedback.Subject[]>(subjects, response.IsSuccessStatusCode, response.StatusCode);
+            return new ZhalobobotResult<Models.Subject.Subject[]>(subjects, response.IsSuccessStatusCode, response.StatusCode);
         }
     }
 }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Zhalobobot.Api.Server.Repositories.Common;
 using Zhalobobot.Common.Models.Helpers;
 
@@ -10,12 +11,14 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
     public class FeedbackRepository : GoogleSheetsRepositoryBase, IFeedbackRepository
     {
         private IConfiguration Configuration { get; }
+        private ILogger<FeedbackRepository> Logger { get; }
 
         public FeedbackRepository(
-            IConfiguration configuration)
+            IConfiguration configuration, ILogger<FeedbackRepository> logger)
         : base(configuration, configuration["FeedbackSpreadSheetId"])
         {
             Configuration = configuration;
+            Logger = logger;
         }
 
         public async Task AddFeedback(Zhalobobot.Common.Models.Feedback.Feedback feedback)
@@ -34,11 +37,7 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
                 feedback.Student!.AdmissionYear?.ToString() ?? string.Empty
             };
             
-            await StartGoogleSheetsRequest()
-                .AddValues(objectList)
-                .SetupRange("Feedback!A:J")
-                .ToAppendRequest()
-                .ExecuteAsync();
+            await AppendRequest("Feedback!A:J", objectList).ExecuteAsync();
         }
     }
 }

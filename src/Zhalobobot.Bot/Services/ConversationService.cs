@@ -10,6 +10,7 @@ using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Feedback;
 using Zhalobobot.Common.Models.Student;
+using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
 
 namespace Zhalobobot.Bot.Services

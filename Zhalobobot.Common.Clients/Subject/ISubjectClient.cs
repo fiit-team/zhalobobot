@@ -5,6 +5,6 @@ namespace Zhalobobot.Common.Clients.Subject
 {
     public interface ISubjectClient
     {
-        Task<ZhalobobotResult<Models.Feedback.Subject[]>> GetSubjects();
+        Task<ZhalobobotResult<Models.Subject.Subject[]>> GetSubjects();
     }
 }

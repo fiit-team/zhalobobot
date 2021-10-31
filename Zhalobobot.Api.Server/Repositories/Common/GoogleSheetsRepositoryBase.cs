@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
@@ -48,5 +49,22 @@ namespace Zhalobobot.Api.Server.Repositories.Common
 
         protected GoogleSheetsRequest StartGoogleSheetsRequest()
             => GoogleSheetsRequestBuilder.InitializeSpreadSheetId(SpreadSheetId, Resource);
+
+        protected SpreadsheetsResource.ValuesResource.GetRequest GetRequest(string range)
+            => GoogleSheetsRequestBuilder.InitializeSpreadSheetId(SpreadSheetId, Resource)
+                .SetupRange(range)
+                .ToGetRequest();
+        
+        protected SpreadsheetsResource.ValuesResource.AppendRequest AppendRequest(string range, IEnumerable<IList<object>> values)
+            => GoogleSheetsRequestBuilder.InitializeSpreadSheetId(SpreadSheetId, Resource)
+                .SetupRange(range)
+                .AddValues(values)
+                .ToAppendRequest();
+        
+        protected SpreadsheetsResource.ValuesResource.AppendRequest AppendRequest(string range, IList<object> values)
+            => GoogleSheetsRequestBuilder.InitializeSpreadSheetId(SpreadSheetId, Resource)
+                .SetupRange(range)
+                .AddValues(values)
+                .ToAppendRequest();
     }
 }

@@ -6,11 +6,12 @@
     <UserSecretsId>b20f6a2f-0a58-4d5c-bf85-07bcebb94d63</UserSecretsId>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.10" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Google.Apis.Sheets.v4" Version="1.55.0.2371" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.10" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
+        <PackageReference Include="Vostok.Commons.Time" Version="0.1.1-pre000031" />
+    </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Zhalobobot.Common.Clients\Zhalobobot.Common.Clients.csproj" />
