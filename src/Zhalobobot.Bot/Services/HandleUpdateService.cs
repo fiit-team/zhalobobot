@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EnumsNET;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -10,7 +12,9 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
+using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Student;
+using Zhalobobot.Common.Models.Subject;
 using Emoji = Zhalobobot.Bot.Models.Emoji;
 
 namespace Zhalobobot.Bot.Services
@@ -71,7 +75,6 @@ namespace Zhalobobot.Bot.Services
             var handler = update.Type switch
             {
                 UpdateType.Message => BotOnMessageReceived(update.Message),
-                //UpdateType.EditedMessage => BotOnMessageReceived(update.EditedMessage),
                 UpdateType.CallbackQuery => BotOnCallbackQueryReceived(update.CallbackQuery),
                 UpdateType.PollAnswer => BotOnPollAnswerReceived(update.PollAnswer),
                 _ => UnknownUpdateHandlerAsync(update)
@@ -148,13 +151,10 @@ namespace Zhalobobot.Bot.Services
 
             var subjects = (await Client.Subject.GetSubjects()).Result;
 
-            var inlineKeyboard = new InlineKeyboardMarkup(
-                subjects.Select(subject => new[] { InlineKeyboardButton.WithCallbackData(subject.Name) }));
-
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 "Выбери предмет",
-                replyMarkup: inlineKeyboard);
+                replyMarkup: GetSubjectsKeyboard(subjects));
         }
 
         private async Task<Message> SaveFeedbackAsync(ITelegramBotClient bot, Message message)
@@ -215,11 +215,29 @@ namespace Zhalobobot.Bot.Services
 
             var subjects = (await Client.Subject.GetSubjects()).Result;
 
+            if (callbackQuery.Data == Strings.Skip)
+                return;
+
+            var categories = Enum.GetValues<SubjectCategory>()
+                .Where(c => c.ToString() == callbackQuery.Data)
+                .ToList();
+
+            if (categories.Count == 1)
+            {
+                await BotClient.EditMessageReplyMarkupAsync(
+                    chatId,
+                    callbackQuery.Message.MessageId,
+                    GetSubjectsKeyboard(subjects, categories.First()));
+                return;
+            }
+
             await BotClient.DeleteMessageAsync(chatId, callbackQuery.Message.MessageId);
 
-            if (subjects.Any(s => s.Name == callbackQuery.Data))
+            var subject = subjects.FirstOrDefault(
+                s => s.Name.GetHashCode().ToString() == callbackQuery.Data);
+            if (subject != null)
             {
-                await StartSubjectFeedback(chatId, callbackQuery.Data);
+                await StartSubjectFeedback(chatId, subject.Name);
                 return;
             }
 
@@ -321,6 +339,30 @@ namespace Zhalobobot.Bot.Services
 
             Logger.LogInformation(errorMessage);
             return Task.CompletedTask;
+        }
+
+        private static InlineKeyboardMarkup GetSubjectsKeyboard(IEnumerable<Subject> subjects, SubjectCategory category = 0)
+        {
+            var categories = Enum.GetValues<SubjectCategory>()
+                .Select(c => (
+                    (c == category ? Emoji.Arrow : string.Empty) + c.AsString(EnumFormat.Description),
+                    c == category ? Strings.Skip : c.ToString()))
+                .Select(c => InlineKeyboardButton.WithCallbackData(c.Item1, c.Item2))
+                .ToList();
+
+            var inlineKeyboard = new InlineKeyboardMarkup(
+                subjects
+                    .Where(subject => subject.Category! == category)
+                    .Select(subject => new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData(
+                            subject.Name.Slice(),
+                            subject.Name.GetHashCode().ToString())
+                    })
+                    .Append(categories.Take((categories.Count + 1) / 2))
+                    .Append(categories.Skip((categories.Count + 1) / 2)));
+
+            return inlineKeyboard;
         }
 
         private static string BuildStartFeedbackMessage(bool isGroupA, bool isSubjectFeedback = false)

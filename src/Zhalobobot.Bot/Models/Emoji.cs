@@ -9,5 +9,6 @@
         public const string BackArrow = "↩️";
         public const string Envelope = "✉️";
         public const string Star = "⭐️";
+        public const string Arrow = "➡️";
     }
 }

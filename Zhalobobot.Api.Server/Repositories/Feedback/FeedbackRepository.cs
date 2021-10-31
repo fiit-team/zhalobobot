@@ -27,7 +27,7 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
             {
                 EkbTime().ToString(CultureInfo.InvariantCulture),
                 feedback.Type.GetString(),
-                feedback.Subject.Name,
+                feedback.Subject?.Name ?? string.Empty,
                 feedback.Message ?? string.Empty,
                 feedback.Student!.InGroupA ? "A" : "B",
                 feedback.Student!.TelegramId,
