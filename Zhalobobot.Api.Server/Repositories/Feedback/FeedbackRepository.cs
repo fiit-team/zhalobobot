@@ -28,6 +28,9 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
                 EkbTime().ToString(CultureInfo.InvariantCulture),
                 feedback.Type.GetString(),
                 feedback.Subject?.Name ?? string.Empty,
+                feedback.SubjectSurvey?.Rating.ToString() ?? string.Empty,
+                feedback.SubjectSurvey is null ? string.Empty : string.Join("; ", feedback.SubjectSurvey.LikedPoints),
+                feedback.SubjectSurvey is null ? string.Empty : string.Join("; ", feedback.SubjectSurvey.UnlikedPoints),
                 feedback.Message ?? string.Empty,
                 feedback.Student!.InGroupA ? "A" : "B",
                 feedback.Student!.TelegramId,
@@ -37,7 +40,7 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
                 feedback.Student!.AdmissionYear?.ToString() ?? string.Empty
             };
             
-            await AppendRequest("Feedback!A:J", objectList).ExecuteAsync();
+            await AppendRequest("Feedback!A:M", objectList).ExecuteAsync();
         }
     }
 }
