@@ -9,5 +9,5 @@ namespace Zhalobobot.Common.Models.Student
         int? GroupNumber,
         int? SubgroupNumber,
         bool InGroupA)
-        : Student(TelegramId, Name, AdmissionYear, GroupNumber, SubgroupNumber);
+        : OldStudent(TelegramId, Name, AdmissionYear, GroupNumber, SubgroupNumber);
 }

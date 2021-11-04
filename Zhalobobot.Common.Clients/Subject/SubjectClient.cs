@@ -1,35 +1,18 @@
-using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Zhalobobot.Common.Clients.Core;
-using Zhalobobot.Common.Models.Serialization;
+using Zhalobobot.Common.Models.Subject.Requests;
 
 namespace Zhalobobot.Common.Clients.Subject
 {
-    public class SubjectClient : ISubjectClient
+    public class SubjectClient : ClientBase, ISubjectClient
     {
-        private readonly HttpClient client = new();
-
-        private readonly string serverUri;
-
-        public SubjectClient(string serverUri = "https://localhost:5001")
+        public SubjectClient(HttpClient client, string serverUri)
+            : base("subjects", client, serverUri)
         {
-            this.serverUri = serverUri;
         }
-        
-        public async Task<ZhalobobotResult<Models.Subject.Subject[]>> GetSubjects()
-        {
-            var response = await client.GetAsync($"{serverUri}/subjects");
 
-            if (!response.IsSuccessStatusCode)
-                return new ZhalobobotResult<Models.Subject.Subject[]>(
-                    Array.Empty<Models.Subject.Subject>(),
-                    response.IsSuccessStatusCode, 
-                    response.StatusCode);
-            
-            var subjects = (await response.Content.ReadAsStreamAsync()).FromJsonStream<Models.Subject.Subject[]>();
-
-            return new ZhalobobotResult<Models.Subject.Subject[]>(subjects, response.IsSuccessStatusCode, response.StatusCode);
-        }
+        public Task<ZhalobobotResult<Models.Subject.Subject[]>> Get(GetSubjectsRequest request)
+            => Method<Models.Subject.Subject[]>("get").CallAsync(request);
     }
 }

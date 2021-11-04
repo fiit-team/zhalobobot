@@ -2,21 +2,22 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Zhalobobot.Api.Server.Repositories.Subjects;
 using Zhalobobot.Common.Models.Subject;
+using Zhalobobot.Common.Models.Subject.Requests;
 
 namespace Zhalobobot.Api.Server.Controllers
 {
     [Route("subjects")]
     public class SubjectsController
     {
-        private readonly ISubjectsRepository repository;
+        private readonly ISubjectRepository repository;
 
-        public SubjectsController(ISubjectsRepository repository)
+        public SubjectsController(ISubjectRepository repository)
         {
             this.repository = repository;
         }
 
-        [HttpGet]
-        public async Task<Subject[]> Get()
-            => await repository.Get();
+        [HttpPost("get")]
+        public async Task<Subject[]> Get([FromBody] GetSubjectsRequest request)
+            => await repository.Get(request.Course);
     }
 }

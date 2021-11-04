@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Common.Helpers",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Tests", "Zhalobobot.Tests\Zhalobobot.Tests.csproj", "{87C2EE2D-4274-4751-AD65-EEDE1E33680D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Schedule.Handler", "Zhalobobot.Schedule.Handler\Zhalobobot.Schedule.Handler.csproj", "{FE0FB929-5ABE-4C99-B60E-57096366B990}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{87C2EE2D-4274-4751-AD65-EEDE1E33680D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87C2EE2D-4274-4751-AD65-EEDE1E33680D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87C2EE2D-4274-4751-AD65-EEDE1E33680D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE0FB929-5ABE-4C99-B60E-57096366B990}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE0FB929-5ABE-4C99-B60E-57096366B990}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE0FB929-5ABE-4C99-B60E-57096366B990}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE0FB929-5ABE-4C99-B60E-57096366B990}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

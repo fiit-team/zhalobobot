@@ -9,18 +9,18 @@ namespace Zhalobobot.Api.Server.Repositories.AbTest
 {
     public class AbTestRepository : GoogleSheetsRepositoryBase, IAbTestRepository
     {
+        private string AbTestRange { get; }
+
         public AbTestRepository(IConfiguration configuration) 
             : base(configuration, configuration["ABTestSpreadSheetId"])
         {
+            AbTestRange = configuration["AbTestRange"];
         }
 
         public async Task<AbTestStudent> Get(string telegramId)
         {
-            var students = await StartGoogleSheetsRequest()
-                .SetupRange("A2:H277")
-                .ToGetRequest()
-                .ExecuteAsync();
-            
+            var students = await GetRequest(AbTestRange).ExecuteAsync();
+
             var student = students.Values.FirstOrDefault(v => v[6].ToString() == telegramId);
             
             if (student == null)
@@ -32,7 +32,7 @@ namespace Zhalobobot.Api.Server.Repositories.AbTest
                 ParsingHelper.ParseNullableInt(student[0]), 
                 ParsingHelper.ParseNullableInt(student[4]), 
                 ParsingHelper.ParseNullableInt(student[5]),
-                student[7] as string == "TRUE");
+                ParsingHelper.ParseBool(student[7]));
         }
     }
 }

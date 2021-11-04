@@ -3,8 +3,8 @@ using Zhalobobot.Common.Models.Subject;
 
 namespace Zhalobobot.Api.Server.Repositories.Subjects
 {
-    public interface ISubjectsRepository
+    public interface ISubjectRepository
     {
-        Task<Subject[]> Get();
+        Task<Subject[]> Get(int course);
     }
 }

@@ -14,7 +14,9 @@ using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Student;
+using Zhalobobot.Common.Models.Student.Requests;
 using Zhalobobot.Common.Models.Subject;
+using Zhalobobot.Common.Models.Subject.Requests;
 using Emoji = Zhalobobot.Bot.Models.Emoji;
 
 namespace Zhalobobot.Bot.Services
@@ -98,8 +100,10 @@ namespace Zhalobobot.Bot.Services
                 return;
 
             var userName = $"@{message.From.Username}";
+            
+            var request = new GetAbTestStudentRequest { Username = userName };
 
-            var student = (await Client.Student.GetAbTestStudent(userName)).Result;
+            var student = (await Client.Student.GetAbTestStudent(request)).Result;
 
             var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
@@ -149,7 +153,7 @@ namespace Zhalobobot.Bot.Services
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
-            var subjects = (await Client.Subject.GetSubjects()).Result;
+            var subjects = (await Client.Subject.Get(new GetSubjectsRequest { Course = 1 })).Result; // TODO: course зашит временно
 
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
@@ -213,7 +217,7 @@ namespace Zhalobobot.Bot.Services
 
             await BotClient.SendChatActionAsync(chatId, ChatAction.Typing);
 
-            var subjects = (await Client.Subject.GetSubjects()).Result;
+            var subjects = (await Client.Subject.Get(new GetSubjectsRequest { Course = 1 })).Result; // TODO: course зашит временно
 
             if (callbackQuery.Data == Strings.Skip)
                 return;
@@ -299,8 +303,10 @@ namespace Zhalobobot.Bot.Services
             {
                 var pollResult = PollService.GetUnlikedPoints(pollAnswer.OptionIds);
                 ConversationService.ProcessPollAnswer(chatId, pollResult);
-
-                var student = (await Client.Student.GetAbTestStudent($"@{pollAnswer.User.Username}")).Result;
+                
+                var student = (await Client.Student.GetAbTestStudent(
+                    new GetAbTestStudentRequest { Username = $"@{pollAnswer.User.Username}" })).Result;
+                
                 await BotClient.SendTextMessageAsync(
                     chatId,
                     BuildStartFeedbackMessage(student.InGroupA, true),

@@ -3,21 +3,10 @@ using Zhalobobot.Common.Models.UserCommon;
 namespace Zhalobobot.Common.Models.Student
 {
     public record Student(
-        string TelegramId,
-        Name? Name,
-        int? AdmissionYear,
-        int? GroupNumber,
-        int? SubgroupNumber)
-    {
-        public string? GetGroup()
-        {
-            string? group = null;
-            if (GroupNumber != null)
-                group = $"��-{GroupNumber}";
-            if (SubgroupNumber != null)
-                group += $"0{SubgroupNumber}";
-
-            return group;
-        }
-    }
+        string Id, //telegram id
+        string Username, // @...
+        int Course, // аналогично год легко определить
+        int Group, // при сообщении пользователя проверим, была ли запись
+        int Subgroup, // о нём, если нет, предложим выбрать группу и подгруппу, чтобы предметы получить
+        Name? Name);
 }

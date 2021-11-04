@@ -12,6 +12,7 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
     {
         private IConfiguration Configuration { get; }
         private ILogger<FeedbackRepository> Logger { get; }
+        private string FeedbackRange { get; }
 
         public FeedbackRepository(
             IConfiguration configuration, ILogger<FeedbackRepository> logger)
@@ -19,9 +20,10 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
         {
             Configuration = configuration;
             Logger = logger;
+            FeedbackRange = configuration["FeedbackRange"];
         }
 
-        public async Task AddFeedback(Zhalobobot.Common.Models.Feedback.Feedback feedback)
+        public async Task Add(Zhalobobot.Common.Models.Feedback.Feedback feedback)
         {
             var objectList = new List<object>
             {
@@ -40,7 +42,7 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
                 feedback.Student!.AdmissionYear?.ToString() ?? string.Empty
             };
             
-            await AppendRequest("Feedback!A:M", objectList).ExecuteAsync();
+            await AppendRequest(FeedbackRange, objectList).ExecuteAsync();
         }
     }
 }

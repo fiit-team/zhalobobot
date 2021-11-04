@@ -9,6 +9,7 @@ using Telegram.Bot;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Feedback;
+using Zhalobobot.Common.Models.Feedback.Requests;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
@@ -81,7 +82,7 @@ namespace Zhalobobot.Bot.Services
         {
             var feedback = Feedback.Subj with
             {
-                Subject = new Subject(subjectName),
+                Subject = new OldSubject(subjectName),
                 SubjectSurvey = new SubjectSurvey()
             };
 
@@ -204,7 +205,7 @@ namespace Zhalobobot.Bot.Services
             foreach (var entity in conversation.Messages
                 .Select(message => feedback with { Message = message }))
             {
-                await Client.Feedback.AddFeedback(entity);
+                await Client.Feedback.AddFeedback(new AddFeedbackRequest { Feedback = entity });
             }
 
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
@@ -220,27 +221,27 @@ namespace Zhalobobot.Bot.Services
 
             feedback = feedback with { Message = string.Join("\n", conversation.Messages) };
 
-            await Client.Feedback.AddFeedback(feedback);
+            await Client.Feedback.AddFeedback(new AddFeedbackRequest { Feedback = feedback });
 
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
         }
 
-        private async Task SendUrgentFeedback(string message, Student student)
+        private async Task SendUrgentFeedback(string message, OldStudent oldStudent)
         {
             var builder = new StringBuilder();
             builder.AppendLine("Алерт! Кто-то оставил срочную обратную связь");
             builder.AppendLine();
-            builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
+            builder.AppendLine($"{oldStudent.Name ?? Name.UnknownPerson}");
             
-            var group = student.GetGroup();
+            var group = oldStudent.GetGroup();
             if (group != null)
             {
                 builder.AppendLine($"{group}");
             }
 
-            if (student.TelegramId.Length > 1)
+            if (oldStudent.TelegramId.Length > 1)
             {
-                builder.AppendLine(student.TelegramId);
+                builder.AppendLine(oldStudent.TelegramId);
             }
 
             builder.AppendLine();

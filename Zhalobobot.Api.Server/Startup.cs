@@ -6,6 +6,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Zhalobobot.Api.Server.Repositories.AbTest;
 using Zhalobobot.Api.Server.Repositories.Feedback;
+using Zhalobobot.Api.Server.Repositories.Schedule;
+using Zhalobobot.Api.Server.Repositories.Students;
 using Zhalobobot.Api.Server.Repositories.Subjects;
 using Zhalobobot.Common.Clients.Core;
 
@@ -58,8 +60,10 @@ namespace Zhalobobot.Api.Server
         private static void ConfigureRepositories(IServiceCollection services)
         {
             services.AddSingleton<IFeedbackRepository, FeedbackRepository>();
-            services.AddSingleton<ISubjectsRepository, SubjectsRepository>();
+            services.AddSingleton<ISubjectRepository, SubjectRepository>();
             services.AddSingleton<IAbTestRepository, AbTestRepository>();
+            services.AddSingleton<IScheduleRepository, ScheduleRepository>();
+            services.AddSingleton<IStudentRepository, StudentRepository>();
         }
     }
 }

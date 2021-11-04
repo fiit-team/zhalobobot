@@ -1,34 +1,25 @@
-using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Zhalobobot.Common.Clients.Core;
-using Zhalobobot.Common.Models.Serialization;
 using Zhalobobot.Common.Models.Student;
+using Zhalobobot.Common.Models.Student.Requests;
 
 namespace Zhalobobot.Common.Clients.Student
 {
-    public class StudentClient : IStudentClient
+    public class StudentClient : ClientBase, IStudentClient
     {
-        private readonly HttpClient client = new();
-
-        private readonly string serverUri;
-
-        public StudentClient(string serverUri = "https://localhost:5001")
+        public StudentClient(HttpClient client, string serverUri)
+            : base("students", client, serverUri)
         {
-            this.serverUri = serverUri;
         }
 
-        public async Task<ZhalobobotResult<AbTestStudent>> GetAbTestStudent(string telegramId)
-        {
-            var response = await client.GetAsync($"{serverUri}/students/ab-test/{telegramId}");
+        public Task<ZhalobobotResult<AbTestStudent>> GetAbTestStudent(GetAbTestStudentRequest request)
+            => Method<AbTestStudent>("ab-test").CallAsync(request);
 
-            if (!response.IsSuccessStatusCode)
-                throw new Exception();
+        public Task<ZhalobobotResult<Models.Student.Student[]>> Get()
+            => Method<Models.Student.Student[]>("get").CallAsync();
 
-            var student = (await response.Content.ReadAsStreamAsync()).FromJsonStream<AbTestStudent>();
-            
-            return new ZhalobobotResult<AbTestStudent>(student, response.IsSuccessStatusCode, response.StatusCode);
-
-        }
+        public Task<ZhalobobotResult> Add(AddStudentRequest request)
+            => Method("add").CallAsync(request);
     }
 }
