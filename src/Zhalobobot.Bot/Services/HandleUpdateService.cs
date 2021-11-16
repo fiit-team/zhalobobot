@@ -38,7 +38,7 @@ namespace Zhalobobot.Bot.Services
             ResizeKeyboard = true
         };
 
-        private static ReplyKeyboardMarkup SubmitKeyboardMarkup { get; } = new (
+        private static ReplyKeyboardMarkup SubmitKeyboardMarkup { get; } = new(
             new KeyboardButton[]
             {
                 Buttons.Submit,
@@ -48,14 +48,24 @@ namespace Zhalobobot.Bot.Services
             ResizeKeyboard = true
         };
 
-        private static ReplyKeyboardMarkup CancelKeyboardMarkup { get; } = new(
-            new KeyboardButton[]
-            {
-                Buttons.MainMenu
-            })
-        {
-            ResizeKeyboard = true
-        };
+        private static InlineKeyboardMarkup SubjectCategoryKeyboard { get; } =
+            new InlineKeyboardMarkup(Enum.GetValues<SubjectCategory>()
+                .Select(category => new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData(
+                            category.AsString(EnumFormat.Description),
+                            $"{CallbackDataPrefix.SubjectCategory}-{category}")
+                    }));
+
+        private static InlineKeyboardMarkup RatingKeyboard { get; } =
+            new InlineKeyboardMarkup(Enumerable.Range(1, 5)
+                .Select(star => new[]
+                {
+                    InlineKeyboardButton.WithCallbackData(
+                        string.Join(" ", Enumerable.Repeat(Emoji.Star, star)),
+                        $"{CallbackDataPrefix.Rating}-{star}")
+                }));
+
 
         public HandleUpdateService(ITelegramBotClient botClient,
             IZhalobobotApiClient client,
@@ -105,18 +115,19 @@ namespace Zhalobobot.Bot.Services
 
             var action = message.Text.Trim() switch
             {
+                "/start" => StartUsage(BotClient, message),
                 Buttons.Alarm => HandleAlertFeedbackAsync(BotClient, message),
-                Buttons.Subjects => SendSubjectListAsync(BotClient, message),
+                Buttons.Subjects => SenbSubjectCategoryKeyboard(BotClient, message),
                 Buttons.GeneralFeedback => HandleGeneralFeedbackAsync(BotClient, message, student),
                 Buttons.Submit => SendFeedbackAsync(BotClient, message, student),
                 Buttons.MainMenu => CancelFeedbackAsync(BotClient, message),
                 _ => conversationStatus == ConversationStatus.Default
                     ? Usage(BotClient, message)
-                    : SaveFeedbackAsync(BotClient, message)
+                    : SaveFeedbackAsync(BotClient, message, student)
             };
 
-            var sentMessage = await action;
-            Logger.LogInformation($"The message was sent with id: {sentMessage.MessageId}");
+            await action;
+            Logger.LogInformation($"The message has been processed. MessageId: {message.MessageId}");
         }
 
         private async Task<Message> HandleAlertFeedbackAsync(ITelegramBotClient bot, Message message)
@@ -130,7 +141,7 @@ namespace Zhalobobot.Bot.Services
             return await BotClient.SendTextMessageAsync(
                 message.Chat.Id,
                 text,
-                replyMarkup: CancelKeyboardMarkup);
+                replyMarkup: SubmitKeyboardMarkup);
         }
 
         private async Task<Message> HandleGeneralFeedbackAsync(ITelegramBotClient bot, Message message, AbTestStudent student)
@@ -142,36 +153,36 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 BuildStartFeedbackMessage(student.InGroupA),
-                replyMarkup: CancelKeyboardMarkup);
-        }
-
-        private async Task<Message> SendSubjectListAsync(ITelegramBotClient bot, Message message)
-        {
-            await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-
-            var subjects = (await Client.Subject.GetSubjects()).Result;
-
-            return await bot.SendTextMessageAsync(
-                message.Chat.Id,
-                "Выбери предмет",
-                replyMarkup: GetSubjectsKeyboard(subjects));
-        }
-
-        private async Task<Message> SaveFeedbackAsync(ITelegramBotClient bot, Message message)
-        {
-            await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-
-            ConversationService.SaveMessage(message.Chat.Id, message.Text);
-            
-            const string text = @"Если больше мыслей не осталось — жми ""Готово""";
-
-            return await bot.SendTextMessageAsync(
-                message.Chat.Id,
-                text,
                 replyMarkup: SubmitKeyboardMarkup);
         }
 
-        private async Task<Message> SendFeedbackAsync(ITelegramBotClient bot, Message message, AbTestStudent student)
+        private async Task<Message> SenbSubjectCategoryKeyboard(ITelegramBotClient bot, Message message)
+        {
+            await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
+
+            return await bot.SendTextMessageAsync(
+                message.Chat.Id,
+                "Выбери категорию",
+                replyMarkup: SubjectCategoryKeyboard);
+        }
+
+        private async Task SaveFeedbackAsync(ITelegramBotClient bot, Message message, AbTestStudent student)
+        {
+            ConversationService.SaveMessage(message.Chat.Id, message.Text);
+
+            if (student.InGroupA)
+            {
+                await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
+
+                const string text = @"Если больше мыслей не осталось — жми ""Готово""";
+
+                await bot.SendTextMessageAsync(
+                    message.Chat.Id,
+                    text);
+            }
+        }
+
+        private async Task SendFeedbackAsync(ITelegramBotClient bot, Message message, AbTestStudent student)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
@@ -179,73 +190,112 @@ namespace Zhalobobot.Bot.Services
 
             string text;
             var replyMarkup = DefaultKeyboardMarkup;
+
             if (conversationStatus == ConversationStatus.AwaitingConfirmation)
             {
                 await ConversationService.SendFeedbackAsync(message.Chat.Id, student);
                 text = "Спасибо, я всё записал!";
             }
+            else if (conversationStatus == ConversationStatus.AwaitingMessage)
+            {
+                text = @"Напиши сообщение, а потом нажми ""Готово""";
+                replyMarkup = SubmitKeyboardMarkup;
+            }
             else
             {
-                text = "Прости, не понял. Попробуй нажать на кнопку";
+                await Usage(bot, message);
+                return;
             }
 
-            return await bot.SendTextMessageAsync(
+            await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 text,
                 replyMarkup: replyMarkup);
         }
 
-        private async Task<Message> CancelFeedbackAsync(ITelegramBotClient bot, Message message)
+        private async Task CancelFeedbackAsync(ITelegramBotClient bot, Message message)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
             
             ConversationService.StopConversation(message.Chat.Id);
 
-            return await bot.SendTextMessageAsync(
-                message.Chat.Id,
-                Buttons.MainMenu,
-                replyMarkup: DefaultKeyboardMarkup);
+            await StartUsage(bot, message);
         }
 
         private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery)
         {
             var chatId = callbackQuery.Message.Chat.Id;
+            var messageId = callbackQuery.Message.MessageId;
+            var tokens = callbackQuery.Data.Split('-');
+
+            var callbackType = tokens[0];
+            var data = tokens[1];
 
             await BotClient.SendChatActionAsync(chatId, ChatAction.Typing);
 
+            if (callbackType == CallbackDataPrefix.SubjectCategory)
+            {
+                await HandleSubjectCategoryCallback(chatId, data, messageId).ConfigureAwait(false);
+            }
+            else if (callbackType == CallbackDataPrefix.Subject)
+            {
+                await HandleSubjectCallback(chatId, data, messageId).ConfigureAwait(false);
+            }
+            else if (callbackType == CallbackDataPrefix.Rating)
+            {
+                await HandleRatingCallback(chatId, data, messageId).ConfigureAwait(false);
+            }
+            else
+            {
+                var message = $"Unknown callbackType: {callbackType}";
+                Logger.LogError(message);
+                throw new Exception(message);
+            }
+        }
+
+        private async Task HandleSubjectCategoryCallback(long chatId, string data, int messageId)
+        {
             var subjects = (await Client.Subject.GetSubjects()).Result;
 
-            if (callbackQuery.Data == Strings.Skip)
-                return;
+            var category = Enum.GetValues<SubjectCategory>()
+                .First(c => c.ToString() == data);
 
-            var categories = Enum.GetValues<SubjectCategory>()
-                .Where(c => c.ToString() == callbackQuery.Data)
-                .ToList();
+            await BotClient.EditMessageReplyMarkupAsync(
+                chatId,
+                messageId,
+                GetSubjectsKeyboard(subjects, category));
+        }
 
-            if (categories.Count == 1)
+        private async Task HandleSubjectCallback(long chatId, string data, int messageId)
+        {
+            if (data == Strings.Back)
             {
                 await BotClient.EditMessageReplyMarkupAsync(
                     chatId,
-                    callbackQuery.Message.MessageId,
-                    GetSubjectsKeyboard(subjects, categories.First()));
+                    messageId,
+                    SubjectCategoryKeyboard);
                 return;
             }
 
-            await BotClient.DeleteMessageAsync(chatId, callbackQuery.Message.MessageId);
+            var subjects = (await Client.Subject.GetSubjects()).Result;
 
-            var subject = subjects.FirstOrDefault(
-                s => s.Name.GetHashCode().ToString() == callbackQuery.Data);
-            if (subject != null)
-            {
-                await StartSubjectFeedback(chatId, subject.Name);
-                return;
-            }
+            await BotClient.DeleteMessageAsync(chatId, messageId);
+
+            var subject = subjects.First(
+                s => s.Name.GetHashCode().ToString() == data);
+
+            await StartSubjectFeedback(chatId, subject.Name);
+        }
+
+        private async Task HandleRatingCallback(long chatId, string data, int messageId)
+        {
+            await BotClient.DeleteMessageAsync(chatId, messageId);
 
             var status = ConversationService.GetConversationStatus(chatId);
             if (status != ConversationStatus.AwaitingRating)
                 return;
 
-            ConversationService.SaveRating(chatId, int.Parse(callbackQuery.Data));
+            ConversationService.SaveRating(chatId, int.Parse(data));
 
             await StartPoll(chatId, true);
         }
@@ -256,19 +306,14 @@ namespace Zhalobobot.Bot.Services
 
             await BotClient.SendTextMessageAsync(
                 chatId,
-                $"Ты выбрал {subject}",
-                replyMarkup: CancelKeyboardMarkup);
+                $"Ты выбрал {subject}");
 
             const string text = $"Оцени курс от 1 до 5 {Emoji.Star}";
-
-            var inlineKeyboard = new InlineKeyboardMarkup(Enumerable.Range(1, 5)
-                .Select(i => new[] { InlineKeyboardButton.WithCallbackData(
-                    string.Join(" ", Enumerable.Repeat(Emoji.Star, i)), i.ToString()) }));
 
             await BotClient.SendTextMessageAsync(
                 chatId,
                 text,
-                replyMarkup: inlineKeyboard);
+                replyMarkup: RatingKeyboard);
         }
 
         private async Task BotOnPollAnswerReceived(PollAnswer pollAnswer)
@@ -343,24 +388,21 @@ namespace Zhalobobot.Bot.Services
 
         private static InlineKeyboardMarkup GetSubjectsKeyboard(IEnumerable<Subject> subjects, SubjectCategory category = 0)
         {
-            var categories = Enum.GetValues<SubjectCategory>()
-                .Select(c => (
-                    (c == category ? Emoji.Arrow : string.Empty) + c.AsString(EnumFormat.Description),
-                    c == category ? Strings.Skip : c.ToString()))
-                .Select(c => InlineKeyboardButton.WithCallbackData(c.Item1, c.Item2))
-                .ToList();
-
             var inlineKeyboard = new InlineKeyboardMarkup(
                 subjects
                     .Where(subject => subject.Category! == category)
                     .Select(subject => new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData(
-                            subject.Name.Slice(),
-                            subject.Name.GetHashCode().ToString())
-                    })
-                    .Append(categories.Take((categories.Count + 1) / 2))
-                    .Append(categories.Skip((categories.Count + 1) / 2)));
+                        {
+                            InlineKeyboardButton.WithCallbackData(
+                                subject.Name.Slice(),
+                                $"{CallbackDataPrefix.Subject}-{subject.Name.GetHashCode()}")
+                        })
+                    .Append(new[] 
+                        { 
+                            InlineKeyboardButton.WithCallbackData(
+                                Buttons.Back,
+                                $"{CallbackDataPrefix.Subject}-{Strings.Back}")
+                        }));
 
             return inlineKeyboard;
         }
@@ -393,20 +435,29 @@ namespace Zhalobobot.Bot.Services
             return builder.ToString();
         }
 
-        private static async Task<Message> Usage(ITelegramBotClient bot, Message message)
+        private static async Task<Message> StartUsage(ITelegramBotClient bot, Message message)
         {
             var usage = new StringBuilder();
 
-            usage.AppendLine("ALARM — это красная кнопка. Если всё очень плохо — нажми");
+            usage.AppendLine($"{Buttons.Subjects} — поставить оценку от 1 до 5 и оставить комментарий конкретному предмету");
             usage.AppendLine();
-            usage.AppendLine("Выбрать предмет — поставить оценку от 1 до 5 и оставить комментарий конкретному предмету");
+            usage.AppendLine($"{Buttons.GeneralFeedback} — выскажи всё, что лежит на душе: и хорошее, и плохое");
             usage.AppendLine();
-            usage.AppendLine("Просто пожаловаться — выскажи всё, что лежит на душе: и хорошее, и плохое");
+            usage.AppendLine($"{Buttons.Alarm} — это красная кнопка. Если всё очень плохо — нажми");
 
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 usage.ToString(),
                 replyMarkup: DefaultKeyboardMarkup);
+        }
+
+        private static async Task Usage(ITelegramBotClient bot, Message message)
+        {
+            await bot.SendTextMessageAsync(
+                message.Chat.Id,
+                "Попробуй нажать на кнопку");
+
+            await StartUsage(bot, message);
         }
     }
 }
