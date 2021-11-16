@@ -82,6 +82,13 @@ namespace Zhalobobot.Bot.Services
 
         public async Task EchoAsync(Update update)
         {
+            var chat = update.Message?.Chat;
+            if (chat is not null && chat.Type != ChatType.Private)
+            {
+                // Временно не обрабатываем логику бота в группе.
+                return;
+            }
+
             var handler = update.Type switch
             {
                 UpdateType.Message => BotOnMessageReceived(update.Message),
@@ -117,7 +124,7 @@ namespace Zhalobobot.Bot.Services
             {
                 "/start" => StartUsage(BotClient, message),
                 Buttons.Alarm => HandleAlertFeedbackAsync(BotClient, message),
-                Buttons.Subjects => SenbSubjectCategoryKeyboard(BotClient, message),
+                Buttons.Subjects => SendSubjectCategoryKeyboard(BotClient, message),
                 Buttons.GeneralFeedback => HandleGeneralFeedbackAsync(BotClient, message, student),
                 Buttons.Submit => SendFeedbackAsync(BotClient, message, student),
                 Buttons.MainMenu => CancelFeedbackAsync(BotClient, message),
@@ -156,7 +163,7 @@ namespace Zhalobobot.Bot.Services
                 replyMarkup: SubmitKeyboardMarkup);
         }
 
-        private async Task<Message> SenbSubjectCategoryKeyboard(ITelegramBotClient bot, Message message)
+        private async Task<Message> SendSubjectCategoryKeyboard(ITelegramBotClient bot, Message message)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
@@ -198,7 +205,7 @@ namespace Zhalobobot.Bot.Services
             }
             else if (conversationStatus == ConversationStatus.AwaitingMessage)
             {
-                text = @"Напиши сообщение, а потом нажми ""Готово""";
+                text = @"Отправь сообщение, а потом нажми ""Готово""";
                 replyMarkup = SubmitKeyboardMarkup;
             }
             else
@@ -226,7 +233,7 @@ namespace Zhalobobot.Bot.Services
         {
             var chatId = callbackQuery.Message.Chat.Id;
             var messageId = callbackQuery.Message.MessageId;
-            var tokens = callbackQuery.Data.Split('-');
+            var tokens = callbackQuery.Data.Split('-', 2);
 
             var callbackType = tokens[0];
             var data = tokens[1];
@@ -260,6 +267,10 @@ namespace Zhalobobot.Bot.Services
             var category = Enum.GetValues<SubjectCategory>()
                 .First(c => c.ToString() == data);
 
+            await BotClient.EditMessageTextAsync(
+                chatId,
+                messageId,
+                "Выбери предмет");
             await BotClient.EditMessageReplyMarkupAsync(
                 chatId,
                 messageId,
@@ -270,6 +281,10 @@ namespace Zhalobobot.Bot.Services
         {
             if (data == Strings.Back)
             {
+                await BotClient.EditMessageTextAsync(
+                    chatId,
+                    messageId,
+                    "Выбери категорию");
                 await BotClient.EditMessageReplyMarkupAsync(
                     chatId,
                     messageId,
@@ -279,10 +294,10 @@ namespace Zhalobobot.Bot.Services
 
             var subjects = (await Client.Subject.GetSubjects()).Result;
 
-            await BotClient.DeleteMessageAsync(chatId, messageId);
-
             var subject = subjects.First(
                 s => s.Name.GetHashCode().ToString() == data);
+
+            await BotClient.DeleteMessageAsync(chatId, messageId);
 
             await StartSubjectFeedback(chatId, subject.Name);
         }
@@ -297,7 +312,8 @@ namespace Zhalobobot.Bot.Services
 
             ConversationService.SaveRating(chatId, int.Parse(data));
 
-            await StartPoll(chatId, true);
+            status = ConversationService.GetConversationStatus(chatId);
+            await StartPoll(chatId, status == ConversationStatus.AwaitingLikedPointsPollAnswer);
         }
 
         private async Task StartSubjectFeedback(long chatId, string subject)
@@ -337,13 +353,22 @@ namespace Zhalobobot.Bot.Services
             {
                 var pollResult = PollService.GetLikedPoints(pollAnswer.OptionIds);
                 ConversationService.ProcessPollAnswer(chatId, pollResult, true);
-                await StartPoll(chatId);
             }
 
             if (status is ConversationStatus.AwaitingUnlikedPointsPollAnswer)
             {
                 var pollResult = PollService.GetUnlikedPoints(pollAnswer.OptionIds);
                 ConversationService.ProcessPollAnswer(chatId, pollResult);
+            }
+
+            status = ConversationService.GetConversationStatus(chatId);
+            if (status is ConversationStatus.AwaitingUnlikedPointsPollAnswer)
+            {
+                await StartPoll(chatId);
+            }
+
+            if (status is ConversationStatus.AwaitingConfirmation)
+            {
 
                 var student = (await Client.Student.GetAbTestStudent($"@{pollAnswer.User.Username}")).Result;
                 await BotClient.SendTextMessageAsync(

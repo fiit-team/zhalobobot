@@ -129,13 +129,14 @@ namespace Zhalobobot.Bot.Services
 
             if (feedback.Type == FeedbackType.SubjectFeedback)
             {
-                if (feedback.SubjectSurvey!.Rating == 0)
+                var rating = feedback.SubjectSurvey!.Rating;
+                if (rating == 0)
                     return ConversationStatus.AwaitingRating;
 
-                if (feedback.SubjectSurvey!.LikedPoints.Count == 0)
+                if (rating >= 3 && feedback.SubjectSurvey!.LikedPoints.Count == 0)
                     return ConversationStatus.AwaitingLikedPointsPollAnswer;
 
-                if (feedback.SubjectSurvey!.UnlikedPoints.Count == 0)
+                if (rating <= 3 && feedback.SubjectSurvey!.UnlikedPoints.Count == 0)
                     return ConversationStatus.AwaitingUnlikedPointsPollAnswer;
 
                 return ConversationStatus.AwaitingConfirmation;
@@ -228,6 +229,8 @@ namespace Zhalobobot.Bot.Services
         private async Task SendUrgentFeedback(string message, Student student)
         {
             var builder = new StringBuilder();
+
+            builder.AppendLine("@disturm"); // костыли любимые
             builder.AppendLine("Алерт! Кто-то оставил срочную обратную связь");
             builder.AppendLine();
             builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
