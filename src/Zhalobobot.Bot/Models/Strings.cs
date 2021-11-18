@@ -2,6 +2,6 @@
 {
     public static class Strings
     {
-        public const string Skip = "skip";
+        public const string Back = "back";
     }
 }
