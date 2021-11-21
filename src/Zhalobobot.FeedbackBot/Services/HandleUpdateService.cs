@@ -10,9 +10,11 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Helpers.Extensions;
+using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Student.Requests;
 using Zhalobobot.Common.Models.Subject;
@@ -28,46 +30,6 @@ namespace Zhalobobot.Bot.Services
         private IConversationService ConversationService { get; }
         private IPollService PollService { get; }
         private ILogger<HandleUpdateService> Logger { get; }
-
-        private static ReplyKeyboardMarkup DefaultKeyboardMarkup { get; } = new(
-            new[]
-            {
-                new KeyboardButton[] { Buttons.Subjects },
-                new KeyboardButton[] { Buttons.GeneralFeedback },
-                new KeyboardButton[] { Buttons.Alarm }
-            })
-        {
-            ResizeKeyboard = true
-        };
-
-        private static ReplyKeyboardMarkup SubmitKeyboardMarkup { get; } = new(
-            new KeyboardButton[]
-            {
-                Buttons.Submit,
-                Buttons.MainMenu
-            })
-        {
-            ResizeKeyboard = true
-        };
-
-        private static InlineKeyboardMarkup SubjectCategoryKeyboard { get; } =
-            new InlineKeyboardMarkup(Enum.GetValues<SubjectCategory>()
-                .Select(category => new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData(
-                            category.AsString(EnumFormat.Description),
-                            $"{CallbackDataPrefix.SubjectCategory}-{category}")
-                    }));
-
-        private static InlineKeyboardMarkup RatingKeyboard { get; } =
-            new InlineKeyboardMarkup(Enumerable.Range(1, 5)
-                .Select(star => new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(
-                        string.Join(" ", Enumerable.Repeat(Emoji.Star, star)),
-                        $"{CallbackDataPrefix.Rating}-{star}")
-                }));
-
 
         public HandleUpdateService(ITelegramBotClient botClient,
             IZhalobobotApiClient client,
@@ -152,7 +114,7 @@ namespace Zhalobobot.Bot.Services
             return await BotClient.SendTextMessageAsync(
                 message.Chat.Id,
                 text,
-                replyMarkup: SubmitKeyboardMarkup);
+                replyMarkup: WellKnownKeyboards.SubmitKeyboard);
         }
 
         private async Task<Message> HandleGeneralFeedbackAsync(ITelegramBotClient bot, Message message, AbTestStudent student)
@@ -164,19 +126,17 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 BuildStartFeedbackMessage(student.InGroupA),
-                replyMarkup: SubmitKeyboardMarkup);
+                replyMarkup: WellKnownKeyboards.SubmitKeyboard);
         }
 
         private async Task<Message> SendSubjectCategoryKeyboard(ITelegramBotClient bot, Message message)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-
-            var subjects = (await Client.Subject.Get(new GetSubjectsRequest { Course = 1 })).Result; // TODO: course зашит временно
-
+            
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
-                "Выбери категорию",
-                replyMarkup: SubjectCategoryKeyboard);
+                "Выбери курс",
+                replyMarkup: WellKnownKeyboards.ChooseCourseKeyboard);
         }
 
         private async Task SaveFeedbackAsync(ITelegramBotClient bot, Message message, AbTestStudent student)
@@ -202,7 +162,7 @@ namespace Zhalobobot.Bot.Services
             var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
             string text;
-            var replyMarkup = DefaultKeyboardMarkup;
+            var replyMarkup = WellKnownKeyboards.DefaultKeyboard;
 
             if (conversationStatus == ConversationStatus.AwaitingConfirmation)
             {
@@ -212,7 +172,7 @@ namespace Zhalobobot.Bot.Services
             else if (conversationStatus == ConversationStatus.AwaitingMessage)
             {
                 text = @"Отправь сообщение, а потом нажми ""Готово""";
-                replyMarkup = SubmitKeyboardMarkup;
+                replyMarkup = WellKnownKeyboards.SubmitKeyboard;
             }
             else
             {
@@ -245,32 +205,38 @@ namespace Zhalobobot.Bot.Services
             var data = tokens[1];
 
             await BotClient.SendChatActionAsync(chatId, ChatAction.Typing);
-
-            var subjects = (await Client.Subject.Get(new GetSubjectsRequest { Course = 1 })).Result; // TODO: course зашит временно
             
-            if (callbackType == CallbackDataPrefix.SubjectCategory)
+            switch (callbackType)
             {
-                await HandleSubjectCategoryCallback(chatId, data, messageId).ConfigureAwait(false);
-            }
-            else if (callbackType == CallbackDataPrefix.Subject)
-            {
-                await HandleSubjectCallback(chatId, data, messageId).ConfigureAwait(false);
-            }
-            else if (callbackType == CallbackDataPrefix.Rating)
-            {
-                await HandleRatingCallback(chatId, data, messageId).ConfigureAwait(false);
-            }
-            else
-            {
-                var message = $"Unknown callbackType: {callbackType}";
-                Logger.LogError(message);
-                throw new Exception(message);
+                case CallbackDataPrefix.SubjectCategory:
+                    await HandleSubjectCategoryCallback(chatId, data, messageId).ConfigureAwait(false);
+                    break;
+                case CallbackDataPrefix.Subject:
+                    await HandleSubjectCallback(chatId, data, messageId).ConfigureAwait(false);
+                    break;
+                case CallbackDataPrefix.Rating:
+                    await HandleRatingCallback(chatId, data, messageId).ConfigureAwait(false);
+                    break;
+                case CallbackDataPrefix.Course:
+                    await HandleCourseCallback(chatId, data, messageId).ConfigureAwait(false);
+                    break;
+                case CallbackDataPrefix.Feedback:
+                    await HandleFeedbackCallback(chatId, data, messageId).ConfigureAwait(false);
+                    break;
+                default:
+                {
+                    var message = $"Unknown callbackType: {callbackType}";
+                    Logger.LogError(message);
+                    throw new Exception(message);
+                }
             }
         }
 
         private async Task HandleSubjectCategoryCallback(long chatId, string data, int messageId)
         {
-            var subjects = (await Client.Subject.GetSubjects()).Result;
+            var course = ConversationService.GetCourse(chatId) ?? throw new Exception();
+            
+            var subjects = await Client.Subject.Get(new GetSubjectsRequest {Course = course}).GetResult();
 
             var category = Enum.GetValues<SubjectCategory>()
                 .First(c => c.ToString() == data);
@@ -285,6 +251,35 @@ namespace Zhalobobot.Bot.Services
                 GetSubjectsKeyboard(subjects, category));
         }
 
+        private async Task HandleCourseCallback(long chatId, string data, int messageId)
+        {
+            var course = Enum.Parse<Course>(data);
+
+            ConversationService.AddOrUpdateCourse(chatId, course);
+            
+            await BotClient.EditMessageTextAsync(
+                chatId,
+                messageId,
+                "Выбери категорию");
+            
+            await BotClient.EditMessageReplyMarkupAsync(
+                chatId,
+                messageId,
+                WellKnownKeyboards.SubjectCategoryKeyboard);
+        }
+
+        private async Task HandleFeedbackCallback(long chatId, string data, int messageId)
+        {
+            ConversationService.StartSubjectFeedback(chatId, data);
+
+            await BotClient.EditMessageTextAsync(
+                chatId,
+                messageId,
+                "Я тебя внимательно слушаю");
+
+            await BotClient.EditMessageReplyMarkupAsync(chatId, messageId, null);
+        }
+
         private async Task HandleSubjectCallback(long chatId, string data, int messageId)
         {
             if (data == Strings.Back)
@@ -296,11 +291,13 @@ namespace Zhalobobot.Bot.Services
                 await BotClient.EditMessageReplyMarkupAsync(
                     chatId,
                     messageId,
-                    SubjectCategoryKeyboard);
+                    WellKnownKeyboards.SubjectCategoryKeyboard);
                 return;
             }
 
-            var subjects = (await Client.Subject.GetSubjects()).Result;
+            var course = ConversationService.GetCourse(chatId) ?? throw new Exception();
+
+            var subjects = await Client.Subject.Get(new GetSubjectsRequest{Course = course}).GetResult();
 
             var subject = subjects.First(
                 s => s.Name.GetHashCode().ToString() == data);
@@ -337,7 +334,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.SendTextMessageAsync(
                 chatId,
                 text,
-                replyMarkup: RatingKeyboard);
+                replyMarkup: WellKnownKeyboards.RatingKeyboard);
         }
 
         private async Task BotOnPollAnswerReceived(PollAnswer pollAnswer)
@@ -368,9 +365,9 @@ namespace Zhalobobot.Bot.Services
                 var pollResult = PollService.GetUnlikedPoints(pollAnswer.OptionIds);
                 ConversationService.ProcessPollAnswer(chatId, pollResult);
                 
-                var student = (await Client.Student.GetAbTestStudent(
-                    new GetAbTestStudentRequest { Username = $"@{pollAnswer.User.Username}" })).Result;
-                
+                // var student = await Client.Student.GetAbTestStudent(
+                //     new GetAbTestStudentRequest { Username = $"@{pollAnswer.User.Username}" }).GetResult();
+                //
             }
 
             status = ConversationService.GetConversationStatus(chatId);
@@ -381,12 +378,11 @@ namespace Zhalobobot.Bot.Services
 
             if (status is ConversationStatus.AwaitingConfirmation)
             {
-
-                var student = (await Client.Student.GetAbTestStudent($"@{pollAnswer.User.Username}")).Result;
+                var student = await Client.Student.GetAbTestStudent(new GetAbTestStudentRequest { Username = $"@{pollAnswer.User.Username}" }).GetResult();
                 await BotClient.SendTextMessageAsync(
                     chatId,
                     BuildStartFeedbackMessage(student.InGroupA, true),
-                    replyMarkup: SubmitKeyboardMarkup);
+                    replyMarkup: WellKnownKeyboards.SubmitKeyboard);
             }
         }
 
@@ -485,7 +481,7 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 usage.ToString(),
-                replyMarkup: DefaultKeyboardMarkup);
+                replyMarkup: WellKnownKeyboards.DefaultKeyboard);
         }
 
         private static async Task Usage(ITelegramBotClient bot, Message message)

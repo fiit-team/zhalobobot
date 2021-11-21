@@ -23,9 +23,13 @@ namespace Zhalobobot.Api.Server.Controllers
         public async Task<AbTestStudent> GetAbTestStudent([FromBody] GetAbTestStudentRequest request)
             => await abTestRepository.Get(request.Username);
 
-        [HttpPost("get")]
-        public async Task<Student[]> Get()
-            => await studentRepository.Get();
+        [HttpPost("getAll")]
+        public async Task<Student[]> GetAll()
+            => await studentRepository.GetAll();
+
+        [HttpPost("getByCourseAndGroupAndSubgroup")]
+        public async Task<Student[]> GetByCourseAndGroupAndSubgroup([FromBody] GetStudentsByCourseAndGroupAndSubgroupRequest request)
+            => await studentRepository.GetByCourseAndGroupAndSubgroup(request.Course, request.Group, request.Subgroup);
 
         [HttpPost("add")]
         public async Task Add([FromBody] AddStudentRequest request)

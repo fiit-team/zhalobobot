@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Quartz;
 using Telegram.Bot;
+using Zhalobobot.Bot.Quartz.Extensions;
+using Zhalobobot.Bot.Quartz.Jobs;
 using Zhalobobot.Bot.Services;
 using Zhalobobot.Common.Clients.Core;
 
@@ -24,6 +27,9 @@ namespace Zhalobobot.Bot
 
         public void ConfigureServices(IServiceCollection services)
         {
+            RegisterQuartz(services, Configuration);
+            RegisterServices(services);
+            
             services.AddHostedService<ConfigureWebhook>();
 
             services.AddHttpClient("tgwebhook")
@@ -31,9 +37,6 @@ namespace Zhalobobot.Bot
                         => new TelegramBotClient(BotConfig.TelegramBotToken, httpClient));
 
             services.AddSingleton(Settings);
-            services.AddSingleton<IPollService, PollService>();
-            services.AddSingleton<IConversationService, ConversationService>();
-            services.AddScoped<HandleUpdateService>();
             
             services.AddSingleton<IZhalobobotApiClient>(
                 new ZhalobobotApiClient(Settings.ServerAddress));
@@ -59,6 +62,25 @@ namespace Zhalobobot.Bot
                     new { controller = "Webhook", action = "Post" });
                 endpoints.MapControllers();
             });
+        }
+
+        private static void RegisterServices(IServiceCollection services)
+        {
+            services.AddSingleton<IPollService, PollService>();
+            services.AddSingleton<IConversationService, ConversationService>();
+            services.AddScoped<HandleUpdateService>();
+        }
+
+        private static void RegisterQuartz(IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddQuartz(q =>
+            {
+                q.UseMicrosoftDependencyInjectionJobFactory();
+
+                q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
+            });
+            
+            services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
         }
     }
 }

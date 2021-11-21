@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31624.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Bot", "src\Zhalobobot.Bot\Zhalobobot.Bot.csproj", "{647E886F-068D-44F0-A9A1-0074062B4D71}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.FeedbackBot", "src\Zhalobobot.FeedbackBot\Zhalobobot.FeedbackBot.csproj", "{647E886F-068D-44F0-A9A1-0074062B4D71}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Common.Models", "Zhalobobot.Common.Models\Zhalobobot.Common.Models.csproj", "{DBED8A94-3800-4920-AF61-82CA9383B5C5}"
 EndProject
@@ -15,7 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Common.Helpers",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Tests", "Zhalobobot.Tests\Zhalobobot.Tests.csproj", "{87C2EE2D-4274-4751-AD65-EEDE1E33680D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Schedule.Handler", "Zhalobobot.Schedule.Handler\Zhalobobot.Schedule.Handler.csproj", "{FE0FB929-5ABE-4C99-B60E-57096366B990}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.ScheduleBot", "Zhalobobot.ScheduleBot\Zhalobobot.ScheduleBot.csproj", "{FE0FB929-5ABE-4C99-B60E-57096366B990}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

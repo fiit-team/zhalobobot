@@ -16,8 +16,11 @@ namespace Zhalobobot.Common.Clients.Student
         public Task<ZhalobobotResult<AbTestStudent>> GetAbTestStudent(GetAbTestStudentRequest request)
             => Method<AbTestStudent>("ab-test").CallAsync(request);
 
-        public Task<ZhalobobotResult<Models.Student.Student[]>> Get()
-            => Method<Models.Student.Student[]>("get").CallAsync();
+        public Task<ZhalobobotResult<Models.Student.Student[]>> GetAll()
+            => Method<Models.Student.Student[]>("getAll").CallAsync();
+
+        public Task<ZhalobobotResult<Models.Student.Student[]>> Get(GetStudentsByCourseAndGroupAndSubgroupRequest request)
+            => Method<Models.Student.Student[]>("getByCourseAndGroupAndSubgroup").CallAsync(request);
 
         public Task<ZhalobobotResult> Add(AddStudentRequest request)
             => Method("add").CallAsync(request);

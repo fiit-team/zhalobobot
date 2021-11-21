@@ -5,6 +5,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Zhalobobot.Api.Server.Repositories.Common;
 using Zhalobobot.Common.Helpers.Helpers;
+using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Subject;
 
 namespace Zhalobobot.Api.Server.Repositories.Subjects
@@ -17,23 +19,23 @@ namespace Zhalobobot.Api.Server.Repositories.Subjects
 
         public SubjectRepository(
             IConfiguration configuration, ILogger<SubjectRepository> logger)
-        : base(configuration, configuration["FeedbackSpreadSheetId"])
+        : base(configuration, configuration["ScheduleSpreadSheetId"])
         {
             Configuration = configuration;
             Logger = logger;
             SubjectsRange = configuration["SubjectsRange"];
         }
         
-        public async Task<Subject[]> Get(int course)
+        public async Task<Subject[]> Get(Course course)
         {
-            var semester = 1; // TODO: временно, после официального релиза убрать
+            var semester = SemesterHelper.Current;
             
             var subjectsRange = await GetRequest(SubjectsRange).ExecuteAsync();
             
             return subjectsRange.Values.Select(subject => new Subject(
                     subject[0] as string ?? throw new ValidationException("Empty subject name"),
-                    ParsingHelper.ParseInt(subject[1]),
-                    ParsingHelper.ParseInt(subject[2]),
+                    (Course)ParsingHelper.ParseInt(subject[1]),
+                     (Semester)ParsingHelper.ParseInt(subject[2]),
                     ParsingHelper.ParseSubjectCategory(subject[3])))
                 .Where(s => s.Course == course && s.Semester == semester)
                 .ToArray();

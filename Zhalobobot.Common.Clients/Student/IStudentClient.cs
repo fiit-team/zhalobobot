@@ -9,7 +9,9 @@ namespace Zhalobobot.Common.Clients.Student
     {
         Task<ZhalobobotResult<AbTestStudent>> GetAbTestStudent(GetAbTestStudentRequest request);
         
-        Task<ZhalobobotResult<Models.Student.Student[]>> Get();
+        Task<ZhalobobotResult<Models.Student.Student[]>> GetAll();
+        
+        Task<ZhalobobotResult<Models.Student.Student[]>> Get(GetStudentsByCourseAndGroupAndSubgroupRequest request);
         
         Task<ZhalobobotResult> Add(AddStudentRequest request);
     }

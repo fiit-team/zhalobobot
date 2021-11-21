@@ -1,9 +1,11 @@
+using Zhalobobot.Common.Models.Commons;
+
 namespace Zhalobobot.Common.Models.Subject
 {
     public record Subject(
         string Name,
-        int Course,
-        int Semester,
+        Course Course,
+        Semester Semester,
         SubjectCategory Category);//,
-        // EventTime[] Events); // когда будет проводиться в течение этой недели
+    // EventTime[] Events); // когда будет проводиться в течение этой недели
 }

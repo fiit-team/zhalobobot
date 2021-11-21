@@ -1,8 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Telegram.Bot.Types;
 using Zhalobobot.Bot.Models;
+using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Student;
 
 namespace Zhalobobot.Bot.Services
@@ -30,5 +29,9 @@ namespace Zhalobobot.Bot.Services
         public Task SendFeedbackAsync(long chatId, AbTestStudent student);
 
         public ConversationStatus GetConversationStatus(long chatId);
+        
+        public Course? GetCourse(long chatId);
+        
+        public void AddOrUpdateCourse(long chatId, Course course);
     }
 }

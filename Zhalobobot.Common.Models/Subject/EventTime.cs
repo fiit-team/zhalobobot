@@ -1,11 +1,17 @@
 using System;
+using Zhalobobot.Common.Models.Commons;
 
 namespace Zhalobobot.Common.Models.Subject
 {
     public record EventTime(
         DayOfWeek DayOfWeek,
-        int Pair, // номер пары
-        string? StartTime, // для физры с 10:00, например, в привычный формат пар не укладывается
-        string? EndTime,
-        bool ExistsThisWeek); //если пара мигающая или просто на этой неделе отменена
+        Pair? Pair, // номер пары
+        HourAndMinute? StartTime, // для физры с 10:00, например, в привычный формат пар не укладывается
+        HourAndMinute? EndTime,
+        DayAndMonth? StartDay,
+        DayAndMonth? EndDay,
+        WeekParity WeekParity); //,    //если пара мигающая
+    // bool NotExistsNextTime,    // если отменили следующую пару
+    // bool IsOneTimeEvent,
+    // bool CanceledForever);
 }
