@@ -67,7 +67,7 @@ namespace Zhalobobot.Api.Server.Repositories.Students
         {
             var students = await GetRequest(StudentsRange).ExecuteAsync();
 
-            var student = students.Values.FirstOrDefault(v => v[0].ToString() == telegramId);
+            var student = students.Values?.FirstOrDefault(v => v[0].ToString() == telegramId);
 
             if (student == null)
                 return null;
