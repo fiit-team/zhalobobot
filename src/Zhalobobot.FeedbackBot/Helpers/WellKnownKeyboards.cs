@@ -3,6 +3,7 @@ using System.Linq;
 using EnumsNET;
 using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Models;
+using Zhalobobot.Common.Helpers;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Subject;
 
@@ -32,21 +33,12 @@ namespace Zhalobobot.Bot.Helpers
         };
 
         public static InlineKeyboardMarkup ChooseCourseKeyboard { get; } =
-            new (Enum.GetValues<Course>()
+            new(Enum.GetValues<Course>()
                 .Select(course => new[]
                 {
                     InlineKeyboardButton.WithCallbackData(
                         course.AsString(EnumFormat.Description),
-                        $"{CallbackDataPrefix.Course}-{course}")
-                }));
-        
-        public static InlineKeyboardMarkup SubjectCategoryKeyboard { get; } =
-            new (Enum.GetValues<SubjectCategory>()
-                .Select(category => new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(
-                        category.AsString(EnumFormat.Description),
-                        $"{CallbackDataPrefix.SubjectCategory}-{category}")
+                        Utils.Join(Strings.Separator, CallbackDataPrefix.Course, course))
                 }));
 
         public static InlineKeyboardMarkup RatingKeyboard { get; } =
@@ -55,7 +47,7 @@ namespace Zhalobobot.Bot.Helpers
                 {
                     InlineKeyboardButton.WithCallbackData(
                         string.Join(" ", Enumerable.Repeat(Emoji.Star, star)),
-                        $"{CallbackDataPrefix.Rating}-{star}")
+                        Utils.Join(Strings.Separator, CallbackDataPrefix.Rating, star))
                 }));
         
         public static InlineKeyboardMarkup SendFeedbackKeyboard(string subjectName) => 
@@ -65,8 +57,23 @@ namespace Zhalobobot.Bot.Helpers
                 {
                     InlineKeyboardButton.WithCallbackData(
                         "Оставить обратную связь",
-                        $"{CallbackDataPrefix.Feedback}-{subjectName}")                
+                        Utils.Join(Strings.Separator, CallbackDataPrefix.Feedback, subjectName))                
                 }
             };
+
+        public static InlineKeyboardMarkup GetSubjectCategoryKeyboard(Course course)
+            =>  new(Enum.GetValues<SubjectCategory>()
+                    .Select(category => new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData(
+                            category.AsString(EnumFormat.Description),
+                            Utils.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, category, course))
+                    })
+                    .Append(new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData(
+                            Buttons.Back,
+                            Utils.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, Strings.Back))
+                    }));
     }
 }

@@ -27,7 +27,7 @@ namespace Zhalobobot.Bot
 
         public void ConfigureServices(IServiceCollection services)
         {
-            RegisterQuartz(services, Configuration);
+            //RegisterQuartz(services, Configuration);
             RegisterServices(services);
             
             services.AddHostedService<ConfigureWebhook>();

@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Telegram.Bot;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
-using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Feedback;
 using Zhalobobot.Common.Models.Feedback.Requests;
 using Zhalobobot.Common.Models.Student;
@@ -26,9 +25,6 @@ namespace Zhalobobot.Bot.Services
 
         private IDictionary<long, Conversation> Conversations { get; }
             = new ConcurrentDictionary<long, Conversation>();
-
-        private IDictionary<long, Course> SelectedCourse { get; }
-            = new ConcurrentDictionary<long, Course>();
 
         public ConversationService(
             ITelegramBotClient botClient,
@@ -197,14 +193,6 @@ namespace Zhalobobot.Bot.Services
                 conversation.Feedback.SubjectSurvey!.LikedPoints = result;
             else
                 conversation.Feedback.SubjectSurvey!.UnlikedPoints = result;
-        }
-
-        public Course? GetCourse(long chatId) => SelectedCourse.TryGetValue(chatId, out var course) ? course : null;
-
-        public void AddOrUpdateCourse(long chatId, Course course)
-        {
-            if (!SelectedCourse.TryAdd(chatId, course))
-                SelectedCourse[chatId] = course;
         }
 
         private async Task SaveStructuredFeedback(long chatId, Feedback feedback)

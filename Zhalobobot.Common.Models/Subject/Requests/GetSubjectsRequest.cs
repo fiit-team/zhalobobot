@@ -4,6 +4,8 @@ namespace Zhalobobot.Common.Models.Subject.Requests
 {
     public class GetSubjectsRequest
     {
-        public Course Course { get; set; }
+        public SubjectCategory? Category { get; set; } = null;
+
+        public Course? Course { get; set; } = null;
     }
 }

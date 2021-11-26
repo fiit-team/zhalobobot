@@ -6,6 +6,6 @@ namespace Zhalobobot.Api.Server.Repositories.Subjects
 {
     public interface ISubjectRepository
     {
-        Task<Subject[]> Get(Course course);
+        Task<Subject[]> Get(Course? course = null, SubjectCategory? category = null);
     }
 }

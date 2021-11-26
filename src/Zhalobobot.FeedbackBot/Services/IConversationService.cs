@@ -29,9 +29,5 @@ namespace Zhalobobot.Bot.Services
         public Task SendFeedbackAsync(long chatId, AbTestStudent student);
 
         public ConversationStatus GetConversationStatus(long chatId);
-        
-        public Course? GetCourse(long chatId);
-        
-        public void AddOrUpdateCourse(long chatId, Course course);
     }
 }
