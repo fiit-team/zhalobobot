@@ -82,12 +82,8 @@ namespace Zhalobobot.Bot.Services
             
             var request = new GetAbTestStudentRequest { Username = userName };
 
-            var student = (await Client.Student.GetAbTestStudent(request)).Result;
-
-            //Client.Student.Add(new AddStudentRequest
-            //{
-            //    Student = new Student(message.From.Id, message.From.Username, student.)
-            //})
+            var abStudent = (await Client.Student.GetAbTestStudent(request)).Result;
+            await AddStudentIfDoesNotExist(message, abStudent);
 
             var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
@@ -96,16 +92,35 @@ namespace Zhalobobot.Bot.Services
                 "/start" => StartUsage(BotClient, message),
                 Buttons.Alarm => HandleAlertFeedbackAsync(BotClient, message),
                 Buttons.Subjects => HandleSubjectsAsync(BotClient, message),
-                Buttons.GeneralFeedback => HandleGeneralFeedbackAsync(BotClient, message, student),
-                Buttons.Submit => SendFeedbackAsync(BotClient, message, student),
+                Buttons.GeneralFeedback => HandleGeneralFeedbackAsync(BotClient, message, abStudent),
+                Buttons.Submit => SendFeedbackAsync(BotClient, message, abStudent),
                 Buttons.MainMenu => CancelFeedbackAsync(BotClient, message),
                 _ => conversationStatus == ConversationStatus.Default
                     ? Usage(BotClient, message)
-                    : SaveFeedbackAsync(BotClient, message, student)
+                    : SaveFeedbackAsync(BotClient, message, abStudent)
             };
 
             await action;
             Logger.LogInformation($"The message has been processed. MessageId: {message.MessageId}");
+        }
+
+        private async Task AddStudentIfDoesNotExist(Message message, AbTestStudent abStudent)
+        {
+            var student = (await Client.Student.GetStudent(message.From.Id)).Result;
+            if (student is null)
+            {
+                await Client.Student.Add(new AddStudentRequest
+                {
+                    Student = new Student(
+                        message.From.Id.ToString(),
+                        message.From.Username,
+                        abStudent.Course is null ? null : (Course)abStudent.Course,
+                        abStudent.GroupNumber is null ? null : (Group)abStudent.GroupNumber,
+                        abStudent.SubgroupNumber is null ? null : (Subgroup)abStudent.SubgroupNumber,
+                        abStudent.Name,
+                        message.Chat.Id.ToString())
+                });
+            }
         }
 
         private async Task<Message> HandleAlertFeedbackAsync(ITelegramBotClient bot, Message message)

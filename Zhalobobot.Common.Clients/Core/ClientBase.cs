@@ -39,6 +39,11 @@ namespace Zhalobobot.Common.Clients.Core
             
             var result = await response.As<TResult>() ?? default(TResult);
 
+            if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                return new ZhalobobotResult<TResult>(result, true, response.StatusCode);
+            }
+
             return response.IsSuccessStatusCode
                 ? new ZhalobobotResult<TResult>(result ?? throw new Exception(), true, response.StatusCode)
                 : new ZhalobobotResult<TResult>(default, false, response.StatusCode, response.ReasonPhrase);

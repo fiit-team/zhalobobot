@@ -5,9 +5,9 @@ namespace Zhalobobot.Common.Models.Student
     public record AbTestStudent(
         string TelegramId,
         Name? Name,
-        int? AdmissionYear,
+        int? Course,
         int? GroupNumber,
         int? SubgroupNumber,
         bool InGroupA)
-        : OldStudent(TelegramId, Name, AdmissionYear, GroupNumber, SubgroupNumber);
+        : OldStudent(TelegramId, Name, Course, GroupNumber, SubgroupNumber);
 }

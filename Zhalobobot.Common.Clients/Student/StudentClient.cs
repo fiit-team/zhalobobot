@@ -16,6 +16,9 @@ namespace Zhalobobot.Common.Clients.Student
         public Task<ZhalobobotResult<AbTestStudent>> GetAbTestStudent(GetAbTestStudentRequest request)
             => Method<AbTestStudent>("ab-test").CallAsync(request);
 
+        public Task<ZhalobobotResult<Models.Student.Student?>> GetStudent(long telegramId)
+            => Method<Models.Student.Student?>(telegramId.ToString()).CallAsync();
+
         public Task<ZhalobobotResult<Models.Student.Student[]>> GetAll()
             => Method<Models.Student.Student[]>("getAll").CallAsync();
 

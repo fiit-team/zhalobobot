@@ -23,6 +23,18 @@ namespace Zhalobobot.Api.Server.Controllers
         public async Task<AbTestStudent> GetAbTestStudent([FromBody] GetAbTestStudentRequest request)
             => await abTestRepository.Get(request.Username);
 
+
+        [HttpPost("{telegramId}")]
+        public async Task<Student?> GetStudent(string telegramId)
+        {
+            var result = await studentRepository.GetById(telegramId);
+            
+            // TODO: Возвращать ActionResult
+            // TODO: if null return NotFound
+
+            return result;
+        }
+
         [HttpPost("getAll")]
         public async Task<Student[]> GetAll()
             => await studentRepository.GetAll();

@@ -8,6 +8,8 @@ namespace Zhalobobot.Api.Server.Repositories.Students
     {
         Task Add(Student student);
 
+        Task<Student?> GetById(string telegramId);
+
         Task<Student[]> GetAll();
 
         Task<Student[]> GetByCourseAndGroupAndSubgroup(Course course, Group group, Subgroup subgroup);

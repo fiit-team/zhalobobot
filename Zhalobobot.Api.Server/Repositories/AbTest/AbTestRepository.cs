@@ -29,7 +29,7 @@ namespace Zhalobobot.Api.Server.Repositories.AbTest
             return new AbTestStudent(
                 telegramId,
                 ParsingHelper.ParseName(student[1],student[2], student[3]),
-                ParsingHelper.ParseNullableInt(student[0]), 
+                ParsingHelper.ParseCourse(student[0]), 
                 ParsingHelper.ParseNullableInt(student[4]), 
                 ParsingHelper.ParseNullableInt(student[5]),
                 ParsingHelper.ParseBool(student[7]));

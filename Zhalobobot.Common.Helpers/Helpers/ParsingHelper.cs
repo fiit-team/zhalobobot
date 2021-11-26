@@ -21,6 +21,20 @@ namespace Zhalobobot.Common.Helpers.Helpers
         public static bool ParseBool(object value)
             => value as string == "TRUE";
 
+        public static int? ParseCourse(object value)
+        {
+            if (!int.TryParse(value as string, out var admissionYear))
+            {
+                return null;
+            }
+
+            var zeroTime = new DateTime(1, 1, 1);
+            var admissionDate = new DateTime(admissionYear, 8, 1);
+            var now = DateTime.Now;
+            var diff = (now - admissionDate);
+            return (zeroTime + diff).Year;
+        }
+
         public static SubjectCategory ParseSubjectCategory(object value)
         {
             var str = value as string ?? throw new ArgumentException("Subject is empty");

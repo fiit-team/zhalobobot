@@ -5,15 +5,15 @@ namespace Zhalobobot.Common.Clients.Core
 {
     public class ZhalobobotResult<T> : ZhalobobotResult
     {
-        private readonly T result;
+        private readonly T? result;
 
-        public ZhalobobotResult(T result, bool isSuccessful, HttpStatusCode statusCode, string? error = null)
+        public ZhalobobotResult(T? result, bool isSuccessful, HttpStatusCode statusCode, string? error = null)
             : base(isSuccessful, statusCode, error)
         {
             this.result = result;
         }
 
-        public T Result
+        public T? Result
         {
             get
             {
