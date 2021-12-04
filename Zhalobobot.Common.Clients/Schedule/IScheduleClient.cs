@@ -7,6 +7,8 @@ namespace Zhalobobot.Common.Clients.Schedule
 {
     public interface IScheduleClient
     {
+        Task<ZhalobobotResult<ScheduleItem[]>> GetAll();
+        
         Task<ZhalobobotResult<ScheduleItem[]>> GetByCourse(GetScheduleByCourseRequest request);
         
         Task<ZhalobobotResult<ScheduleItem[]>> GetByDayOfWeek(GetScheduleByDayOfWeekRequest request);

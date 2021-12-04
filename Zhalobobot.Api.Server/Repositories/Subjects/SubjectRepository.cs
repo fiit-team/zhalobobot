@@ -25,30 +25,25 @@ namespace Zhalobobot.Api.Server.Repositories.Subjects
             Logger = logger;
             SubjectsRange = configuration["SubjectsRange"];
         }
+        
+        public async Task<Subject[]> Get(Course course)
+            => (await GetAll())
+                .Where(s => s.Course == course)
+                .ToArray();
 
-        public async Task<Subject[]> Get(Course? course = null, SubjectCategory? category = null)
+        public async Task<Subject[]> GetAll()
         {
             var semester = SemesterHelper.Current;
             
             var subjectsRange = await GetRequest(SubjectsRange).ExecuteAsync();
-
-            var result = subjectsRange.Values.Select(subject => new Subject(
+            
+            return subjectsRange.Values.Select(subject => new Subject(
                     subject[0] as string ?? throw new ValidationException("Empty subject name"),
                     (Course)ParsingHelper.ParseInt(subject[1]),
                     (Semester)ParsingHelper.ParseInt(subject[2]),
                     ParsingHelper.ParseSubjectCategory(subject[3])))
-                .Where(s => s.Semester == semester);
-
-            if (course.HasValue)
-            {
-                result = result.Where(s => Equals(s.Course, course));
-            }
-            if (category.HasValue)
-            {
-                result = result.Where(s => Equals(s.Category, category));
-            }
-
-            return result.ToArray();
+                .Where(s => s.Semester == semester)
+                .ToArray();
         }
     }
 }

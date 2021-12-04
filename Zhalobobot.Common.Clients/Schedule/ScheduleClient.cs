@@ -13,6 +13,9 @@ namespace Zhalobobot.Common.Clients.Schedule
         {
         }
 
+        public Task<ZhalobobotResult<ScheduleItem[]>> GetAll()
+            => Method<ScheduleItem[]>("getAll").CallAsync();
+        
         public Task<ZhalobobotResult<ScheduleItem[]>> GetByCourse(GetScheduleByCourseRequest request)
             => Method<ScheduleItem[]>("getByCourse").CallAsync(request);
 

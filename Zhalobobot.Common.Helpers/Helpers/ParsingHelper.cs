@@ -17,6 +17,9 @@ namespace Zhalobobot.Common.Helpers.Helpers
 
         public static int ParseInt(object value)
             => int.TryParse(value as string, out var result) ? result : throw new Exception();
+        
+        public static long ParseLong(object value)
+            => long.TryParse(value as string, out var result) ? result : throw new Exception();
 
         public static bool ParseBool(object value)
             => value as string == "TRUE";
@@ -129,7 +132,7 @@ namespace Zhalobobot.Common.Helpers.Helpers
             }
         }
 
-        public static IEnumerable<int> ParseRange(object value)
+        public static IEnumerable<(Course, Group)> ParseFlow(object value)
         {
             if (value is not string str)
                 throw new Exception();
@@ -139,20 +142,15 @@ namespace Zhalobobot.Common.Helpers.Helpers
 
             var parts = str.Split(',');
 
-            return parts.SelectMany(p =>
+            return parts.Select(part =>
             {
-                var range = p.Split('-').Select(s => int.Parse(s.Trim(' '))).ToArray();
-                if (range.Length == 1)
-                    return new List<int> { range[0] };
+                var items = part
+                    .Split('-', 2)[1]
+                    .Split('0', 2)
+                    .Select(int.Parse)
+                    .ToArray();
 
-                var minValue = range.Min();
-                var maxValue = range.Max();
-                
-                var res = new List<int>();
-                for (var i = minValue; i <= maxValue; i++)
-                    res.Add(i);
-                
-                return res;
+                return ((Course)items[0], (Group)items[1]);
             });
         }
     }

@@ -9,7 +9,7 @@ namespace Zhalobobot.Common.Clients.Student
     {
         Task<ZhalobobotResult<AbTestStudent>> GetAbTestStudent(GetAbTestStudentRequest request);
 
-        Task<ZhalobobotResult<Models.Student.Student?>> GetStudent(long telegramId);
+        Task<ZhalobobotResult<Models.Student.Student?>> FindStudent(long telegramId);
 
         Task<ZhalobobotResult<Models.Student.Student[]>> GetAll();
         

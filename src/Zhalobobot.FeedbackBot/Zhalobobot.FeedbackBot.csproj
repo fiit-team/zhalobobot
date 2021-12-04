@@ -5,6 +5,7 @@
     <UserSecretsId>a6f526b1-8c88-45a5-a496-8c5670246976</UserSecretsId>
     <LangVersion>preview</LangVersion>
     <RootNamespace>Zhalobobot.Bot</RootNamespace>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

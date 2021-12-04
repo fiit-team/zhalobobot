@@ -9,6 +9,7 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
@@ -30,17 +31,20 @@ namespace Zhalobobot.Bot.Services
         private IConversationService ConversationService { get; }
         private IPollService PollService { get; }
         private ILogger<HandleUpdateService> Logger { get; }
+        private EntitiesCache Cache { get; }
 
         public HandleUpdateService(ITelegramBotClient botClient,
             IZhalobobotApiClient client,
             IConversationService conversationService,
             IPollService pollService,
+            EntitiesCache cache,
             ILogger<HandleUpdateService> logger)
         {
             BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             Client = client ?? throw new ArgumentNullException(nameof(client));
             ConversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
             PollService = pollService ?? throw new ArgumentNullException(nameof(pollService));
+            Cache = cache;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -106,19 +110,23 @@ namespace Zhalobobot.Bot.Services
 
         private async Task AddStudentIfDoesNotExist(Message message, AbTestStudent abStudent)
         {
-            var student = (await Client.Student.GetStudent(message.From.Id)).Result;
+            var student = Cache.Students.Find(message.From.Id);
             if (student is null)
             {
+                throw new NotImplementedException();
+                
+                //TODO: отправить студенту сообщение типа "Привет! Я тебя еще не знаю, давай знакомиться ..."
+                //TODO: и спросить курс, группу и подгруппу, после чего сохранить
+                
                 await Client.Student.Add(new AddStudentRequest
                 {
                     Student = new Student(
-                        message.From.Id.ToString(),
+                        message.From.Id,
                         message.From.Username,
                         abStudent.Course is null ? null : (Course)abStudent.Course,
                         abStudent.GroupNumber is null ? null : (Group)abStudent.GroupNumber,
                         abStudent.SubgroupNumber is null ? null : (Subgroup)abStudent.SubgroupNumber,
-                        abStudent.Name,
-                        message.Chat.Id.ToString())
+                        abStudent.Name)
                 });
             }
         }

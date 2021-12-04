@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Zhalobobot.Api.Server.Repositories.Schedule;
@@ -15,6 +16,10 @@ namespace Zhalobobot.Api.Server.Controllers
         {
             this.repository = repository;
         }
+
+        [HttpPost("getAll")]
+        public async Task<ScheduleItem[]> GetAll()
+            => (await repository.GetAll()).ToArray();
 
         [HttpPost("getByCourse")]
         public async Task<ScheduleItem[]> GetByCourse([FromBody] GetScheduleByCourseRequest request)

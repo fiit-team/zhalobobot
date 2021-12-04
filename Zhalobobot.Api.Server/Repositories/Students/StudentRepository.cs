@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -27,13 +25,12 @@ namespace Zhalobobot.Api.Server.Repositories.Students
             {
                 student.Id,
                 student.Username ?? string.Empty,
-                student.Course is null ? string.Empty : student.Course,
-                student.Group is null ? string.Empty : student.Group,
-                student.Subgroup is null ? string.Empty : student.Subgroup,
+                student.Course,
+                student.Group,
+                student.Subgroup,
                 student.Name?.LastName ?? string.Empty,
                 student.Name?.FirstName ?? string.Empty,
-                student.Name?.MiddleName ?? string.Empty,
-                student.ChatId
+                student.Name?.MiddleName ?? string.Empty
             };
 
             await AppendRequest(StudentsRange, values).ExecuteAsync();
@@ -44,13 +41,12 @@ namespace Zhalobobot.Api.Server.Repositories.Students
             var values = await GetRequest(StudentsRange).ExecuteAsync();
 
             return values.Values.Select(student => new Student(
-                    student[0] as string ?? throw new ValidationException("Id is empty!"),
-                    student[1] as string ?? string.Empty,
-                    (Course)ParsingHelper.ParseInt(student[2]),
-                    (Group)ParsingHelper.ParseInt(student[3]),
-                    (Subgroup)ParsingHelper.ParseInt(student[4]),
-                    null, // TODO: вернуть имя вместо null (пока не нужно)
-                    student[8] as string ?? throw new ValidationException("ChatId is empty!")))
+                ParsingHelper.ParseLong(student[0]),
+                student[1] as string ?? string.Empty,
+                (Course)ParsingHelper.ParseInt(student[2]),
+                (Group)ParsingHelper.ParseInt(student[3]),
+                (Subgroup)ParsingHelper.ParseInt(student[4]),
+                null)) // TODO: вернуть имя вместо null (пока не нужно)
                 .ToArray();
         }
 
@@ -63,27 +59,26 @@ namespace Zhalobobot.Api.Server.Repositories.Students
                 .ToArray();
         }
 
-        public async Task<Student?> GetById(string telegramId)
+        public async Task<Student?> FindById(long telegramId)
         {
             var students = await GetRequest(StudentsRange).ExecuteAsync();
 
-            var student = students.Values?.FirstOrDefault(v => v[0].ToString() == telegramId);
+            var student = students.Values?.FirstOrDefault(v => ParsingHelper.ParseLong(v[0]) == telegramId);
 
             if (student == null)
                 return null;
                 
-            var course = ParsingHelper.ParseNullableInt(student[2]);
-            var group = ParsingHelper.ParseNullableInt(student[3]);
-            var subgroup = ParsingHelper.ParseNullableInt(student[4]);
+            var course = ParsingHelper.ParseInt(student[2]);
+            var group = ParsingHelper.ParseInt(student[3]);
+            var subgroup = ParsingHelper.ParseInt(student[4]);
 
             return new Student(
                 telegramId,
                 student[1] as string,
-                course is null ? null : (Course) course,
-                group is null ? null : (Group) group,
-                subgroup is null ? null : (Subgroup) subgroup,
-                ParsingHelper.ParseName(student[1], student[2], student[3]),
-                (string) student[8]);;
+                (Course) course,
+                (Group) group,
+                (Subgroup) subgroup,
+                ParsingHelper.ParseName(student[1], student[2], student[3]));
         }
     }
 }

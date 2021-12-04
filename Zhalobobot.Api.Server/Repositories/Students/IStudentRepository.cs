@@ -7,10 +7,10 @@ namespace Zhalobobot.Api.Server.Repositories.Students
     public interface IStudentRepository
     {
         Task Add(Student student);
-
-        Task<Student?> GetById(string telegramId);
-
+        
         Task<Student[]> GetAll();
+        
+        Task<Student?> FindById(long telegramId);
 
         Task<Student[]> GetByCourseAndGroupAndSubgroup(Course course, Group group, Subgroup subgroup);
     }

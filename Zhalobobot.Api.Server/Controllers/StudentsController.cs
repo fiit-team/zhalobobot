@@ -24,12 +24,12 @@ namespace Zhalobobot.Api.Server.Controllers
             => await abTestRepository.Get(request.Username);
 
 
-        [HttpPost("{telegramId}")]
-        public async Task<Student?> GetStudent(string telegramId)
+        [HttpPost("find/{telegramId}")]
+        public async Task<Student?> FindStudent(string telegramId)
         {
-            var result = await studentRepository.GetById(telegramId);
+            var result = await studentRepository.FindById(long.Parse(telegramId));
             
-            // TODO: Возвращать ActionResult
+            // TODO: Р’РѕР·РІСЂР°С‰Р°С‚СЊ ActionResult
             // TODO: if null return NotFound
 
             return result;

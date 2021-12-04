@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Quartz;
 using Telegram.Bot;
+using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Quartz.Extensions;
 using Zhalobobot.Bot.Quartz.Jobs;
 using Zhalobobot.Bot.Services;
@@ -27,9 +28,10 @@ namespace Zhalobobot.Bot
 
         public void ConfigureServices(IServiceCollection services)
         {
-            //RegisterQuartz(services, Configuration);
+            RegisterQuartz(services, Configuration);
             RegisterServices(services);
-            
+            RegisterCache(services);
+
             services.AddHostedService<ConfigureWebhook>();
 
             services.AddHttpClient("tgwebhook")
@@ -78,9 +80,14 @@ namespace Zhalobobot.Bot
                 q.UseMicrosoftDependencyInjectionJobFactory();
 
                 q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
+                
+                q.AddJobAndTrigger<UpdateCacheJob>(SimpleScheduleBuilder.Create().WithIntervalInSeconds(10).RepeatForever());
             });
             
             services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
         }
+
+        private static void RegisterCache(IServiceCollection services)
+            => services.AddSingleton<EntitiesCache>();
     }
 }

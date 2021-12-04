@@ -16,7 +16,7 @@ namespace Zhalobobot.Bot.Quartz.Jobs
     [DisallowConcurrentExecution]
     public class NotifyStudentsJob : IJob
     {
-        private const int Percent = 20;
+        private const int Percent = 10;
         private IZhalobobotApiClient Client { get; }
         private ITelegramBotClient BotClient { get; }
         private ILogger<NotifyStudentsJob> Log { get; }
@@ -30,17 +30,11 @@ namespace Zhalobobot.Bot.Quartz.Jobs
 
         public async Task Execute(IJobExecutionContext context)
         {
-            Log.LogInformation($"TRIGGERED IN TIME:\nHour:{DateTime.Now.Hour}\nMinute:{DateTime.Now.Minute}\nDay:{DateTime.Now.DayOfWeek}");
             var getScheduleRequest = new GetScheduleByDayOfWeekHourAndMinuteRequest(DateTime.Now.DayOfWeek,
                 new HourAndMinute(DateTime.Now.Hour, DateTime.Now.Minute));
-            
-            // var getScheduleRequest = new GetScheduleByDayOfWeekHourAndMinuteRequest(DayOfWeek.Monday,
-            //     new HourAndMinute(10, 30));
-            
+
             var courses = await Client.Schedule.GetByDayOfWeekAndEndsAtHourAndMinute(getScheduleRequest).GetResult();
-
-            Log.LogInformation($"Courses: {courses.Select(c => c.Subject.Name).ToPrettyJson()}");
-
+            
             foreach (var course in courses)
             {
                 if (course.Subgroup.HasValue)

@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Configuration;
 using Quartz;
@@ -24,6 +25,20 @@ namespace Zhalobobot.Bot.Quartz.Extensions
                 .ForJob(jobKey)
                 .WithIdentity(triggerName)
                 .WithCronSchedule(cronSchedule));
+        }
+        
+        public static void AddJobAndTrigger<T>(
+            this IServiceCollectionQuartzConfigurator quartz,
+            SimpleScheduleBuilder scheduleBuilder)
+            where T : IJob
+        {
+            var jobKey = new JobKey(typeof(T).Name);
+            quartz.AddJob<T>(opts => opts.WithIdentity(jobKey));
+
+            quartz.AddTrigger(opts => opts
+                .ForJob(jobKey)
+                .WithIdentity(Guid.NewGuid().ToString())
+                .WithSimpleSchedule(scheduleBuilder));
         }
     }
 }

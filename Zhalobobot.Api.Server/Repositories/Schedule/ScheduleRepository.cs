@@ -12,7 +12,6 @@ using Zhalobobot.Common.Helpers.Helpers;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Schedule;
-using Zhalobobot.Common.Models.Serialization;
 using Zhalobobot.Common.Models.Subject;
 
 namespace Zhalobobot.Api.Server.Repositories.Schedule
@@ -21,8 +20,8 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
     {
         private IConfiguration Configuration { get; }
         private ILogger<ScheduleRepository> Log { get; }
-        // private string FirstCourseScheduleRange { get; }
-        private string SecondCourseScheduleRange { get; }
+        
+        private string ScheduleRange { get; }
         private ISubjectRepository SubjectRepository { get; }
         private bool IsFirstYearWeekOdd { get; }
 
@@ -32,16 +31,19 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             Configuration = configuration;
             Log = log;
             // FirstCourseScheduleRange = configuration["FirstCourseScheduleRange"];
-            SecondCourseScheduleRange = configuration["SecondCourseScheduleRange"];
+            // SecondCourseScheduleRange = configuration["SecondCourseScheduleRange"];
+            ScheduleRange = configuration["ScheduleRange"];
             SubjectRepository = subjectRepository;
             IsFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
         }
 
         public async Task<ScheduleItem[]> GetByCourse(Course course)
-            => (await GetCorrectSchedule(course)).ToArray();
+            => (await GetAll())
+                .Where(s => s.Subject.Course == course)
+                .ToArray();
 
         public async Task<ScheduleItem[]> GetByDayOfWeek(DayOfWeek dayOfWeek)
-            => (await GetCorrectSchedule())
+            => (await GetAll())
                 .Where(schedule => schedule.EventTime.DayOfWeek == dayOfWeek)
                 .ToArray();
 
@@ -71,22 +73,14 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                    || item.EventTime.EndTime != null && item.EventTime.EndTime == hourAndMinute;
         }
 
-        private async Task<IEnumerable<ScheduleItem>> GetCorrectSchedule(Course? course = null)
+        public async Task<IEnumerable<ScheduleItem>> GetAll()
         { 
-            var scheduleRanges = new[] { SecondCourseScheduleRange };
-
-            IEnumerable<ScheduleItem> scheduleItems;
-
-            if (course.HasValue)
-                scheduleItems = await ParseScheduleRange(scheduleRanges[(int)course.Value - 1], course.Value);
-            else
-                scheduleItems = (await Task.WhenAll(scheduleRanges.Select(async (range, ind) => await ParseScheduleRange(range, (Course)(ind + 2))))).SelectMany(r => r);
+            IEnumerable<ScheduleItem> scheduleItems = await ParseScheduleRange(ScheduleRange);
 
             return scheduleItems.Where(s => WeekParityMatches(s) && PairExists(s));
             
-            async Task<IEnumerable<ScheduleItem>> ParseScheduleRange(string scheduleRange, Course courseValue)
+            async Task<IEnumerable<ScheduleItem>> ParseScheduleRange(string scheduleRange)
             {
-                Log.LogInformation($"PARSE RANGE FOR {scheduleRange}, {courseValue}");
                 var result = await GetRequest(scheduleRange).ExecuteAsync();
             
                 var value = result.Values[0][0].ToString();
@@ -94,9 +88,11 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                 if (value != "TRUE")
                     return Array.Empty<ScheduleItem>(); //incorrect table or synchronized == false
 
-                var subjects = await SubjectRepository.Get(courseValue);
-                
-                return result.Values.Skip(2).SelectMany(v => ParseRow(v, subjects, courseValue));
+                var subjects = await SubjectRepository.GetAll();
+
+                return result.Values
+                    .Skip(2)
+                    .SelectMany(v => ParseRow(v, subjects));
             }
 
             bool WeekParityMatches(ScheduleItem item)
@@ -128,27 +124,30 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             }
         }
 
-        private IEnumerable<ScheduleItem> ParseRow(IList<object> row, Subject[] subjects, Course course)
+        private IEnumerable<ScheduleItem> ParseRow(IList<object> row, Subject[] subjects)
         {
             var subjectName = row[2] as string ?? throw new Exception();
             var semester = SemesterHelper.Current;
 
-            var pairs = ParsingHelper.ParseRange(row[1]);
-            var groups = ParsingHelper.ParseRange(row[3]).ToArray();
-            Log.LogInformation($"SEMESTER AND COURSE: {SemesterHelper.Current} {course}");
-            Log.LogInformation("SUBJECTS: " + subjects.ToPrettyJson());
-            var subject = subjects.First(s => s.Course == course && s.Semester == semester && s.Name == subjectName);
-
+            var flow = ParsingHelper.ParseFlow(row[3]).ToArray();
+            
             var startDayAndMonthOrHourAndMinutes = ParsingHelper.ParseDayAndMonthOrHourAndMinutes(row[8]);
             
             var endDayAndMonthOrHourAndMinutes = ParsingHelper.ParseDayAndMonthOrHourAndMinutes(row[9]);
-
-            foreach (var pair in pairs) 
-            foreach (var group in groups)
+    
+            foreach (var (course, group) in flow)
             {
+                var subject = subjects.FirstOrDefault(s => s.Course == course && s.Semester == semester && s.Name == subjectName);
+
+                if (subject == null)
+                {
+                    Log.LogInformation($"Subject {subjectName} not found");
+                    continue;
+                }
+                
                 var eventTime = new EventTime(
                     ParsingHelper.ParseDay(row[0]),
-                    (Pair)pair,
+                    (Pair)ParsingHelper.ParseInt(row[1]),
                     startDayAndMonthOrHourAndMinutes?.HourAndMinutes,
                     endDayAndMonthOrHourAndMinutes?.HourAndMinutes,
                     startDayAndMonthOrHourAndMinutes?.DayAndMonth,
@@ -160,7 +159,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                 yield return new ScheduleItem(
                     subject,
                     eventTime,
-                    (Group)group,
+                    group,
                     subgroup != null ? (Subgroup)subgroup : null,
                     row[5] as string ?? string.Empty,
                     row[6] as string ?? string.Empty);
