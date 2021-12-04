@@ -84,7 +84,7 @@ namespace Zhalobobot.Bot.Services
             
             var userName = $"@{message.From.Username}";
             
-            var request = new GetAbTestStudentRequest { Username = userName };
+            var request = new GetAbTestStudentRequest(userName);
 
             var abStudent = (await Client.Student.GetAbTestStudent(request)).Result;
             await AddStudentIfDoesNotExist(message, abStudent);
@@ -276,11 +276,7 @@ namespace Zhalobobot.Bot.Services
             var subjectCategory = Enum.Parse<SubjectCategory>(subjectData);
             var course = Enum.Parse<Course>(courseData);
 
-            var subjects = await Client.Subject.Get(new GetSubjectsRequest
-            {
-                Category = subjectCategory,
-                Course = course
-            }).GetResult();
+            var subjects = Cache.Subjects.Get((course, subjectCategory));
 
             await BotClient.EditMessageTextAsync(
                 chatId,
@@ -417,7 +413,7 @@ namespace Zhalobobot.Bot.Services
 
             if (status is ConversationStatus.AwaitingConfirmation)
             {
-                var student = await Client.Student.GetAbTestStudent(new GetAbTestStudentRequest { Username = $"@{pollAnswer.User.Username}" }).GetResult();
+                var student = await Client.Student.GetAbTestStudent(new GetAbTestStudentRequest($"@{pollAnswer.User.Username}")).GetResult();
                 await BotClient.SendTextMessageAsync(
                     chatId,
                     BuildStartFeedbackMessage(student.InGroupA, true),

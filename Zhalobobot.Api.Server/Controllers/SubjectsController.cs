@@ -16,12 +16,12 @@ namespace Zhalobobot.Api.Server.Controllers
             this.repository = repository;
         }
 
+        [HttpPost("getAll")]
+        public async Task<Subject[]> GetAll()
+            => await repository.GetAll();
+
         [HttpPost("get")]
         public async Task<Subject[]> Get([FromBody] GetSubjectsRequest request)
-        {
-            request ??= new GetSubjectsRequest();
-
-            return await repository.Get(request.Course, request.Category);
-        }
+            => await repository.Get(request.Course);
     }
 }

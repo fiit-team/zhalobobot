@@ -4,13 +4,13 @@ namespace Zhalobobot.Common.Models.Subject
 {
     public enum SubjectCategory
     {
-        [Description("Математика")]
+        [Description("РњР°С‚РµРјР°С‚РёРєР°")]
         Math = 0,
-        [Description("Программирование")]
+        [Description("РџСЂРѕРіСЂР°РјРјРёСЂРѕРІР°РЅРёРµ")]
         Programming = 1,
-        [Description("Онлайн курсы")]
+        [Description("РћРЅР»Р°Р№РЅ РєСѓСЂСЃС‹")]
         OnlineCourse = 2,
-        [Description("Другое")]
+        [Description("Р”СЂСѓРіРѕРµ")]
         Another = 3
     }
 }

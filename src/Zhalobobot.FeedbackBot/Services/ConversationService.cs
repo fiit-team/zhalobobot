@@ -206,7 +206,7 @@ namespace Zhalobobot.Bot.Services
             foreach (var entity in conversation.Messages
                 .Select(message => feedback with { Message = message }))
             {
-                await Client.Feedback.AddFeedback(new AddFeedbackRequest { Feedback = entity });
+                await Client.Feedback.AddFeedback(new AddFeedbackRequest(entity));
             }
 
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
@@ -222,7 +222,7 @@ namespace Zhalobobot.Bot.Services
 
             feedback = feedback with { Message = string.Join("\n", conversation.Messages) };
 
-            await Client.Feedback.AddFeedback(new AddFeedbackRequest { Feedback = feedback });
+            await Client.Feedback.AddFeedback(new AddFeedbackRequest(feedback));
 
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
         }
