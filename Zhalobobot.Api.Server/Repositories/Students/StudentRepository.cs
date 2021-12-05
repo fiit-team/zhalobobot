@@ -6,6 +6,7 @@ using Zhalobobot.Api.Server.Repositories.Common;
 using Zhalobobot.Common.Helpers.Helpers;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Student;
+using Zhalobobot.Common.Models.UserCommon;
 
 namespace Zhalobobot.Api.Server.Repositories.Students
 {
@@ -46,7 +47,7 @@ namespace Zhalobobot.Api.Server.Repositories.Students
                 (Course)ParsingHelper.ParseInt(student[2]),
                 (Group)ParsingHelper.ParseInt(student[3]),
                 (Subgroup)ParsingHelper.ParseInt(student[4]),
-                null)) // TODO: вернуть имя вместо null (пока не нужно)
+                new Name(student[5] as string ?? string.Empty, student[6] as string ?? string.Empty, student[7] as string ?? string.Empty)))
                 .ToArray();
         }
 
