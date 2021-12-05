@@ -47,7 +47,7 @@ namespace Zhalobobot.Api.Server.Repositories.Students
                 (Course)ParsingHelper.ParseInt(student[2]),
                 (Group)ParsingHelper.ParseInt(student[3]),
                 (Subgroup)ParsingHelper.ParseInt(student[4]),
-                new Name(student[5] as string ?? string.Empty, student[6] as string ?? string.Empty, student[7] as string ?? string.Empty)))
+                new Name(student[5] as string ?? string.Empty, student[6] as string ?? string.Empty, null)))
                 .ToArray();
         }
 

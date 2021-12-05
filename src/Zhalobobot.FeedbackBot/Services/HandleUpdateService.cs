@@ -16,6 +16,7 @@ using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Helpers;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Exceptions;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Student.Requests;
 using Zhalobobot.Common.Models.Subject;
@@ -56,9 +57,16 @@ namespace Zhalobobot.Bot.Services
                 // Временно не обрабатываем логику бота в группе.
                 return;
             }
-            
-            if (await HandleAddStudent())
+
+            try
+            {
+                if (await HandleAddStudent())
+                    return;
+            }
+            catch (CacheNotInitializedException)
+            {
                 return;
+            }
 
             var handler = update.Type switch
             {

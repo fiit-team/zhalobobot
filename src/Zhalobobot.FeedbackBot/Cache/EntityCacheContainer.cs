@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Zhalobobot.Common.Models.Exceptions;
 
 namespace Zhalobobot.Bot.Cache
 {
@@ -24,7 +25,7 @@ namespace Zhalobobot.Bot.Cache
         }
 
         public TCache Cache 
-            => cache ?? throw new Exception($"Cache of type '{EntityType}' is not initialized yet.");
+            => cache ?? throw new CacheNotInitializedException($"Cache of type '{EntityType}' is not initialized yet.");
 
         public async Task Update(bool ensureSuccess)
         {
