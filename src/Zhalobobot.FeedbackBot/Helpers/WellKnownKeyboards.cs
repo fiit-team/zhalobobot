@@ -32,13 +32,32 @@ namespace Zhalobobot.Bot.Helpers
             ResizeKeyboard = true
         };
 
-        public static InlineKeyboardMarkup ChooseCourseKeyboard { get; } =
+        public static InlineKeyboardMarkup AddCourseKeyboard { get; } =
             new(Enum.GetValues<Course>()
                 .Select(course => new[]
                 {
                     InlineKeyboardButton.WithCallbackData(
                         course.AsString(EnumFormat.Description),
-                        Utils.Join(Strings.Separator, CallbackDataPrefix.Course, course))
+                        Utils.Join(Strings.Separator, CallbackDataPrefix.AddCourse, course))
+                }));
+
+        public static InlineKeyboardMarkup AddCourseAndGroupKeyboard(Course course) =>
+            new (Enum.GetValues<Group>()
+                .Take(course == Course.Third ? 2 : 4)
+                .Select(group => new[]
+                {
+                    InlineKeyboardButton.WithCallbackData(
+                        group.AsString(EnumFormat.Description),
+                        Utils.Join(Strings.Separator, CallbackDataPrefix.AddCourseAndGroup, course, group))
+                }));
+        
+        public static InlineKeyboardMarkup AddCourseAndGroupAndSubgroupKeyboard(Course course, Group group) =>
+            new (Enum.GetValues<Subgroup>()
+                .Select(subgroup => new[]
+                {
+                    InlineKeyboardButton.WithCallbackData(
+                        subgroup.AsString(EnumFormat.Description),
+                        Utils.Join(Strings.Separator, CallbackDataPrefix.AddCourseAndGroupAndSubgroup, course, group, subgroup))
                 }));
 
         public static InlineKeyboardMarkup RatingKeyboard { get; } =
@@ -61,19 +80,13 @@ namespace Zhalobobot.Bot.Helpers
                 }
             };
 
-        public static InlineKeyboardMarkup GetSubjectCategoryKeyboard(Course course)
-            =>  new(Enum.GetValues<SubjectCategory>()
+        public static InlineKeyboardMarkup GetSubjectCategoryKeyboard =>  
+            new (Enum.GetValues<SubjectCategory>()
                     .Select(category => new[]
                     {
                         InlineKeyboardButton.WithCallbackData(
                             category.AsString(EnumFormat.Description),
-                            Utils.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, category, course))
-                    })
-                    .Append(new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData(
-                            Buttons.Back,
-                            Utils.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, Strings.Back))
+                            Utils.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, category))
                     }));
     }
 }

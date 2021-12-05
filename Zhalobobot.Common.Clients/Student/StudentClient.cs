@@ -1,7 +1,6 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using Zhalobobot.Common.Clients.Core;
-using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Student.Requests;
 
 namespace Zhalobobot.Common.Clients.Student
@@ -12,9 +11,6 @@ namespace Zhalobobot.Common.Clients.Student
             : base("students", client, serverUri)
         {
         }
-
-        public Task<ZhalobobotResult<AbTestStudent>> GetAbTestStudent(GetAbTestStudentRequest request)
-            => Method<AbTestStudent>("ab-test").CallAsync(request);
 
         public Task<ZhalobobotResult<Models.Student.Student?>> FindStudent(long telegramId)
             => Method<Models.Student.Student?>($"find/${telegramId}").CallAsync();

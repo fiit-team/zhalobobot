@@ -5,10 +5,10 @@ namespace Zhalobobot.Common.Models.Feedback
     public enum FeedbackType
     {
         [Description("Срочная обратная связь.")]
-        UrgentFeedback,
+        Urgent,
         [Description("Общая обратная связь.")]
-        GeneralFeedback,
+        General,
         [Description("Обратная связь по предмету.")]
-        SubjectFeedback
+        Subject
     }
 }

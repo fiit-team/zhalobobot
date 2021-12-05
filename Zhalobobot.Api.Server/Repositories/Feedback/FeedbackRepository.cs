@@ -34,12 +34,12 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
                 feedback.SubjectSurvey is null ? string.Empty : string.Join("; ", feedback.SubjectSurvey.LikedPoints),
                 feedback.SubjectSurvey is null ? string.Empty : string.Join("; ", feedback.SubjectSurvey.UnlikedPoints),
                 feedback.Message ?? string.Empty,
-                feedback.Student!.InGroupA ? "A" : "B",
-                feedback.Student!.TelegramId,
-                feedback.Student!.Name?.ToString() ?? string.Empty,
-                feedback.Student!.GroupNumber?.ToString() ?? string.Empty,
-                feedback.Student!.SubgroupNumber?.ToString() ?? string.Empty,
-                feedback.Student!.AdmissionYear?.ToString() ?? string.Empty
+                feedback.Student.Id,
+                feedback.Student.Username ?? string.Empty,
+                feedback.Student.Name?.ToString() ?? string.Empty,
+                feedback.Student.Group,
+                feedback.Student.Subgroup,
+                feedback.Student.Course
             };
             
             await AppendRequest(FeedbackRange, objectList).ExecuteAsync();

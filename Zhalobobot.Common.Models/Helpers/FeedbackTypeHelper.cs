@@ -8,9 +8,9 @@ namespace Zhalobobot.Common.Models.Helpers
         {
             return feedbackType switch
             {
-                FeedbackType.GeneralFeedback => "Общая",
-                FeedbackType.SubjectFeedback => "Предмет",
-                FeedbackType.UrgentFeedback => "Срочная",
+                FeedbackType.General => "Общая",
+                FeedbackType.Subject => "Предмет",
+                FeedbackType.Urgent => "Срочная",
                 _ => throw new System.NotImplementedException()
             };
         }

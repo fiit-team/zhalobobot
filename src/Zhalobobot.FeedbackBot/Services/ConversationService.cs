@@ -6,10 +6,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
+using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Feedback;
 using Zhalobobot.Common.Models.Feedback.Requests;
+using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
@@ -21,6 +23,7 @@ namespace Zhalobobot.Bot.Services
         private ITelegramBotClient BotClient { get; }
         private IZhalobobotApiClient Client { get; }
         private Settings Settings { get; }
+        private EntitiesCache Cache { get; }
         private ILogger Logger { get; }
 
         private IDictionary<long, Conversation> Conversations { get; }
@@ -30,11 +33,13 @@ namespace Zhalobobot.Bot.Services
             ITelegramBotClient botClient,
             IZhalobobotApiClient client,
             Settings settings,
+            EntitiesCache cache,
             ILogger<ConversationService> logger)
         {
             BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             Client = client ?? throw new ArgumentNullException(nameof(client));
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            Cache = cache;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -60,9 +65,11 @@ namespace Zhalobobot.Bot.Services
 
         public void StartUrgentFeedback(long chatId)
         {
+            var student = Cache.Students.Get(chatId);
+            
             Conversations[chatId] = new Conversation
             {
-                Feedback = Feedback.Urgent
+                Feedback = new Feedback(FeedbackType.Urgent, student)
             }; 
 
             Logger.LogInformation($"Urgent feedback started successfully. ChatId {chatId}");
@@ -70,9 +77,11 @@ namespace Zhalobobot.Bot.Services
 
         public void StartGeneralFeedback(long chatId)
         {
+            var student = Cache.Students.Get(chatId);
+            
             Conversations[chatId] = new Conversation
             {
-                Feedback = Feedback.General
+                Feedback = new Feedback(FeedbackType.General, student)
             };
 
             Logger.LogInformation($"General feedback started successfully. ChatId {chatId}");
@@ -80,11 +89,13 @@ namespace Zhalobobot.Bot.Services
 
         public void StartSubjectFeedback(long chatId, string subjectName)
         {
-            var feedback = Feedback.Subj with
-            {
-                Subject = new OldSubject(subjectName),
-                SubjectSurvey = new SubjectSurvey()
-            };
+            var student = Cache.Students.Get(chatId);
+
+            var subject = Cache.Subjects
+                .Get(subjectName)
+                .FirstOrDefault(s => s.Course == student.Course && s.Semester == SemesterHelper.Current);
+            
+            var feedback = new Feedback(FeedbackType.Subject, student, null, subject, new SubjectSurvey());
 
             Conversations[chatId] = new Conversation
             {
@@ -94,7 +105,7 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"Subject feedback started successfully. ChatId {chatId}, Subject {subjectName}");
         }
 
-        public async Task SendFeedbackAsync(long chatId, AbTestStudent student)
+        public async Task SendFeedbackAsync(long chatId)
         {
             if (!Conversations.TryGetValue(chatId, out var value))
             {
@@ -102,21 +113,17 @@ namespace Zhalobobot.Bot.Services
                 throw new Exception($"Chat not found. ChatId {chatId}");
             }
 
+            var student = Cache.Students.Get(chatId);
+
             var feedback = value.Feedback with { Student = student };
 
-            if (feedback.Type == FeedbackType.UrgentFeedback)
+            if (feedback.Type == FeedbackType.Urgent)
             {
                 var message = string.Join("\n", value.Messages);
                 await SendUrgentFeedback(message, student).ConfigureAwait(false);
-                await SaveUnStructuredFeedback(chatId, feedback).ConfigureAwait(false);
             }
-            else
-            {
-                if (student.InGroupA)
-                    await SaveStructuredFeedback(chatId, feedback).ConfigureAwait(false);
-                else
-                    await SaveUnStructuredFeedback(chatId, feedback).ConfigureAwait(false);
-            }
+            
+            await SaveStructuredFeedback(chatId, feedback).ConfigureAwait(false);
 
             Conversations.Remove(chatId);
         }
@@ -128,7 +135,7 @@ namespace Zhalobobot.Bot.Services
 
             var feedback = conversation.Feedback;
 
-            if (feedback.Type == FeedbackType.SubjectFeedback)
+            if (feedback.Type == FeedbackType.Subject)
             {
                 var rating = feedback.SubjectSurvey!.Rating;
                 if (rating == 0)
@@ -203,8 +210,7 @@ namespace Zhalobobot.Bot.Services
                 throw new Exception($"Chat not found. ChatId {chatId}");
             }
 
-            foreach (var entity in conversation.Messages
-                .Select(message => feedback with { Message = message }))
+            foreach (var entity in conversation.Messages.Select(message => feedback with { Message = message }))
             {
                 await Client.Feedback.AddFeedback(new AddFeedbackRequest(entity));
             }
@@ -212,39 +218,19 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
         }
 
-        private async Task SaveUnStructuredFeedback(long chatId, Feedback feedback)
-        {
-            if (!Conversations.TryGetValue(chatId, out var conversation))
-            {
-                Logger.LogError($"Chat not found. ChatId {chatId}");
-                throw new Exception($"Chat not found. ChatId {chatId}");
-            }
-
-            feedback = feedback with { Message = string.Join("\n", conversation.Messages) };
-
-            await Client.Feedback.AddFeedback(new AddFeedbackRequest(feedback));
-
-            Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
-        }
-
-        private async Task SendUrgentFeedback(string message, OldStudent oldStudent)
+        private async Task SendUrgentFeedback(string message, Student student)
         {
             var builder = new StringBuilder();
 
             builder.AppendLine("@disturm"); // костыли любимые
             builder.AppendLine("Алерт! Кто-то оставил срочную обратную связь");
             builder.AppendLine();
-            builder.AppendLine($"{oldStudent.Name ?? Name.UnknownPerson}");
-            
-            var group = oldStudent.GetGroup();
-            if (group != null)
-            {
-                builder.AppendLine($"{group}");
-            }
+            builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
+            builder.AppendLine($"{student.Group}");
 
-            if (oldStudent.TelegramId.Length > 1)
+            if (student.Username?.Length > 1)
             {
-                builder.AppendLine(oldStudent.TelegramId);
+                builder.AppendLine(student.Username);
             }
 
             builder.AppendLine();

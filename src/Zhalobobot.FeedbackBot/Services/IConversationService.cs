@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Zhalobobot.Bot.Models;
-using Zhalobobot.Common.Models.Commons;
-using Zhalobobot.Common.Models.Student;
 
 namespace Zhalobobot.Bot.Services
 {
@@ -26,7 +24,7 @@ namespace Zhalobobot.Bot.Services
 
         public void ProcessPollAnswer(long chatId, ICollection<string> result, bool isLikedPoints = false);
 
-        public Task SendFeedbackAsync(long chatId, AbTestStudent student);
+        public Task SendFeedbackAsync(long chatId);
 
         public ConversationStatus GetConversationStatus(long chatId);
     }

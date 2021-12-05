@@ -4,7 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using Zhalobobot.Api.Server.Repositories.AbTest;
 using Zhalobobot.Api.Server.Repositories.Feedback;
 using Zhalobobot.Api.Server.Repositories.Schedule;
 using Zhalobobot.Api.Server.Repositories.Students;
@@ -61,7 +60,6 @@ namespace Zhalobobot.Api.Server
         {
             services.AddSingleton<IFeedbackRepository, FeedbackRepository>();
             services.AddSingleton<ISubjectRepository, SubjectRepository>();
-            services.AddSingleton<IAbTestRepository, AbTestRepository>();
             services.AddSingleton<IScheduleRepository, ScheduleRepository>();
             services.AddSingleton<IStudentRepository, StudentRepository>();
         }

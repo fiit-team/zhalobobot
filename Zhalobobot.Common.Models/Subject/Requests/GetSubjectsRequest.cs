@@ -4,6 +4,11 @@ namespace Zhalobobot.Common.Models.Subject.Requests
 {
     public class GetSubjectsRequest
     {
-        public Course Course { get; set; }
+        public GetSubjectsRequest(Course course)
+        {
+            Course = course;
+        }
+
+        public Course Course { get; }
     }
 }
