@@ -10,5 +10,6 @@
         public const string Envelope = "✉️";
         public const string Star = "⭐️";
         public const string Arrow = "➡️";
+        public const string Clock = "🕝";
     }
 }

@@ -10,7 +10,7 @@ namespace Zhalobobot.Common.Models.Commons
         Second = 2,
         [Description("Третий курс")]
         Third = 3,
-        // [Description("Четвертый курс")]
-        // Fourth = 4
+        [Description("Четвертый курс")]
+        Fourth = 4
     }
 }

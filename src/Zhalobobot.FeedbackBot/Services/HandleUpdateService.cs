@@ -347,7 +347,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.EditMessageTextAsync(
                 chatId,
                 messageId,
-                $"Окей, твой курс ФТ-{(int)course}0{(int)group}, теперь давай узнаем полугруппу");
+                $"Окей, твоя группа ФТ-{(int)course}0{(int)group}, теперь давай узнаем полугруппу");
             
             await BotClient.EditMessageReplyMarkupAsync(
                 chatId,
@@ -746,7 +746,7 @@ namespace Zhalobobot.Bot.Services
             if (student.Course < Course.Third) //todo: убрать после того, как добавим обработку 3го курса
             {
                 usage.AppendLine();
-                usage.AppendLine($"{Buttons.Schedule} — нажав на кнопку, можно будет посмотреть формат будущего расписания. Если будут замечания (кроме правильности пар), пишите их боту в обратной связи). Если кратко о фичах, постарались сделать удобный формат: можно выбирать расписание из нескольких вариантов, есть полоска времени, показывающая текущее положение (например, выделяет текущую пару, если между парами - пишет текущее время и время до начала следующей пары. И да, она обновляется каждую минуту, так что не нужно будет каждый раз запрашивать новое расписание)");
+                usage.AppendLine($"{Buttons.Schedule} — узнать, в каком кабинете следующая пара и какую домашку делать на завтра");
             }
 
             return await bot.SendTextMessageAsync(
