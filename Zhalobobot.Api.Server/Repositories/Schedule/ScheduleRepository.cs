@@ -22,6 +22,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
         private ILogger<ScheduleRepository> Log { get; }
         
         private string ScheduleRange { get; }
+        private string HolidaysRange { get; }
         private ISubjectRepository SubjectRepository { get; }
         private bool IsFirstYearWeekOdd { get; }
 
@@ -33,6 +34,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             // FirstCourseScheduleRange = configuration["FirstCourseScheduleRange"];
             // SecondCourseScheduleRange = configuration["SecondCourseScheduleRange"];
             ScheduleRange = configuration["ScheduleRange"];
+            HolidaysRange = configuration["HolidaysRange"];
             SubjectRepository = subjectRepository;
             IsFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
         }
@@ -77,7 +79,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
         { 
             IEnumerable<ScheduleItem> scheduleItems = await ParseScheduleRange(ScheduleRange);
 
-            return scheduleItems.Where(s => WeekParityMatches(s) && PairExists(s));
+            return scheduleItems.Where(s => PairExists(s));
             
             async Task<IEnumerable<ScheduleItem>> ParseScheduleRange(string scheduleRange)
             {
@@ -95,21 +97,21 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                     .SelectMany(v => ParseRow(v, subjects));
             }
 
-            bool WeekParityMatches(ScheduleItem item)
-            {
-                var weekOfYear = new CultureInfo("ru-RU").Calendar.GetWeekOfYear(DateTime.Now, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
-
-                return item.EventTime.WeekParity == WeekParity.Both
-                       || IsFirstYearWeekOdd && weekOfYear % 2 == 1 && item.EventTime.WeekParity == WeekParity.Odd
-                       || !IsFirstYearWeekOdd && weekOfYear % 2 == 0 && item.EventTime.WeekParity == WeekParity.Even;
-            }
+            // bool WeekParityMatches(ScheduleItem item)
+            // {
+            //     var weekOfYear = new CultureInfo("ru-RU").Calendar.GetWeekOfYear(DateTime.Now, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+            //
+            //     return item.EventTime.WeekParity == WeekParity.Both
+            //            || IsFirstYearWeekOdd && weekOfYear % 2 == 1 && item.EventTime.WeekParity == WeekParity.Odd
+            //            || !IsFirstYearWeekOdd && weekOfYear % 2 == 0 && item.EventTime.WeekParity == WeekParity.Even;
+            // }
 
             bool PairExists(ScheduleItem item)
             {
                 // if (item.EventTime.CanceledForever || item.EventTime.NotExistsNextTime)
                 //     return false;
 
-                var now = new DayAndMonth(DateTime.Now.Day, DateTime.Now.Month);
+                var now = new DayAndMonth(DateTime.Now.Day, (Month)DateTime.Now.Month);
 
                 if (item.EventTime.StartDay != null && item.EventTime.EndDay != null)
                     return item.EventTime.StartDay >= now && item.EventTime.EndDay <= now;
@@ -122,6 +124,16 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
 
                 return true;
             }
+        }
+
+        public async Task<DayAndMonth[]> GetHolidays()
+        {
+            var result = await GetRequest(HolidaysRange).ExecuteAsync();
+
+            return result.Values
+                .SelectMany(row => ParsingHelper.ParseRange(row[1])
+                    .Select(day => new DayAndMonth(day, ParsingHelper.ParseMonth(row[0]))))
+                .ToArray();
         }
 
         private IEnumerable<ScheduleItem> ParseRow(IList<object> row, Subject[] subjects)

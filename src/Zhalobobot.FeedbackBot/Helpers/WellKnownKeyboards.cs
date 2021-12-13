@@ -1,26 +1,49 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EnumsNET;
 using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Helpers;
 using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Subject;
 
 namespace Zhalobobot.Bot.Helpers
 {
     public static class WellKnownKeyboards
     {
-        public static ReplyKeyboardMarkup DefaultKeyboard { get; } = new(
-            new[]
+        // public static ReplyKeyboardMarkup DefaultKeyboard { get; } = new(
+        //     new[]
+        //     {
+        //         new KeyboardButton[] { Buttons.Subjects },
+        //         new KeyboardButton[] { Buttons.GeneralFeedback },
+        //         new KeyboardButton[] { Buttons.Alarm },
+        //         new KeyboardButton[] { Buttons.Schedule },
+        //     })
+        // {
+        //     ResizeKeyboard = true
+        // };
+
+        public static ReplyKeyboardMarkup DefaultKeyboard(Student student) //todo: убрать после того, как добавим обработку 3го курса
+        {
+            var buttons = new List<KeyboardButton[]>
             {
                 new KeyboardButton[] { Buttons.Subjects },
                 new KeyboardButton[] { Buttons.GeneralFeedback },
                 new KeyboardButton[] { Buttons.Alarm }
-            })
-        {
-            ResizeKeyboard = true
-        };
+            };
+
+            if (student.Course < Course.Third)
+            {
+                buttons.Add(new KeyboardButton[] { Buttons.Schedule });
+            }
+            
+            return new ReplyKeyboardMarkup(buttons)
+            {
+                ResizeKeyboard = true
+            };
+        }
 
         public static ReplyKeyboardMarkup SubmitKeyboard { get; } = new(
             new KeyboardButton[]
@@ -88,5 +111,41 @@ namespace Zhalobobot.Bot.Helpers
                             category.AsString(EnumFormat.Description),
                             Utils.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, category))
                     }));
+
+        public static InlineKeyboardMarkup ChooseScheduleDayKeyboard(DayOfWeek lastStudyWeekDay)
+        {
+            var currentDay = DateTime.Now.DayOfWeek;
+
+            var keyboard = new List<InlineKeyboardButton[]>();
+
+            if (currentDay <= lastStudyWeekDay && currentDay != DayOfWeek.Sunday)
+                keyboard.Add(new [] { CreateButton("На сегодня", (int)currentDay) });
+
+            if (currentDay == DayOfWeek.Sunday)
+            {
+                keyboard.Add(new[] { CreateButton("На завтра", (int)ScheduleDay.NextMonday) });
+                keyboard.Add(new[] { CreateButton("На следующую неделю", (int)ScheduleDay.NextWeek) });
+            }
+            else if (currentDay < lastStudyWeekDay)
+            {
+                keyboard.Add(new[] { CreateButton("На завтра", (int)currentDay + 1) });
+            }
+            else
+            {
+                keyboard.Add(new[] { CreateButton("На понедельник", (int)ScheduleDay.NextMonday) });
+                keyboard.Add(new[] { CreateButton("На следующую неделю", (int)ScheduleDay.NextWeek) });
+            }
+
+            if ((int)currentDay + 1 < (int)lastStudyWeekDay && currentDay != DayOfWeek.Sunday)
+                keyboard.Add(new [] { CreateButton("До конца недели", (int)ScheduleDay.UntilWeekEnd) });
+
+            keyboard.Add(new [] { CreateButton("На эту неделю", (int)ScheduleDay.FullWeek) });
+
+            return new InlineKeyboardMarkup(keyboard);
+
+            InlineKeyboardButton CreateButton(string text, int scheduleDay)
+                => InlineKeyboardButton.WithCallbackData(text,
+                    Utils.Join(Strings.Separator, CallbackDataPrefix.ChooseScheduleRange, $"{scheduleDay}"));
+        }
     }
 }

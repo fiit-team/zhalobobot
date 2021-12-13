@@ -9,5 +9,6 @@
         public const string AddCourseAndGroup = "addCourseAndGroup";
         public const string AddCourseAndGroupAndSubgroup = "addCourseAndGroupAndSubgroup";
         public const string Feedback = "feedback";
+        public const string ChooseScheduleRange = "chooseScheduleRange";
     }
 }

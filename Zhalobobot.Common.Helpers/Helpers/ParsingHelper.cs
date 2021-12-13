@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
@@ -66,6 +67,26 @@ namespace Zhalobobot.Common.Helpers.Helpers
             };
         }
 
+        public static Month ParseMonth(object value)
+        {
+            return (value as string) switch
+            {
+                "Январь" => Month.January,
+                "Февраль" => Month.February,
+                "Март" => Month.March,
+                "Апрель" => Month.April,
+                "Май" => Month.May,
+                "Июнь" => Month.June,
+                "Июль" => Month.July,
+                "Август" => Month.August,
+                "Сентябрь" => Month.September,
+                "Октябрь" => Month.October,
+                "Ноябрь" => Month.November,
+                "Декабрь" => Month.December,
+                _ => throw new NotSupportedException()
+            };
+        }
+
         public static WeekParity ParseParity(object value)
         {
             if (value is not string str)
@@ -106,7 +127,7 @@ namespace Zhalobobot.Common.Helpers.Helpers
                 if (!int.TryParse(hourAndMinutes[1].TrimStart('0'), out var minutes))
                     minutes = 0;
 
-                return new(new DayAndMonth(day, month), new HourAndMinute(hour, minutes));
+                return new(new DayAndMonth(day, (Month)month), new HourAndMinute(hour, minutes));
             }
 
             if (str.Contains(':'))
@@ -128,7 +149,7 @@ namespace Zhalobobot.Common.Helpers.Helpers
                 var day = int.Parse(dayAndMonth[0].TrimStart('0'));
                 var month = int.Parse(dayAndMonth[1].TrimStart('0'));
 
-                return new ValueTuple<DayAndMonth?, HourAndMinute?>(new DayAndMonth(day, month), null);
+                return new ValueTuple<DayAndMonth?, HourAndMinute?>(new DayAndMonth(day, (Month)month), null);
             }
         }
 
@@ -145,6 +166,7 @@ namespace Zhalobobot.Common.Helpers.Helpers
             return parts.Select(part =>
             {
                 var items = part
+                    .Trim()
                     .Split('-', 2)[1]
                     .Split('0', 2)
                     .Select(int.Parse)
@@ -152,6 +174,33 @@ namespace Zhalobobot.Common.Helpers.Helpers
 
                 return ((Course)items[0], (Group)items[1]);
             });
+        }
+
+        public static IEnumerable<int> ParseRange(object value)
+        {
+            if (value is not string str)
+                throw new Exception();
+
+            if (str == "")
+                throw new Exception();
+
+            var parts = str.Split(',');
+
+            foreach (var part in parts)
+            {
+                if (part.Contains('-'))
+                {
+                    var (start, end) = part.SplitPair('-');
+                    for (var i = int.Parse(start); i <= int.Parse(end); i++)
+                    {
+                        yield return i;
+                    }
+                }
+                else
+                {
+                    yield return int.Parse(part);
+                }
+            }
         }
     }
 }

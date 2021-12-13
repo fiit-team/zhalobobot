@@ -2,7 +2,7 @@ using System;
 
 namespace Zhalobobot.Common.Models.Commons
 {
-    public record DayAndMonth(int Day, int Month) : IComparable<DayAndMonth>
+    public record DayAndMonth(int Day, Month Month) : IComparable<DayAndMonth>
     {
         public int CompareTo(DayAndMonth? other)
         {
@@ -25,5 +25,7 @@ namespace Zhalobobot.Common.Models.Commons
         public static bool operator >=(DayAndMonth left, DayAndMonth right) => left.CompareTo(right) >= 0;
 
         public static bool operator <=(DayAndMonth left, DayAndMonth right) => left.CompareTo(right) <= 0;
+
+        public override string ToString() => $"{Day}.{(int)Month}";
     }
 }

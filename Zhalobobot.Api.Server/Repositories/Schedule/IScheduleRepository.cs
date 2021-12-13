@@ -13,5 +13,6 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
         Task<ScheduleItem[]> GetByDayOfWeek(DayOfWeek dayOfWeek);
         Task<ScheduleItem[]> GetByDayOfWeekAndStartsAtHourAndMinute(DayOfWeek dayOfWeek, HourAndMinute hourAndMinute);
         Task<ScheduleItem[]> GetByDayOfWeekAndEndsAtHourAndMinute(DayOfWeek dayOfWeek, HourAndMinute hourAndMinute);
+        Task<DayAndMonth[]> GetHolidays();
     }
 }

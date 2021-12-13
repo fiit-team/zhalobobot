@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EnumsNET;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -15,8 +17,10 @@ using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Helpers;
 using Zhalobobot.Common.Helpers.Extensions;
+using Zhalobobot.Common.Helpers.Helpers;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Exceptions;
+using Zhalobobot.Common.Models.Schedule;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Student.Requests;
 using Zhalobobot.Common.Models.Subject;
@@ -31,22 +35,29 @@ namespace Zhalobobot.Bot.Services
         private IZhalobobotApiClient Client { get; }
         private IConversationService ConversationService { get; }
         private IPollService PollService { get; }
+        private IScheduleMessageService ScheduleMessageService { get; }
         private ILogger<HandleUpdateService> Logger { get; }
         private EntitiesCache Cache { get; }
+
+        private bool IsFirstYearWeekOdd { get; }
 
         public HandleUpdateService(ITelegramBotClient botClient,
             IZhalobobotApiClient client,
             IConversationService conversationService,
             IPollService pollService,
+            IScheduleMessageService scheduleMessageService,
             EntitiesCache cache,
-            ILogger<HandleUpdateService> logger)
+            ILogger<HandleUpdateService> logger, 
+            IConfiguration configuration)
         {
             BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             Client = client ?? throw new ArgumentNullException(nameof(client));
             ConversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
             PollService = pollService ?? throw new ArgumentNullException(nameof(pollService));
+            ScheduleMessageService = scheduleMessageService;
             Cache = cache;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            IsFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
         }
 
         public async Task EchoAsync(Update update)
@@ -132,6 +143,7 @@ namespace Zhalobobot.Bot.Services
                 Buttons.Alarm => HandleAlertFeedbackAsync(BotClient, message),
                 Buttons.Subjects => HandleSubjectsAsync(BotClient, message),
                 Buttons.GeneralFeedback => HandleGeneralFeedbackAsync(BotClient, message),
+                Buttons.Schedule => HandleScheduleAsync(BotClient, message),
                 Buttons.Submit => SendFeedbackAsync(BotClient, message),
                 Buttons.MainMenu => CancelFeedbackAsync(BotClient, message),
                 _ => conversationStatus == ConversationStatus.Default
@@ -179,6 +191,23 @@ namespace Zhalobobot.Bot.Services
                 replyMarkup: WellKnownKeyboards.GetSubjectCategoryKeyboard);
         }
 
+        private async Task<Message> HandleScheduleAsync(ITelegramBotClient bot, Message message)
+        {
+            var student = Cache.Students.Get(message.Chat.Id);
+
+            var lastStudyWeekDay = Cache.ScheduleItems
+                .GetFullFor(student.Course, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd))
+                .FilterFor(student)
+                .LastStudyWeekDay();
+
+            await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
+
+            return await bot.SendTextMessageAsync(
+                message.Chat.Id,
+                "Выбери нужный вариант",
+                replyMarkup: WellKnownKeyboards.ChooseScheduleDayKeyboard(lastStudyWeekDay));
+        }
+
         private async Task SaveFeedbackAsync(ITelegramBotClient bot, Message message)
         {
             ConversationService.SaveMessage(message.Chat.Id, message.Text);
@@ -199,7 +228,8 @@ namespace Zhalobobot.Bot.Services
             var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
             string text;
-            var replyMarkup = WellKnownKeyboards.DefaultKeyboard;
+            var student = Cache.Students.Get(message.Chat.Id); //todo: убрать после того, как добавим обработку 3го курса
+            var replyMarkup = WellKnownKeyboards.DefaultKeyboard(student);
 
             if (conversationStatus == ConversationStatus.AwaitingConfirmation)
             {
@@ -262,6 +292,9 @@ namespace Zhalobobot.Bot.Services
                     break;
                 case CallbackDataPrefix.Feedback:
                     await HandleFeedbackCallback(chatId, data, messageId).ConfigureAwait(false);
+                    break;
+                case CallbackDataPrefix.ChooseScheduleRange:
+                    await HandleChooseScheduleRange(chatId, data, messageId).ConfigureAwait(false);
                     break;
                 default:
                 {
@@ -396,6 +429,181 @@ namespace Zhalobobot.Bot.Services
             await StartPoll(chatId, status == ConversationStatus.AwaitingLikedPointsPollAnswer);
         }
 
+        public async Task HandleChooseScheduleRange(long chatId, string data, int messageId)
+        {
+            const int telegramMessageWidth = 30;
+            var scheduleDay = (ScheduleDay)int.Parse(data);
+            
+            var holidays = Cache.Holidays.All.ToHashSet();
+
+            var student = Cache.Students.Get(chatId);
+
+            var currentWeekSchedule = Cache.ScheduleItems
+                .GetFullFor(student.Course, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd))
+                .FilterFor(student);
+
+            var nextWeekSchedule = Cache.ScheduleItems
+                .GetFullFor(student.Course, DateHelper.NextWeekParity(IsFirstYearWeekOdd))
+                .FilterFor(student);
+            
+            var currentWeekByDay = currentWeekSchedule
+                .GroupBy(s => s.EventTime.DayOfWeek)
+                .ToDictionary(s => (ScheduleDay)(int)s.Key, s => s.ToArray());
+            
+            var nextWeekByDay = nextWeekSchedule
+                .GroupBy(s => s.EventTime.DayOfWeek)
+                .ToDictionary(s => (ScheduleDay)(int)s.Key, s => s.ToArray());
+
+            var lastStudyWeekDay = currentWeekSchedule.LastStudyWeekDay();
+
+            var lastStudyNextWeekDay = nextWeekSchedule.LastStudyWeekDay();
+
+            string message;
+            DayAndMonth? whenDelete = null;
+            
+            switch (scheduleDay)
+            {
+                case >= ScheduleDay.Monday and <= ScheduleDay.Saturday:
+                    message = FormatDay(currentWeekByDay, scheduleDay, scheduleDay, true);
+                    whenDelete = scheduleDay.OneDayAfterCurrentWeekDayAndMonth();
+                    break;
+                case ScheduleDay.UntilWeekEnd:
+                {
+                    var currentDay = (int)DateTime.Now.DayOfWeek;
+
+                    var days = Enum.GetValues<ScheduleDay>()
+                        .Where(d => d >= (ScheduleDay)currentDay && d <= (ScheduleDay)(int)lastStudyWeekDay);
+
+                    message = string.Join("\n", days.Select(d => FormatDay(currentWeekByDay, d, d, true)).Where(s => s.Length > 0));
+                    whenDelete = ((ScheduleDay)(int)lastStudyWeekDay).OneDayAfterCurrentWeekDayAndMonth();
+                    break;
+                }
+                case ScheduleDay.FullWeek:
+                    var weekDays = Enum.GetValues<ScheduleDay>()
+                        .Where(d => d >= ScheduleDay.Monday && d <= (ScheduleDay)(int)lastStudyWeekDay);
+                    
+                    message = string.Join("\n", weekDays.Select(d => FormatDay(currentWeekByDay, d, scheduleDay, true)).Where(s => s.Length > 0));
+                    break;
+                case ScheduleDay.NextMonday:
+                    message = FormatDay(nextWeekByDay, ScheduleDay.Monday, ScheduleDay.Monday, false);
+                    whenDelete = ScheduleDay.Monday.OneDayAfterNextWeekDayAndMonth();
+                    break;
+                case ScheduleDay.NextWeek:
+                    weekDays = Enum.GetValues<ScheduleDay>()
+                        .Where(d => d >= ScheduleDay.Monday && d <= (ScheduleDay)(int)lastStudyNextWeekDay);
+
+                    message = string.Join("\n", weekDays.Select(d => FormatDay(nextWeekByDay, d, ScheduleDay.FullWeek, false)).Where(s => s.Length > 0));
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+            
+            if (whenDelete != null)
+                ScheduleMessageService.AddMessageToUpdate((chatId, data, messageId, whenDelete));
+
+            await BotClient.EditMessageTextAsync(
+                chatId,
+                messageId,
+                $"<pre>{message}</pre>", 
+                ParseMode.Html);
+            
+            static string FormatDay(IReadOnlyDictionary<ScheduleDay, ScheduleItem[]> itemm, ScheduleDay scheduleDay, ScheduleDay target, bool currentWeek)
+            {
+                if (!itemm.ContainsKey(scheduleDay))
+                    return "";
+                
+                var builder = new StringBuilder();
+                var dayOfWeek = scheduleDay.AsString(EnumFormat.Description);
+                var date = currentWeek ? scheduleDay.CurrentWeekDayAndMonth() : scheduleDay.NextWeekDayAndMonth();
+
+                builder.Append($"{dayOfWeek} {date}".PutInCenterOf(' ', telegramMessageWidth) + "\n");
+
+                var items = itemm[scheduleDay];
+                
+                var hourAndMinute = DateTime.Now.ToHourAndMinute();
+
+                var orderedItems = items.OrderBy(i => GetSubjectDuration(i).Start.Hour)
+                    .ThenBy(i => GetSubjectDuration(i).Start.Minute)
+                    .ThenBy(i => GetSubjectDuration(i).End.Hour)
+                    .ThenBy(i => GetSubjectDuration(i).End.Minute);
+
+                var firstItem = orderedItems.First();
+
+                builder.Append(SingleDayScheduleRequested() ? ForDay(firstItem) : ForWeek(firstItem));
+
+                foreach (var item in orderedItems.Skip(1))
+                {
+                    var (_, previousEnd) = GetSubjectDuration(firstItem);
+                    var (nextStart, _) = GetSubjectDuration(item);
+
+                    if (previousEnd < hourAndMinute && hourAndMinute < nextStart && item.EventTime.DayOfWeek == DateTime.Now.DayOfWeek)
+                    {
+                        var difference = nextStart - hourAndMinute;
+                        builder.Append($"[{hourAndMinute}, до пары {(difference.Hour == 0 ? $"{difference.Minute}мин" : difference)}]".PutInCenterOf('-', telegramMessageWidth) + "\n");
+                    }
+                    else if (SingleDayScheduleRequested())
+                        builder.Append($"{new string(' ', telegramMessageWidth)}\n");
+                    
+                    builder.Append(SingleDayScheduleRequested() ? ForDay(item) : ForWeek(item));
+
+                    firstItem = item;
+                }
+                
+                return builder.ToString();
+
+                string ForWeek(ScheduleItem item) => Crop(FormatItemForPeriod(item));
+
+                string ForDay(ScheduleItem item)
+                {
+                    var (start, end) = GetSubjectDuration(item);
+
+                    var (firstLine, secondLine) = FormatItemForDay(item);
+
+                    if (start <= hourAndMinute && hourAndMinute <= end && item.EventTime.DayOfWeek == DateTime.Now.DayOfWeek)
+                        return $"{Crop(firstLine, true)}{Crop(secondLine, true, "📖")}";
+
+                    return $"{Crop(firstLine)}{Crop(secondLine)}";
+                }
+
+                bool SingleDayScheduleRequested() =>
+                    target is >= ScheduleDay.Monday and <= ScheduleDay.Saturday;
+
+                string Crop(string str, bool withStudy = false, string endForStudy="👨‍🎓")
+                {
+                    var possibleLen = withStudy ? telegramMessageWidth - 2 : telegramMessageWidth;
+                    var length = Math.Min(possibleLen, str.Length);
+                    return $"{str[..length]}{new string(' ', possibleLen - length)}{(str.Length > possibleLen ? "…" : " ")}{(withStudy ? endForStudy : "")}\n";
+                }
+            }
+
+            static (string FirstLine, string SecondLine) FormatItemForDay(ScheduleItem item)
+            {
+                var (start, end) = GetSubjectDuration(item);
+
+                return ($"{start} {item.Subject.Name}", $"{end} {item.Cabinet}");
+            }
+
+            static string FormatItemForPeriod(ScheduleItem item)
+            {
+                var (start, _) = GetSubjectDuration(item);
+
+                return $"{start} {item.Subject.Name}";
+            }
+
+            static (HourAndMinute Start, HourAndMinute End) GetSubjectDuration(ScheduleItem item)
+            {
+                var start = item.EventTime.StartTime 
+                                           ?? item.EventTime.Pair?.ToHourAndMinute().Start 
+                                           ?? throw new Exception();
+                
+                var end = item.EventTime.EndTime 
+                                           ?? item.EventTime.Pair?.ToHourAndMinute().End 
+                                           ?? throw new Exception();
+
+                return (start, end);
+            }
+        }
+
         private async Task StartSubjectFeedback(long chatId, string subject)
         {
             ConversationService.StartSubjectFeedback(chatId, subject);
@@ -525,8 +733,9 @@ namespace Zhalobobot.Bot.Services
             return builder.ToString();
         }
 
-        private static async Task<Message> StartUsage(ITelegramBotClient bot, Message message)
+        private async Task<Message> StartUsage(ITelegramBotClient bot, Message message)
         {
+            var student = Cache.Students.Get(message.Chat.Id);
             var usage = new StringBuilder();
 
             usage.AppendLine($"{Buttons.Subjects} — поставить оценку от 1 до 5 и оставить комментарий конкретному предмету");
@@ -534,14 +743,19 @@ namespace Zhalobobot.Bot.Services
             usage.AppendLine($"{Buttons.GeneralFeedback} — выскажи всё, что лежит на душе: и хорошее, и плохое");
             usage.AppendLine();
             usage.AppendLine($"{Buttons.Alarm} — это красная кнопка. Если всё очень плохо — нажми");
+            if (student.Course < Course.Third) //todo: убрать после того, как добавим обработку 3го курса
+            {
+                usage.AppendLine();
+                usage.AppendLine($"{Buttons.Schedule} — нажав на кнопку, можно будет посмотреть формат будущего расписания. Если будут замечания (кроме правильности пар), пишите их боту в обратной связи). Если кратко о фичах, постарались сделать удобный формат: можно выбирать расписание из нескольких вариантов, есть полоска времени, показывающая текущее положение (например, выделяет текущую пару, если между парами - пишет текущее время и время до начала следующей пары. И да, она обновляется каждую минуту, так что не нужно будет каждый раз запрашивать новое расписание)");
+            }
 
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 usage.ToString(),
-                replyMarkup: WellKnownKeyboards.DefaultKeyboard);
+                replyMarkup: WellKnownKeyboards.DefaultKeyboard(student));
         }
 
-        private static async Task Usage(ITelegramBotClient bot, Message message)
+        private async Task Usage(ITelegramBotClient bot, Message message)
         {
             await bot.SendTextMessageAsync(
                 message.Chat.Id,

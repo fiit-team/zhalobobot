@@ -40,5 +40,19 @@ namespace Zhalobobot.Bot.Quartz.Extensions
                 .WithIdentity(Guid.NewGuid().ToString())
                 .WithSimpleSchedule(scheduleBuilder));
         }
+        
+        public static void AddJobAndTrigger<T>(
+            this IServiceCollectionQuartzConfigurator quartz,
+            string cronSchedule)
+            where T : IJob
+        {
+            var jobKey = new JobKey(typeof(T).Name);
+            quartz.AddJob<T>(opts => opts.WithIdentity(jobKey));
+
+            quartz.AddTrigger(opts => opts
+                .ForJob(jobKey)
+                .WithIdentity(Guid.NewGuid().ToString())
+                .WithCronSchedule(cronSchedule));
+        }
     }
 }

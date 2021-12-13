@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using Zhalobobot.Common.Clients.Core;
+using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Schedule;
 using Zhalobobot.Common.Models.Schedule.Requests;
 
@@ -27,5 +28,8 @@ namespace Zhalobobot.Common.Clients.Schedule
 
         public Task<ZhalobobotResult<ScheduleItem[]>> GetByDayOfWeekAndEndsAtHourAndMinute(GetScheduleByDayOfWeekHourAndMinuteRequest request)
             => Method<ScheduleItem[]>("getByDayOfWeekAndEndsAtHourAndMinute").CallAsync(request);
+
+        public Task<ZhalobobotResult<DayAndMonth[]>> GetHolidays()
+            => Method<DayAndMonth[]>("holidays").CallAsync();
     }
 }

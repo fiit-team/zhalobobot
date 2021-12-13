@@ -70,6 +70,7 @@ namespace Zhalobobot.Bot
         {
             services.AddSingleton<IPollService, PollService>();
             services.AddSingleton<IConversationService, ConversationService>();
+            services.AddSingleton<IScheduleMessageService, ScheduleMessageService>();
             services.AddScoped<HandleUpdateService>();
         }
 
@@ -79,9 +80,10 @@ namespace Zhalobobot.Bot
             {
                 q.UseMicrosoftDependencyInjectionJobFactory();
 
-                q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
+                // q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
                 
                 q.AddJobAndTrigger<UpdateCacheJob>(SimpleScheduleBuilder.Create().WithIntervalInSeconds(10).RepeatForever());
+                q.AddJobAndTrigger<UpdateScheduleMessageJob>("0 * * * * ?");
             });
             
             services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
