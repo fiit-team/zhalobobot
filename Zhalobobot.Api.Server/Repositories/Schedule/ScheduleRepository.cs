@@ -24,7 +24,6 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
         private string ScheduleRange { get; }
         private string HolidaysRange { get; }
         private ISubjectRepository SubjectRepository { get; }
-        private bool IsFirstYearWeekOdd { get; }
 
         public ScheduleRepository(IConfiguration configuration, ILogger<ScheduleRepository> log, ISubjectRepository subjectRepository) 
             : base(configuration, configuration["ScheduleSpreadSheetId"])
@@ -36,7 +35,6 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             ScheduleRange = configuration["ScheduleRange"];
             HolidaysRange = configuration["HolidaysRange"];
             SubjectRepository = subjectRepository;
-            IsFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
         }
 
         public async Task<ScheduleItem[]> GetByCourse(Course course)
