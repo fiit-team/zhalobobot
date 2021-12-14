@@ -82,7 +82,7 @@ namespace Zhalobobot.Bot
 
                 // q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
                 
-                q.AddJobAndTrigger<UpdateCacheJob>(SimpleScheduleBuilder.Create().WithIntervalInSeconds(10).RepeatForever());
+                q.AddJobAndTrigger<UpdateCacheJob>(SimpleScheduleBuilder.Create().WithIntervalInMinutes(1).RepeatForever());
                 q.AddJobAndTrigger<UpdateScheduleMessageJob>("0 * * * * ?");
             });
             
