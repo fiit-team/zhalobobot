@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Zhalobobot.Common.Models.Commons;
 
@@ -5,16 +6,24 @@ namespace Zhalobobot.Bot.Services
 {
     public class ScheduleMessageService : IScheduleMessageService
     {
-        private ConcurrentSet<(long ChatId, string Data, int MessageId, DayAndMonth WhenDelete)> messageToUpdate = new();
+        private ConcurrentDictionary<long, (string Data, int MessageId, DayAndMonth WhenDelete)> messageToUpdate = new();
 
-        public bool AddMessageToUpdate((long ChatId, string Data, int MessageId, DayAndMonth WhenDelete) message) 
-            => messageToUpdate.Add(message);
+        public bool AddMessageToUpdate(long chatId, (string Data, int MessageId, DayAndMonth WhenDelete) message)
+        {
+            if (messageToUpdate.TryAdd(chatId, message))
+                return true;
 
-        public bool RemoveMessageToUpdate((long ChatId, string Data, int MessageId, DayAndMonth WhenDelete) message) 
-            => messageToUpdate.Remove(message);
+            if (!messageToUpdate.TryRemove(chatId, out _))
+                return false;
 
-        public IEnumerator<(long ChatId, string Data, int MessageId, DayAndMonth WhenDelete)> GetAll() => messageToUpdate.GetEnumerator();
+            return messageToUpdate.TryAdd(chatId, message);
+        }
+        
+        public bool RemoveMessageToUpdate(long chatId) 
+            => messageToUpdate.TryRemove(chatId, out _);
 
-        public void Reset() => messageToUpdate = new ConcurrentSet<(long ChatId, string Data, int MessageId, DayAndMonth WhenDelete)>();
+        public IEnumerator<KeyValuePair<long, (string Data, int MessageId, DayAndMonth WhenDelete)>> GetAll() => messageToUpdate.GetEnumerator();
+
+        public void Reset() => messageToUpdate = new ConcurrentDictionary<long, (string Data, int MessageId, DayAndMonth WhenDelete)>();
     }
 }

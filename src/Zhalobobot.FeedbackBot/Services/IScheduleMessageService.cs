@@ -5,9 +5,9 @@ namespace Zhalobobot.Bot.Services
 {
     public interface IScheduleMessageService
     {
-        bool AddMessageToUpdate((long ChatId, string Data, int MessageId, DayAndMonth WhenDelete) message);
-        bool RemoveMessageToUpdate((long ChatId, string Data, int MessageId, DayAndMonth WhenDelete) message);
-        IEnumerator<(long ChatId, string Data, int MessageId, DayAndMonth WhenDelete)> GetAll();
+        bool AddMessageToUpdate(long chatId, (string Data, int MessageId, DayAndMonth WhenDelete) message);
+        bool RemoveMessageToUpdate(long chatId);
+        IEnumerator<KeyValuePair<long, (string Data, int MessageId, DayAndMonth WhenDelete)>> GetAll();
         void Reset();
     }
 }

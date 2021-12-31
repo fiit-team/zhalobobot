@@ -1,7 +1,7 @@
 using System;
 using Zhalobobot.Bot.Models;
-using Zhalobobot.Common.Helpers.Helpers;
 using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Helpers;
 
 namespace Zhalobobot.Bot.Helpers
 {

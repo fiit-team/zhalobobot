@@ -497,7 +497,7 @@ namespace Zhalobobot.Bot.Services
             }
             
             if (whenDelete != null)
-                ScheduleMessageService.AddMessageToUpdate((chatId, data, messageId, whenDelete));
+                ScheduleMessageService.AddMessageToUpdate(chatId, (data, messageId, whenDelete));
 
             await BotClient.EditMessageTextAsync(
                 chatId,

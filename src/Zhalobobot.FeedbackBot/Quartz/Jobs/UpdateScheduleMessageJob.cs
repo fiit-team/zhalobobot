@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Quartz;
 using Telegram.Bot.Exceptions;
 using Zhalobobot.Bot.Services;
-using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 
 namespace Zhalobobot.Bot.Quartz.Jobs
@@ -24,20 +23,20 @@ namespace Zhalobobot.Bot.Quartz.Jobs
         {
             var iterator = ScheduleMessageService.GetAll();
 
-            var messagesToDelete = new HashSet<(long ChatId, string Data, int MessageId, DayAndMonth WhenDelete)>();
+            var chatsToDelete = new HashSet<long>();
             
             var currentDay = DateHelper.EkbTime.ToDayAndMonth();
             while (iterator.MoveNext())
             {
-                if (iterator.Current.WhenDelete <= currentDay)
-                    messagesToDelete.Add(iterator.Current);
+                if (iterator.Current.Value.WhenDelete <= currentDay)
+                    chatsToDelete.Add(iterator.Current.Key);
                 else
                 {
                     try
                     {
-                        await HandleUpdateService.HandleChooseScheduleRange(iterator.Current.ChatId,
-                            iterator.Current.Data,
-                            iterator.Current.MessageId);
+                        await HandleUpdateService.HandleChooseScheduleRange(iterator.Current.Key,
+                            iterator.Current.Value.Data,
+                            iterator.Current.Value.MessageId);
                     }
                     catch (MessageIsNotModifiedException)
                     {
@@ -46,8 +45,8 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                 }
             }
 
-            foreach (var message in messagesToDelete)
-                ScheduleMessageService.RemoveMessageToUpdate(message);
+            foreach (var chatId in chatsToDelete)
+                ScheduleMessageService.RemoveMessageToUpdate(chatId);
         }
     }
 }
