@@ -8,6 +8,7 @@ using Telegram.Bot;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Quartz.Extensions;
 using Zhalobobot.Bot.Quartz.Jobs;
+using Zhalobobot.Bot.Schedule;
 using Zhalobobot.Bot.Services;
 using Zhalobobot.Common.Clients.Core;
 
@@ -31,6 +32,8 @@ namespace Zhalobobot.Bot
             RegisterQuartz(services, Configuration);
             RegisterServices(services);
             RegisterCache(services);
+
+            services.AddSingleton<IScheduleMessageFormatter, ScheduleMessageFormatter>();
 
             services.AddHostedService<ConfigureWebhook>();
 

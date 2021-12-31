@@ -7,6 +7,9 @@ namespace Zhalobobot.Bot.Helpers
 {
     public static class ScheduleDayExtensions
     {
+        public static bool IsCurrentWeek(this ScheduleDay day) =>
+            day is not (ScheduleDay.NextMonday or ScheduleDay.NextWeek);
+
         public static DayAndMonth CurrentWeekDayAndMonth(this ScheduleDay date)
         {
             if (date > ScheduleDay.Saturday)
