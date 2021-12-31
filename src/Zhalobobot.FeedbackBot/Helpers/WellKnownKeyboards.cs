@@ -6,6 +6,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Helpers;
 using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Subject;
 
@@ -114,7 +115,7 @@ namespace Zhalobobot.Bot.Helpers
 
         public static InlineKeyboardMarkup ChooseScheduleDayKeyboard(DayOfWeek lastStudyWeekDay)
         {
-            var currentDay = DateTime.Now.DayOfWeek;
+            var currentDay = DateHelper.EkbTime.DayOfWeek;
 
             var keyboard = new List<InlineKeyboardButton[]>();
 

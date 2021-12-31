@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
 
@@ -32,10 +33,10 @@ namespace Zhalobobot.Common.Helpers.Helpers
                 return null;
             }
 
-            var zeroTime = new DateTime(1, 1, 1);
-            var admissionDate = new DateTime(admissionYear, 8, 1);
-            var now = DateTime.Now;
-            var diff = (now - admissionDate);
+            var zeroTime = new DateTime(1, 1, 1).ToEkbTime();
+            var admissionDate = new DateTime(admissionYear, 8, 1).ToEkbTime();
+            var now = DateHelper.EkbTime;
+            var diff = now - admissionDate;
             return (zeroTime + diff).Year;
         }
 

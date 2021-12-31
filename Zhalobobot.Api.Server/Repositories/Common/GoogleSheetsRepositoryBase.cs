@@ -11,7 +11,6 @@ namespace Zhalobobot.Api.Server.Repositories.Common
 {
     public abstract class GoogleSheetsRepositoryBase
     {
-        protected Func<DateTime> EkbTime { get; } 
         private SpreadsheetsResource Resource { get; }
         private string SpreadSheetId { get; }
         private IConfiguration Configuration { get; }
@@ -19,17 +18,9 @@ namespace Zhalobobot.Api.Server.Repositories.Common
         protected GoogleSheetsRepositoryBase(IConfiguration configuration, string spreadSheetId)
         {
             SpreadSheetId = spreadSheetId;
-            EkbTime = GetEkbTime;
             Resource = GetSpreadsheetsResource();
             Configuration = configuration;
 
-            DateTime GetEkbTime()
-            {
-                var moscowTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
-            
-                return DateTime.UtcNow + moscowTimeZone.BaseUtcOffset + TimeSpan.FromHours(2);
-            }
-            
             SpreadsheetsResource GetSpreadsheetsResource()
             {
                 var scopes = new[] { SheetsService.Scope.Spreadsheets };

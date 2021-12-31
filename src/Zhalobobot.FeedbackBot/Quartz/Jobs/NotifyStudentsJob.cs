@@ -7,6 +7,7 @@ using Telegram.Bot;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Schedule.Requests;
 using Zhalobobot.Common.Models.Serialization;
 using Zhalobobot.Common.Models.Student.Requests;
@@ -30,8 +31,8 @@ namespace Zhalobobot.Bot.Quartz.Jobs
 
         public async Task Execute(IJobExecutionContext context)
         {
-            var getScheduleRequest = new GetScheduleByDayOfWeekHourAndMinuteRequest(DateTime.Now.DayOfWeek,
-                new HourAndMinute(DateTime.Now.Hour, DateTime.Now.Minute));
+            var getScheduleRequest = new GetScheduleByDayOfWeekHourAndMinuteRequest(DateHelper.EkbTime.DayOfWeek,
+                new HourAndMinute(DateHelper.EkbTime.Hour, DateHelper.EkbTime.Minute));
 
             var courses = await Client.Schedule.GetByDayOfWeekAndEndsAtHourAndMinute(getScheduleRequest).GetResult();
             

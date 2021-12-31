@@ -17,9 +17,9 @@ using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Helpers;
 using Zhalobobot.Common.Helpers.Extensions;
-using Zhalobobot.Common.Helpers.Helpers;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Exceptions;
+using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Schedule;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Student.Requests;
@@ -469,13 +469,12 @@ namespace Zhalobobot.Bot.Services
                     break;
                 case ScheduleDay.UntilWeekEnd:
                 {
-                    var currentDay = (int)DateTime.Now.DayOfWeek;
+                    var currentDay = (int)DateHelper.EkbTime.DayOfWeek;
 
                     var days = Enum.GetValues<ScheduleDay>()
                         .Where(d => d >= (ScheduleDay)currentDay && d <= (ScheduleDay)(int)lastStudyWeekDay);
 
                     message = string.Join("\n", days.Select(d => FormatDay(currentWeekByDay, d, d, true)).Where(s => s.Length > 0));
-                    whenDelete = ((ScheduleDay)(int)lastStudyWeekDay).OneDayAfterCurrentWeekDayAndMonth();
                     break;
                 }
                 case ScheduleDay.FullWeek:
@@ -486,7 +485,6 @@ namespace Zhalobobot.Bot.Services
                     break;
                 case ScheduleDay.NextMonday:
                     message = FormatDay(nextWeekByDay, ScheduleDay.Monday, ScheduleDay.Monday, false);
-                    whenDelete = ScheduleDay.Monday.OneDayAfterNextWeekDayAndMonth();
                     break;
                 case ScheduleDay.NextWeek:
                     weekDays = Enum.GetValues<ScheduleDay>()
@@ -520,7 +518,7 @@ namespace Zhalobobot.Bot.Services
 
                 var items = itemm[scheduleDay];
                 
-                var hourAndMinute = DateTime.Now.ToHourAndMinute();
+                var hourAndMinute = DateHelper.EkbTime.ToHourAndMinute();
 
                 var orderedItems = items.OrderBy(i => GetSubjectDuration(i).Start.Hour)
                     .ThenBy(i => GetSubjectDuration(i).Start.Minute)
@@ -536,7 +534,7 @@ namespace Zhalobobot.Bot.Services
                     var (_, previousEnd) = GetSubjectDuration(firstItem);
                     var (nextStart, _) = GetSubjectDuration(item);
 
-                    if (previousEnd < hourAndMinute && hourAndMinute < nextStart && item.EventTime.DayOfWeek == DateTime.Now.DayOfWeek)
+                    if (previousEnd < hourAndMinute && hourAndMinute < nextStart && item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
                     {
                         var difference = nextStart - hourAndMinute;
                         builder.Append($"[{hourAndMinute}, до пары {(difference.Hour == 0 ? $"{difference.Minute}мин" : difference)}]".PutInCenterOf('-', telegramMessageWidth) + "\n");
@@ -559,8 +557,13 @@ namespace Zhalobobot.Bot.Services
 
                     var (firstLine, secondLine) = FormatItemForDay(item);
 
-                    if (start <= hourAndMinute && hourAndMinute <= end && item.EventTime.DayOfWeek == DateTime.Now.DayOfWeek)
-                        return $"{Crop(firstLine, true)}{Crop(secondLine, true, "📖")}";
+                    if (start <= hourAndMinute && hourAndMinute <= end &&
+                        item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
+                    {
+                        var difference = end - hourAndMinute;
+                        var timeBetweenStudy = $"[{hourAndMinute}, до конца {(difference.Hour == 0 ? $"{difference.Minute}мин" : difference)}]";
+                        return $"{Crop(firstLine)}{timeBetweenStudy}\n{Crop(secondLine)}";
+                    }
 
                     return $"{Crop(firstLine)}{Crop(secondLine)}";
                 }
@@ -568,11 +571,10 @@ namespace Zhalobobot.Bot.Services
                 bool SingleDayScheduleRequested() =>
                     target is >= ScheduleDay.Monday and <= ScheduleDay.Saturday;
 
-                string Crop(string str, bool withStudy = false, string endForStudy="👨‍🎓")
+                string Crop(string str)
                 {
-                    var possibleLen = withStudy ? telegramMessageWidth - 2 : telegramMessageWidth;
-                    var length = Math.Min(possibleLen, str.Length);
-                    return $"{str[..length]}{new string(' ', possibleLen - length)}{(str.Length > possibleLen ? "…" : " ")}{(withStudy ? endForStudy : "")}\n";
+                    var length = Math.Min(telegramMessageWidth, str.Length);
+                    return $"{str[..length]}{(str.Length > telegramMessageWidth ? "…" : " ")}\n";
                 }
             }
 

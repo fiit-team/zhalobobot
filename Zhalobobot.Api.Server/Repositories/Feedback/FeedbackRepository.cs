@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Zhalobobot.Api.Server.Repositories.Common;
+using Zhalobobot.Common.Helpers.Helpers;
 using Zhalobobot.Common.Models.Helpers;
 
 namespace Zhalobobot.Api.Server.Repositories.Feedback
@@ -27,7 +28,7 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
         {
             var objectList = new List<object>
             {
-                EkbTime().ToString(CultureInfo.InvariantCulture),
+                DateHelper.EkbTime.ToString(CultureInfo.InvariantCulture),
                 feedback.Type.GetString(),
                 feedback.Subject?.Name ?? string.Empty,
                 feedback.SubjectSurvey?.Rating.ToString() ?? string.Empty,

@@ -2,12 +2,18 @@ using System;
 using System.Globalization;
 using Zhalobobot.Common.Models.Commons;
 
-namespace Zhalobobot.Common.Helpers.Helpers
+namespace Zhalobobot.Common.Models.Helpers
 {
     public static class DateHelper
     {
         public static int WeekOfYear
-            => new CultureInfo("ru-RU").Calendar.GetWeekOfYear(DateTime.Now, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+            => new CultureInfo("ru-RU").Calendar.GetWeekOfYear(EkbTime, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+        
+        public static DateTime EkbTime => 
+            DateTime.UtcNow + TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time").BaseUtcOffset + TimeSpan.FromHours(2);
+
+        public static DateTime ToEkbTime(this DateTime date) =>
+            date.ToUniversalTime() + TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time").BaseUtcOffset + TimeSpan.FromHours(2);
 
         public static WeekParity CurrentWeekParity(bool isFirstYearWeekOdd)
             => isFirstYearWeekOdd switch
@@ -26,7 +32,7 @@ namespace Zhalobobot.Common.Helpers.Helpers
         
         private static DateTime InternalCurrentMondayDate()
         {
-            var date = DateTime.Now;
+            var date = EkbTime;
             return date.DayOfWeek == DayOfWeek.Sunday 
                 ? date.AddDays(-6) 
                 : date.AddDays(DayOfWeek.Monday - date.DayOfWeek);

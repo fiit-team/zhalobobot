@@ -97,7 +97,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
 
             // bool WeekParityMatches(ScheduleItem item)
             // {
-            //     var weekOfYear = new CultureInfo("ru-RU").Calendar.GetWeekOfYear(DateTime.Now, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
+            //     var weekOfYear = new CultureInfo("ru-RU").Calendar.GetWeekOfYear(DateHelper.EkbTime, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
             //
             //     return item.EventTime.WeekParity == WeekParity.Both
             //            || IsFirstYearWeekOdd && weekOfYear % 2 == 1 && item.EventTime.WeekParity == WeekParity.Odd
@@ -109,7 +109,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                 // if (item.EventTime.CanceledForever || item.EventTime.NotExistsNextTime)
                 //     return false;
 
-                var now = new DayAndMonth(DateTime.Now.Day, (Month)DateTime.Now.Month);
+                var now = new DayAndMonth(DateHelper.EkbTime.Day, (Month)DateHelper.EkbTime.Month);
 
                 if (item.EventTime.StartDay != null && item.EventTime.EndDay != null)
                     return item.EventTime.StartDay >= now && item.EventTime.EndDay <= now;
