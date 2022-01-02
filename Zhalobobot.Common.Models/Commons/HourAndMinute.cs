@@ -1,4 +1,5 @@
 using System;
+using Zhalobobot.Common.Models.Extensions;
 
 namespace Zhalobobot.Common.Models.Commons
 {
@@ -34,9 +35,6 @@ namespace Zhalobobot.Common.Models.Commons
         }
 
         public override string ToString()
-            => $"{AddZeroIfNecessary(Hour)}:{AddZeroIfNecessary(Minute)}";
-
-        private static string AddZeroIfNecessary(int value)
-            => value < 10 ? $"0{value}" : value.ToString();
+            => $"{Hour.WithLeadingZeroIfLessThanTen()}:{Minute.WithLeadingZeroIfLessThanTen()}";
     }
 }

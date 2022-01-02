@@ -1,4 +1,5 @@
 using System;
+using Zhalobobot.Common.Models.Extensions;
 
 namespace Zhalobobot.Common.Models.Commons
 {
@@ -26,6 +27,6 @@ namespace Zhalobobot.Common.Models.Commons
 
         public static bool operator <=(DayAndMonth left, DayAndMonth right) => left.CompareTo(right) <= 0;
 
-        public override string ToString() => $"{Day}.{(int)Month}";
+        public override string ToString() => $"{Day.WithLeadingZeroIfLessThanTen()}.{((int)Month).WithLeadingZeroIfLessThanTen()}";
     }
 }
