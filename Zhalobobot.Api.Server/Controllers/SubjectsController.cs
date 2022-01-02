@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Zhalobobot.Api.Server.Repositories.Subjects;
 using Zhalobobot.Common.Models.Subject;
-using Zhalobobot.Common.Models.Subject.Requests;
 
 namespace Zhalobobot.Api.Server.Controllers
 {
@@ -19,9 +18,5 @@ namespace Zhalobobot.Api.Server.Controllers
         [HttpPost("getAll")]
         public async Task<Subject[]> GetAll()
             => await repository.GetAll();
-
-        [HttpPost("get")]
-        public async Task<Subject[]> Get([FromBody] GetSubjectsRequest request)
-            => await repository.Get(request.Course);
     }
 }

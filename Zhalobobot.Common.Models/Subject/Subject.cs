@@ -6,6 +6,5 @@ namespace Zhalobobot.Common.Models.Subject
         string Name,
         Course Course,
         Semester Semester,
-        SubjectCategory Category);//,
-    // EventTime[] Events); // когда будет проводиться в течение этой недели
+        SubjectCategory Category);
 }

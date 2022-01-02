@@ -38,7 +38,7 @@ namespace Zhalobobot.Common.Clients.Core
 
         public HttpStatusCode StatusCode { get; }
 
-        public void EnsureSuccess()
+        protected void EnsureSuccess()
         {
             if (IsSuccessful)
                 return;

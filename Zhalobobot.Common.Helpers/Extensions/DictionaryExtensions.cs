@@ -12,6 +12,12 @@ namespace Zhalobobot.Common.Helpers.Extensions
                 return default;
             return value;
         }
+
+        public static TValue Get<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key)
+            where TKey : notnull
+        {
+            return dictionary.Find(key) ?? throw new KeyNotFoundException();
+        }
         
         public static void AddOrUpdate<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value, Action<TValue> update)
         {

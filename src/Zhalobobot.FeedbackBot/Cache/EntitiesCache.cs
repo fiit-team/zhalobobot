@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Zhalobobot.Common.Clients.Core;
+using Zhalobobot.Common.Clients.Core.Extensions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Schedule;
 using Zhalobobot.Common.Models.Student;

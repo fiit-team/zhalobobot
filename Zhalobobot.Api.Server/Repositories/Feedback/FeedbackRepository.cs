@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Zhalobobot.Api.Server.Repositories.Common;
-using Zhalobobot.Common.Helpers.Helpers;
 using Zhalobobot.Common.Models.Helpers;
 
 namespace Zhalobobot.Api.Server.Repositories.Feedback

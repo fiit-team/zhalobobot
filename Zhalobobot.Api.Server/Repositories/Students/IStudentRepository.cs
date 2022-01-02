@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Student;
 
 namespace Zhalobobot.Api.Server.Repositories.Students
@@ -9,9 +8,5 @@ namespace Zhalobobot.Api.Server.Repositories.Students
         Task Add(Student student);
         
         Task<Student[]> GetAll();
-        
-        Task<Student?> FindById(long telegramId);
-
-        Task<Student[]> GetByCourseAndGroupAndSubgroup(Course course, Group group, Subgroup subgroup);
     }
 }

@@ -4,13 +4,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using Telegram.Bot;
+using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
-using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
-using Zhalobobot.Common.Models.Schedule.Requests;
 using Zhalobobot.Common.Models.Serialization;
-using Zhalobobot.Common.Models.Student.Requests;
 
 namespace Zhalobobot.Bot.Quartz.Jobs
 {
@@ -18,23 +16,22 @@ namespace Zhalobobot.Bot.Quartz.Jobs
     public class NotifyStudentsJob : IJob
     {
         private const int Percent = 10;
-        private IZhalobobotApiClient Client { get; }
         private ITelegramBotClient BotClient { get; }
+        private EntitiesCache Cache { get; }
         private ILogger<NotifyStudentsJob> Log { get; }
 
-        public NotifyStudentsJob(IZhalobobotApiClient client, ILogger<NotifyStudentsJob> log, ITelegramBotClient botClient)
+        public NotifyStudentsJob(ITelegramBotClient botClient, EntitiesCache cache, ILogger<NotifyStudentsJob> log)
         {
-            Client = client;
-            Log = log;
             BotClient = botClient;
+            Cache = cache;
+            Log = log;
         }
 
         public async Task Execute(IJobExecutionContext context)
         {
-            var getScheduleRequest = new GetScheduleByDayOfWeekHourAndMinuteRequest(DateHelper.EkbTime.DayOfWeek,
-                new HourAndMinute(DateHelper.EkbTime.Hour, DateHelper.EkbTime.Minute));
-
-            var courses = await Client.Schedule.GetByDayOfWeekAndEndsAtHourAndMinute(getScheduleRequest).GetResult();
+            var ekbTime = DateHelper.EkbTime;
+            var courses = Cache.ScheduleItems
+                .GetByDayOfWeekAndEndsAtHourAndMinute(ekbTime.DayOfWeek, new HourAndMinute(ekbTime.Hour, ekbTime.Minute));
             
             foreach (var course in courses)
             {
@@ -52,10 +49,9 @@ namespace Zhalobobot.Bot.Quartz.Jobs
             async Task SendNotifyMessageToStudents(Course course, Group group, Subgroup subgroup, string name)
             {
                 Log.LogInformation($"Course: {course.ToPrettyJson()}, Group: {group.ToPrettyJson()}, Subgroup: {subgroup.ToPrettyJson()}");
-                var request = new GetStudentsByCourseAndGroupAndSubgroupRequest(course, group, subgroup);
-                var students = await Client.Student.Get(request).GetResult();
+                var students = Cache.Students.Get((course, group, subgroup));
                 
-                var selectedStudentsCount = Math.Max(1, students.Length * Percent / 100);
+                var selectedStudentsCount = Math.Max(1, students.Count * Percent / 100);
                     
                 var random = new Random();
                     

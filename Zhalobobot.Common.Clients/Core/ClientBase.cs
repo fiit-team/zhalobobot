@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Zhalobobot.Common.Helpers.Extensions;
+using Zhalobobot.Common.Clients.Core.Extensions;
 
 namespace Zhalobobot.Common.Clients.Core
 {

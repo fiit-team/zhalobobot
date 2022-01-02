@@ -12,14 +12,8 @@ namespace Zhalobobot.Common.Clients.Student
         {
         }
 
-        public Task<ZhalobobotResult<Models.Student.Student?>> FindStudent(long telegramId)
-            => Method<Models.Student.Student?>($"find/${telegramId}").CallAsync();
-
         public Task<ZhalobobotResult<Models.Student.Student[]>> GetAll()
             => Method<Models.Student.Student[]>("getAll").CallAsync();
-
-        public Task<ZhalobobotResult<Models.Student.Student[]>> Get(GetStudentsByCourseAndGroupAndSubgroupRequest request)
-            => Method<Models.Student.Student[]>("getByCourseAndGroupAndSubgroup").CallAsync(request);
 
         public Task<ZhalobobotResult> Add(AddStudentRequest request)
             => Method("add").CallAsync(request);

@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace Zhalobobot.Common.Clients.Core
+namespace Zhalobobot.Common.Clients.Core.Extensions
 {
     public static class ZhalobobotResultExtensions
     {

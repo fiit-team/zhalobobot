@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Zhalobobot.Api.Server.Repositories.Common;
 using Zhalobobot.Api.Server.Repositories.Subjects;
-using Zhalobobot.Common.Helpers.Extensions;
-using Zhalobobot.Common.Helpers.Helpers;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Schedule;
@@ -18,74 +15,33 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
 {
     public class ScheduleRepository : GoogleSheetsRepositoryBase, IScheduleRepository
     {
-        private IConfiguration Configuration { get; }
-        private ILogger<ScheduleRepository> Log { get; }
-        
         private string ScheduleRange { get; }
         private string HolidaysRange { get; }
         private ISubjectRepository SubjectRepository { get; }
+        private ILogger<ScheduleRepository> Log { get; }
 
-        public ScheduleRepository(IConfiguration configuration, ILogger<ScheduleRepository> log, ISubjectRepository subjectRepository) 
+        public ScheduleRepository(ISubjectRepository subjectRepository, IConfiguration configuration, ILogger<ScheduleRepository> log) 
             : base(configuration, configuration["ScheduleSpreadSheetId"])
         {
-            Configuration = configuration;
-            Log = log;
-            // FirstCourseScheduleRange = configuration["FirstCourseScheduleRange"];
-            // SecondCourseScheduleRange = configuration["SecondCourseScheduleRange"];
             ScheduleRange = configuration["ScheduleRange"];
             HolidaysRange = configuration["HolidaysRange"];
             SubjectRepository = subjectRepository;
-        }
-
-        public async Task<ScheduleItem[]> GetByCourse(Course course)
-            => (await GetAll())
-                .Where(s => s.Subject.Course == course)
-                .ToArray();
-
-        public async Task<ScheduleItem[]> GetByDayOfWeek(DayOfWeek dayOfWeek)
-            => (await GetAll())
-                .Where(schedule => schedule.EventTime.DayOfWeek == dayOfWeek)
-                .ToArray();
-
-        public async Task<ScheduleItem[]> GetByDayOfWeekAndStartsAtHourAndMinute(DayOfWeek dayOfWeek, HourAndMinute hourAndMinute)
-        {
-            var subjects = await GetByDayOfWeek(dayOfWeek);
-
-            return subjects
-                .Where(StartTimeMatches)
-                .ToArray();
-
-            bool StartTimeMatches(ScheduleItem item)
-                => item.EventTime.Pair.HasValue && item.EventTime.Pair.Value.ToHourAndMinute().Start == hourAndMinute
-                   || item.EventTime.StartTime != null && item.EventTime.StartTime == hourAndMinute;
-        }
-        
-        public async Task<ScheduleItem[]> GetByDayOfWeekAndEndsAtHourAndMinute(DayOfWeek dayOfWeek, HourAndMinute hourAndMinute)
-        {
-            var subjects = await GetByDayOfWeek(dayOfWeek);
-
-            return subjects
-                .Where(EndTimeMatches)
-                .ToArray();
-
-            bool EndTimeMatches(ScheduleItem item)
-                => item.EventTime.Pair.HasValue && item.EventTime.Pair.Value.ToHourAndMinute().End == hourAndMinute
-                   || item.EventTime.EndTime != null && item.EventTime.EndTime == hourAndMinute;
+            Log = log;
         }
 
         public async Task<IEnumerable<ScheduleItem>> GetAll()
         { 
             IEnumerable<ScheduleItem> scheduleItems = await ParseScheduleRange(ScheduleRange);
 
-            return scheduleItems.Where(s => PairExists(s));
+            return scheduleItems.Where(PairExists);
             
             async Task<IEnumerable<ScheduleItem>> ParseScheduleRange(string scheduleRange)
             {
                 var result = await GetRequest(scheduleRange).ExecuteAsync();
             
-                var value = result.Values[0][0].ToString();
+                var checkbox = result.Values[0][0].ToString() ?? "";
             
-                if (value != "TRUE")
+                if (checkbox.ToLower() != "true")
                     return Array.Empty<ScheduleItem>(); //incorrect table or synchronized == false
 
                 var subjects = await SubjectRepository.GetAll();
@@ -95,20 +51,8 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                     .SelectMany(v => ParseRow(v, subjects));
             }
 
-            // bool WeekParityMatches(ScheduleItem item)
-            // {
-            //     var weekOfYear = new CultureInfo("ru-RU").Calendar.GetWeekOfYear(DateHelper.EkbTime, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
-            //
-            //     return item.EventTime.WeekParity == WeekParity.Both
-            //            || IsFirstYearWeekOdd && weekOfYear % 2 == 1 && item.EventTime.WeekParity == WeekParity.Odd
-            //            || !IsFirstYearWeekOdd && weekOfYear % 2 == 0 && item.EventTime.WeekParity == WeekParity.Even;
-            // }
-
             bool PairExists(ScheduleItem item)
             {
-                // if (item.EventTime.CanceledForever || item.EventTime.NotExistsNextTime)
-                //     return false;
-
                 var now = new DayAndMonth(DateHelper.EkbTime.Day, (Month)DateHelper.EkbTime.Month);
 
                 if (item.EventTime.StartDay != null && item.EventTime.EndDay != null)
@@ -157,7 +101,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                 
                 var eventTime = new EventTime(
                     ParsingHelper.ParseDay(row[0]),
-                    (Pair)ParsingHelper.ParseInt(row[1]),
+                    ParsingHelper.ParseEnum<Pair>(row[1]),
                     startDayAndMonthOrHourAndMinutes?.HourAndMinutes,
                     endDayAndMonthOrHourAndMinutes?.HourAndMinutes,
                     startDayAndMonthOrHourAndMinutes?.DayAndMonth,

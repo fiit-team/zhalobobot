@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
 
-namespace Zhalobobot.Common.Helpers.Helpers
+namespace Zhalobobot.Api.Server.Repositories.Common
 {
     public static class ParsingHelper
     {
@@ -19,6 +20,13 @@ namespace Zhalobobot.Common.Helpers.Helpers
 
         public static int ParseInt(object value)
             => int.TryParse(value as string, out var result) ? result : throw new Exception();
+
+        public static TEnum ParseEnum<TEnum>(object value)
+            where TEnum : Enum
+        {
+            var integer = ParseInt(value);
+            return Unsafe.As<int, TEnum>(ref integer);
+        }
         
         public static long ParseLong(object value)
             => long.TryParse(value as string, out var result) ? result : throw new Exception();
@@ -42,50 +50,30 @@ namespace Zhalobobot.Common.Helpers.Helpers
 
         public static SubjectCategory ParseSubjectCategory(object value)
         {
-            var str = value as string ?? throw new ArgumentException("Subject is empty");
+            var category = value as string ?? throw new ArgumentException("Category is empty");
 
-            return str switch
-            {
-                "Математика" => SubjectCategory.Math,
-                "Программирование" => SubjectCategory.Programming,
-                "Онлайн курсы" => SubjectCategory.OnlineCourse,
-                "Другое" => SubjectCategory.Another,
-                _ => throw new NotSupportedException(str)
-            };
-        }
+            return category.FromDescriptionTo<SubjectCategory>();
+         }
         
         public static DayOfWeek ParseDay(object value)
         {
-            return (value as string) switch
+            return (value as string ?? "").ToLower() switch
             {
-                "Понедельник" => DayOfWeek.Monday,
-                "Вторник" => DayOfWeek.Tuesday,
-                "Среда" => DayOfWeek.Wednesday,
-                "Четверг" => DayOfWeek.Thursday,
-                "Пятница" => DayOfWeek.Friday,
-                "Суббота" => DayOfWeek.Saturday,
+                "понедельник" => DayOfWeek.Monday,
+                "вторник" => DayOfWeek.Tuesday,
+                "среда" => DayOfWeek.Wednesday,
+                "четверг" => DayOfWeek.Thursday,
+                "пятница" => DayOfWeek.Friday,
+                "суббота" => DayOfWeek.Saturday,
                 _ => throw new NotImplementedException()
             };
         }
 
         public static Month ParseMonth(object value)
         {
-            return (value as string) switch
-            {
-                "Январь" => Month.January,
-                "Февраль" => Month.February,
-                "Март" => Month.March,
-                "Апрель" => Month.April,
-                "Май" => Month.May,
-                "Июнь" => Month.June,
-                "Июль" => Month.July,
-                "Август" => Month.August,
-                "Сентябрь" => Month.September,
-                "Октябрь" => Month.October,
-                "Ноябрь" => Month.November,
-                "Декабрь" => Month.December,
-                _ => throw new NotSupportedException()
-            };
+            var month = value as string ?? throw new ArgumentException("Month is empty");
+
+            return month.FromDescriptionTo<Month>();
         }
 
         public static WeekParity ParseParity(object value)

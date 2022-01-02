@@ -2,7 +2,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Zhalobobot.Common.Models.Serialization;
 
-namespace Zhalobobot.Common.Helpers.Extensions
+namespace Zhalobobot.Common.Clients.Core.Extensions
 {
     public static class HttpResponseMessageExtensions
     {
