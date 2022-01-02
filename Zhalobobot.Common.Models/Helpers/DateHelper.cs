@@ -10,10 +10,10 @@ namespace Zhalobobot.Common.Models.Helpers
             => new CultureInfo("ru-RU").Calendar.GetWeekOfYear(EkbTime, CalendarWeekRule.FirstDay, DayOfWeek.Monday);
         
         public static DateTime EkbTime => 
-            DateTime.UtcNow + TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time").BaseUtcOffset + TimeSpan.FromHours(2);
+            DateTime.UtcNow + TimeSpan.FromHours(5);
 
         public static DateTime ToEkbTime(this DateTime date) =>
-            date.ToUniversalTime() + TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time").BaseUtcOffset + TimeSpan.FromHours(2);
+            date.ToUniversalTime() + TimeSpan.FromHours(5);
 
         public static WeekParity CurrentWeekParity(bool isFirstYearWeekOdd)
             => isFirstYearWeekOdd switch
