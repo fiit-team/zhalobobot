@@ -550,7 +550,7 @@ namespace Zhalobobot.Bot.Services
                         {
                             InlineKeyboardButton.WithCallbackData(
                                 subject.Name.Slice(),
-                                Utils.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.Name.GetHashCode()))
+                                string.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.Name.GetHashCode()))
                         }));
 
             return inlineKeyboard;
