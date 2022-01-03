@@ -109,9 +109,8 @@ namespace Zhalobobot.Bot.Services
                         if (update.Type == UpdateType.CallbackQuery)
                             await BotOnCallbackQueryReceived(update.CallbackQuery);
                         else
-                        {
                             await AddStudent();
-                        }
+                        
                         return true;
                     }
                 
@@ -552,7 +551,7 @@ namespace Zhalobobot.Bot.Services
                         {
                             InlineKeyboardButton.WithCallbackData(
                                 subject.Name.Slice(),
-                                Utils.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.Name.GetHashCode()))
+                                string.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.Name.GetHashCode()))
                         }));
 
             return inlineKeyboard;

@@ -13,10 +13,7 @@ namespace Zhalobobot.Bot.Services
             if (messageToUpdate.TryAdd(chatId, message))
                 return true;
 
-            if (!messageToUpdate.TryRemove(chatId, out _))
-                return false;
-
-            return messageToUpdate.TryAdd(chatId, message);
+            return messageToUpdate.TryRemove(chatId, out _) && messageToUpdate.TryAdd(chatId, message);
         }
         
         public bool RemoveMessageToUpdate(long chatId) 
