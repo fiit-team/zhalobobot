@@ -27,8 +27,6 @@ namespace Zhalobobot.Bot.Schedule
             isFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
         }
         
-        // var holidays = Cache.Holidays.All.ToHashSet();
-
         public string Format(long chatId, ScheduleDay scheduleDay, out DayAndMonth? whenDelete)
         {
             if (scheduleDay.IsCurrentWeek())
@@ -41,11 +39,11 @@ namespace Zhalobobot.Bot.Schedule
         private string CurrentWeek(long chatId, ScheduleDay day, out DayAndMonth? whenDelete)
         {
             var student = cache.Students.Get(chatId);
-            
+
             var weekSchedule = cache.ScheduleItems
-                .GetFullFor(student.Course, DateHelper.CurrentWeekParity(isFirstYearWeekOdd))
-                .FilterFor(student);
-            
+                .GetFor(student, DateHelper.CurrentWeekParity(isFirstYearWeekOdd))
+                .ToArray();
+
             var weekByDay = weekSchedule
                 .GroupBy(s => s.EventTime.DayOfWeek)
                 .ToDictionary(s => (ScheduleDay)(int)s.Key, s => s.ToArray());
@@ -87,10 +85,10 @@ namespace Zhalobobot.Bot.Schedule
         private string NextWeek(long chatId, ScheduleDay day)
         {
             var student = cache.Students.Get(chatId);
-            
+
             var weekSchedule = cache.ScheduleItems
-                .GetFullFor(student.Course, DateHelper.NextWeekParity(isFirstYearWeekOdd))
-                .FilterFor(student);
+                .GetFor(student, DateHelper.NextWeekParity(isFirstYearWeekOdd))
+                .ToArray();
             
             var weekByDay = weekSchedule
                 .GroupBy(s => s.EventTime.DayOfWeek)
@@ -116,22 +114,25 @@ namespace Zhalobobot.Bot.Schedule
             return message;
         }
         
-        private static string FormatDay(IReadOnlyDictionary<ScheduleDay, ScheduleItem[]> scheduleByDay, ScheduleDay scheduleDay, ScheduleDay target, bool currentWeek)
+        private string FormatDay(IReadOnlyDictionary<ScheduleDay, ScheduleItem[]> scheduleByDay, ScheduleDay scheduleDay, ScheduleDay target, bool currentWeek)
         {
             if (!scheduleByDay.ContainsKey(scheduleDay))
                 return "";
-            
+
+            var date = currentWeek ? scheduleDay.CurrentWeekDayAndMonth() : scheduleDay.NextWeekDayAndMonth();
+            var schedule = scheduleByDay[scheduleDay]
+                .EmptyWhenHolidays(date, cache.Holidays.All.ToHashSet());
+
+            if (schedule.Length == 0)
+                return "";
+
             var builder = new StringBuilder();
             var dayOfWeek = scheduleDay.AsString(EnumFormat.Description);
-            var date = currentWeek ? scheduleDay.CurrentWeekDayAndMonth() : scheduleDay.NextWeekDayAndMonth();
-
             builder.Append($"{dayOfWeek} {date}".PutInCenterOf(' ', TelegramMessageWidth) + "\n");
 
-            var items = scheduleByDay[scheduleDay];
-            
             var hourAndMinute = DateHelper.EkbTime.ToHourAndMinute();
 
-            var orderedItems = items.OrderBy(i => GetSubjectDuration(i).Start.Hour)
+            var orderedItems = schedule.OrderBy(i => GetSubjectDuration(i).Start.Hour)
                 .ThenBy(i => GetSubjectDuration(i).Start.Minute)
                 .ThenBy(i => GetSubjectDuration(i).End.Hour)
                 .ThenBy(i => GetSubjectDuration(i).End.Minute);

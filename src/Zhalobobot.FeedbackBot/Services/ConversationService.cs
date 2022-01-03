@@ -93,7 +93,7 @@ namespace Zhalobobot.Bot.Services
 
             var subject = Cache.Subjects
                 .Get(subjectName)
-                .FirstOrDefault(s => s.Course == student.Course && s.Semester == SemesterHelper.Current);
+                .First(s => s.Course == student.Course && s.Semester == SemesterHelper.Current);
             
             var feedback = new Feedback(FeedbackType.Subject, student, null, subject, new SubjectSurvey());
 

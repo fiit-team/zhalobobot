@@ -4,6 +4,7 @@ using System.Linq;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Schedule;
+using Zhalobobot.Common.Models.Student;
 
 namespace Zhalobobot.Bot.Cache
 {
@@ -35,7 +36,11 @@ namespace Zhalobobot.Bot.Cache
 
         public List<ScheduleItem> GetOnly(WeekParity weekParity) => weekParityIndex.GetOrCreate(weekParity, _ => new List<ScheduleItem>());
         public List<ScheduleItem> GetOnly(Course course, WeekParity weekParity) => courseAndWeekParityIndex.GetOrCreate((course, weekParity), _ => new List<ScheduleItem>());
-        public List<ScheduleItem> GetFullFor(Course course, WeekParity weekParity) => courseAndWeekParityIndexIncludingBoth.GetOrCreate((course, weekParity), _ => new List<ScheduleItem>());
+        public IEnumerable<ScheduleItem> GetFor(Student student, WeekParity weekParity) =>
+            courseAndWeekParityIndexIncludingBoth
+                .GetOrCreate((student.Course, weekParity), _ => new List<ScheduleItem>())
+                .Where(s => s.Group == student.Group && (!s.Subgroup.HasValue || s.Subgroup.Value == student.Subgroup))
+                .Distinct();
 
         public IEnumerable<ScheduleItem> GetByDayOfWeekAndEndsAtHourAndMinute(DayOfWeek dayOfWeek, HourAndMinute hourAndMinute)
         {

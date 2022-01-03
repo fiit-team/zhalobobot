@@ -15,7 +15,6 @@ using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Bot.Schedule;
 using Zhalobobot.Common.Clients.Core;
-using Zhalobobot.Common.Helpers;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Exceptions;
@@ -198,8 +197,7 @@ namespace Zhalobobot.Bot.Services
             var student = Cache.Students.Get(message.Chat.Id);
 
             var lastStudyWeekDay = Cache.ScheduleItems
-                .GetFullFor(student.Course, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd))
-                .FilterFor(student)
+                .GetFor(student, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd))
                 .LastStudyWeekDay();
 
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
