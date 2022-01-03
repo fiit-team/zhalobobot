@@ -4,7 +4,7 @@ using System.Linq;
 using EnumsNET;
 using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Models;
-using Zhalobobot.Common.Helpers;
+using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Student;
@@ -12,7 +12,7 @@ using Zhalobobot.Common.Models.Subject;
 
 namespace Zhalobobot.Bot.Helpers
 {
-    public static class WellKnownKeyboards
+    public static class Keyboards
     {
         // public static ReplyKeyboardMarkup DefaultKeyboard { get; } = new(
         //     new[]
@@ -147,6 +147,20 @@ namespace Zhalobobot.Bot.Helpers
             InlineKeyboardButton CreateButton(string text, int scheduleDay)
                 => InlineKeyboardButton.WithCallbackData(text,
                     string.Join(Strings.Separator, CallbackDataPrefix.ChooseScheduleRange, $"{scheduleDay}"));
+        }
+        
+        public static InlineKeyboardMarkup GetSubjectsKeyboard(IEnumerable<Subject> subjects)
+        {
+            var inlineKeyboard = new InlineKeyboardMarkup(
+                subjects
+                    .Select(subject => new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData(
+                            subject.Name.Slice(),
+                            string.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.Name.GetHashCode()))
+                    }));
+
+            return inlineKeyboard;
         }
     }
 }

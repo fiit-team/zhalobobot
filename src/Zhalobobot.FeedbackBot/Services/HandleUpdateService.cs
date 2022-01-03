@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,7 +8,6 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
@@ -121,7 +119,7 @@ namespace Zhalobobot.Bot.Services
                         await BotClient.SendTextMessageAsync(
                             message.Chat.Id,
                             "Привет! Мы с тобой еще не знакомы, так что ответь на пару моих вопросиков :)\nСначала укажи курс:",
-                            replyMarkup: WellKnownKeyboards.AddCourseKeyboard);
+                            replyMarkup: Keyboards.AddCourseKeyboard);
                     }
                 }
 
@@ -167,7 +165,7 @@ namespace Zhalobobot.Bot.Services
             return await BotClient.SendTextMessageAsync(
                 message.Chat.Id,
                 text,
-                replyMarkup: WellKnownKeyboards.SubmitKeyboard);
+                replyMarkup: Keyboards.SubmitKeyboard);
         }
 
         private async Task<Message> HandleGeneralFeedbackAsync(ITelegramBotClient bot, Message message)
@@ -179,7 +177,7 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 BuildStartFeedbackMessage(),
-                replyMarkup: WellKnownKeyboards.SubmitKeyboard);
+                replyMarkup: Keyboards.SubmitKeyboard);
         }
 
         private async Task<Message> HandleSubjectsAsync(ITelegramBotClient bot, Message message)
@@ -189,7 +187,7 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 "Выбери категорию",
-                replyMarkup: WellKnownKeyboards.GetSubjectCategoryKeyboard);
+                replyMarkup: Keyboards.GetSubjectCategoryKeyboard);
         }
 
         private async Task<Message> HandleScheduleAsync(ITelegramBotClient bot, Message message)
@@ -205,7 +203,7 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 "Выбери нужный вариант",
-                replyMarkup: WellKnownKeyboards.ChooseScheduleDayKeyboard(lastStudyWeekDay));
+                replyMarkup: Keyboards.ChooseScheduleDayKeyboard(lastStudyWeekDay));
         }
 
         private async Task SaveFeedbackAsync(ITelegramBotClient bot, Message message)
@@ -229,7 +227,7 @@ namespace Zhalobobot.Bot.Services
 
             string text;
             var student = Cache.Students.Get(message.Chat.Id); //todo: убрать после того, как добавим обработку 3го курса
-            var replyMarkup = WellKnownKeyboards.DefaultKeyboard(student);
+            var replyMarkup = Keyboards.DefaultKeyboard(student);
 
             if (conversationStatus == ConversationStatus.AwaitingConfirmation)
             {
@@ -239,7 +237,7 @@ namespace Zhalobobot.Bot.Services
             else if (conversationStatus == ConversationStatus.AwaitingMessage)
             {
                 text = @"Отправь сообщение, а потом нажми ""Готово""";
-                replyMarkup = WellKnownKeyboards.SubmitKeyboard;
+                replyMarkup = Keyboards.SubmitKeyboard;
             }
             else
             {
@@ -320,7 +318,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.EditMessageReplyMarkupAsync(
                 chatId,
                 messageId,
-                GetSubjectsKeyboard(subjects));
+                Keyboards.GetSubjectsKeyboard(subjects));
         }
 
         private async Task HandleAddCourseCallback(long chatId, string data, int messageId)
@@ -335,7 +333,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.EditMessageReplyMarkupAsync(
                 chatId,
                 messageId,
-                WellKnownKeyboards.AddCourseAndGroupKeyboard(course));
+                Keyboards.AddCourseAndGroupKeyboard(course));
         }
         
         private async Task HandleAddCourseAndGroupCallback(long chatId, string data, int messageId)
@@ -352,7 +350,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.EditMessageReplyMarkupAsync(
                 chatId,
                 messageId,
-                WellKnownKeyboards.AddCourseAndGroupAndSubgroupKeyboard(course, group));
+                Keyboards.AddCourseAndGroupAndSubgroupKeyboard(course, group));
         }
         
         private async Task HandleAddCourseAndGroupAndSubgroupCallback(long chatId, string data, Message message)
@@ -458,7 +456,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.SendTextMessageAsync(
                 chatId,
                 text,
-                replyMarkup: WellKnownKeyboards.RatingKeyboard);
+                replyMarkup: Keyboards.RatingKeyboard);
         }
 
         private async Task BotOnPollAnswerReceived(PollAnswer pollAnswer)
@@ -505,7 +503,7 @@ namespace Zhalobobot.Bot.Services
                 await BotClient.SendTextMessageAsync(
                     chatId,
                     BuildStartFeedbackMessage(true),
-                    replyMarkup: WellKnownKeyboards.SubmitKeyboard);
+                    replyMarkup: Keyboards.SubmitKeyboard);
             }
         }
 
@@ -540,20 +538,6 @@ namespace Zhalobobot.Bot.Services
 
             Logger.LogInformation(errorMessage);
             return Task.CompletedTask;
-        }
-
-        private static InlineKeyboardMarkup GetSubjectsKeyboard(IEnumerable<Subject> subjects)
-        {
-            var inlineKeyboard = new InlineKeyboardMarkup(
-                subjects
-                    .Select(subject => new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(
-                                subject.Name.Slice(),
-                                string.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.Name.GetHashCode()))
-                        }));
-
-            return inlineKeyboard;
         }
 
         private static string BuildStartFeedbackMessage(bool isSubjectFeedback = false)
@@ -593,7 +577,7 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 usage.ToString(),
-                replyMarkup: WellKnownKeyboards.DefaultKeyboard(student));
+                replyMarkup: Keyboards.DefaultKeyboard(student));
         }
 
         private async Task Usage(ITelegramBotClient bot, Message message)
