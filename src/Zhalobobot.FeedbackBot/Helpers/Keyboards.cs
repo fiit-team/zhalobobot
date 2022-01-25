@@ -4,7 +4,7 @@ using System.Linq;
 using EnumsNET;
 using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Models;
-using Zhalobobot.Common.Helpers;
+using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Student;
@@ -12,7 +12,7 @@ using Zhalobobot.Common.Models.Subject;
 
 namespace Zhalobobot.Bot.Helpers
 {
-    public static class WellKnownKeyboards
+    public static class Keyboards
     {
         // public static ReplyKeyboardMarkup DefaultKeyboard { get; } = new(
         //     new[]
@@ -62,7 +62,7 @@ namespace Zhalobobot.Bot.Helpers
                 {
                     InlineKeyboardButton.WithCallbackData(
                         course.AsString(EnumFormat.Description),
-                        Utils.Join(Strings.Separator, CallbackDataPrefix.AddCourse, course))
+                        string.Join(Strings.Separator, CallbackDataPrefix.AddCourse, course))
                 }));
 
         public static InlineKeyboardMarkup AddCourseAndGroupKeyboard(Course course) =>
@@ -72,7 +72,7 @@ namespace Zhalobobot.Bot.Helpers
                 {
                     InlineKeyboardButton.WithCallbackData(
                         group.AsString(EnumFormat.Description),
-                        Utils.Join(Strings.Separator, CallbackDataPrefix.AddCourseAndGroup, course, group))
+                        string.Join(Strings.Separator, CallbackDataPrefix.AddCourseAndGroup, course, group))
                 }));
         
         public static InlineKeyboardMarkup AddCourseAndGroupAndSubgroupKeyboard(Course course, Group group) =>
@@ -81,7 +81,7 @@ namespace Zhalobobot.Bot.Helpers
                 {
                     InlineKeyboardButton.WithCallbackData(
                         subgroup.AsString(EnumFormat.Description),
-                        Utils.Join(Strings.Separator, CallbackDataPrefix.AddCourseAndGroupAndSubgroup, course, group, subgroup))
+                        string.Join(Strings.Separator, CallbackDataPrefix.AddCourseAndGroupAndSubgroup, course, group, subgroup))
                 }));
 
         public static InlineKeyboardMarkup RatingKeyboard { get; } =
@@ -90,7 +90,7 @@ namespace Zhalobobot.Bot.Helpers
                 {
                     InlineKeyboardButton.WithCallbackData(
                         string.Join(" ", Enumerable.Repeat(Emoji.Star, star)),
-                        Utils.Join(Strings.Separator, CallbackDataPrefix.Rating, star))
+                        string.Join(Strings.Separator, CallbackDataPrefix.Rating, star))
                 }));
         
         public static InlineKeyboardMarkup SendFeedbackKeyboard(string subjectName) => 
@@ -100,7 +100,7 @@ namespace Zhalobobot.Bot.Helpers
                 {
                     InlineKeyboardButton.WithCallbackData(
                         "Оставить обратную связь",
-                        Utils.Join(Strings.Separator, CallbackDataPrefix.Feedback, subjectName))                
+                        string.Join(Strings.Separator, CallbackDataPrefix.Feedback, subjectName))                
                 }
             };
 
@@ -110,7 +110,7 @@ namespace Zhalobobot.Bot.Helpers
                     {
                         InlineKeyboardButton.WithCallbackData(
                             category.AsString(EnumFormat.Description),
-                            Utils.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, category))
+                            string.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, category))
                     }));
 
         public static InlineKeyboardMarkup ChooseScheduleDayKeyboard(DayOfWeek lastStudyWeekDay)
@@ -146,7 +146,21 @@ namespace Zhalobobot.Bot.Helpers
 
             InlineKeyboardButton CreateButton(string text, int scheduleDay)
                 => InlineKeyboardButton.WithCallbackData(text,
-                    Utils.Join(Strings.Separator, CallbackDataPrefix.ChooseScheduleRange, $"{scheduleDay}"));
+                    string.Join(Strings.Separator, CallbackDataPrefix.ChooseScheduleRange, $"{scheduleDay}"));
+        }
+        
+        public static InlineKeyboardMarkup GetSubjectsKeyboard(IEnumerable<Subject> subjects)
+        {
+            var inlineKeyboard = new InlineKeyboardMarkup(
+                subjects
+                    .Select(subject => new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData(
+                            subject.Name.Slice(),
+                            string.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.Name.GetHashCode()))
+                    }));
+
+            return inlineKeyboard;
         }
     }
 }

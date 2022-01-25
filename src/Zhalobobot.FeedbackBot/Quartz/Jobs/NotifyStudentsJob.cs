@@ -71,7 +71,7 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                     await BotClient.SendTextMessageAsync(
                         student.Id, 
                         message, 
-                        replyMarkup: WellKnownKeyboards.SendFeedbackKeyboard(name));
+                        replyMarkup: Keyboards.SendFeedbackKeyboard(name));
                 }
             }
         }

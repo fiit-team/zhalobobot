@@ -12,6 +12,7 @@ namespace Zhalobobot.Bot.Cache
     {
         private readonly EntityCacheContainer<ScheduleItem, ScheduleItemCache> schedule;
         private readonly EntityCacheContainer<Student, StudentCache> students;
+        private readonly EntityCacheContainer<StudentData, StudentDataCache> studentsData;
         private readonly EntityCacheContainer<Subject, SubjectCache> subjects;
         private readonly EntityCacheContainer<DayAndMonth, HolidaysCache> holidays;
 
@@ -23,13 +24,15 @@ namespace Zhalobobot.Bot.Cache
             students = new EntityCacheContainer<Student, StudentCache>(() => client.Student.GetAll().GetResult(), items => new StudentCache(items));
             subjects = new EntityCacheContainer<Subject, SubjectCache>(() => client.Subject.GetAll().GetResult(), items => new SubjectCache(items));
             holidays = new EntityCacheContainer<DayAndMonth, HolidaysCache>(() => client.Schedule.GetHolidays().GetResult(), items => new HolidaysCache(items));
+            studentsData = new EntityCacheContainer<StudentData, StudentDataCache>(() => client.Student.GetAllData().GetResult(), items => new StudentDataCache(items));
             
             allContainers = new IEntityCacheContainer[]
             {
                 schedule,
                 students,
                 subjects,
-                holidays
+                holidays,
+                studentsData
             };
         }
 
@@ -37,6 +40,7 @@ namespace Zhalobobot.Bot.Cache
         public StudentCache Students => students.Cache;
         public SubjectCache Subjects => subjects.Cache;
         public HolidaysCache Holidays => holidays.Cache;
+        public StudentDataCache StudentData => studentsData.Cache;
         
         public async Task UpdateAll()
         {
