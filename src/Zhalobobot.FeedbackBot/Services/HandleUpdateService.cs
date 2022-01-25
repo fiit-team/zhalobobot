@@ -103,12 +103,18 @@ namespace Zhalobobot.Bot.Services
 
                     if (student == null)
                     {
-                        if (update.Type == UpdateType.CallbackQuery)
+                        if (Cache.StudentData.Find($"@{message.Chat.Username}") is { } data)
+                        {
+                            student = new Student(message.Chat.Id, message.Chat.Username, data.Course, data.Group, data.Subgroup, data.Name);
+                            Cache.Students.Add(student);
+                            await Client.Student.Add(new AddStudentRequest(student));
+                            await StartUsage(BotClient, message);
+                        }
+                        else if (update.Type == UpdateType.CallbackQuery)
                             await BotOnCallbackQueryReceived(update.CallbackQuery);
                         else
-                        {
                             await AddStudent();
-                        }
+
                         return true;
                     }
                 
@@ -328,7 +334,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.EditMessageTextAsync(
                 chatId,
                 messageId,
-                $"Окей, твой курс ФТ-{(int)course}, теперь давай узнаем группу");
+                $"Окей, твой курс {(int)course}й, теперь давай узнаем группу");
             
             await BotClient.EditMessageReplyMarkupAsync(
                 chatId,
@@ -386,6 +392,8 @@ namespace Zhalobobot.Bot.Services
                 chatId,
                 message.MessageId,
                 $"Спасибо, записал тебе группу ФТ-{(int)course}0{(int)group}-{(int)subgroup}. Теперь можешь свободно пользоваться ботом!");
+            
+            await StartUsage(BotClient, message);
         }
 
         private async Task HandleFeedbackCallback(long chatId, string data, int messageId)
