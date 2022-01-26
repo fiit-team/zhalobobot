@@ -230,7 +230,7 @@ namespace Zhalobobot.Bot.Services
             builder.AppendLine("Алерт! Кто-то оставил срочную обратную связь");
             builder.AppendLine();
             builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
-            builder.AppendLine($"{student.Group}");
+            builder.AppendLine($"ФТ-{(int) student.Course}0{(int) student.Group}-{(int) student.Subgroup}");
 
             if (student.Username?.Length > 1)
             {
