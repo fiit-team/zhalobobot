@@ -39,7 +39,8 @@ namespace Zhalobobot.Api.Server.Repositories.Feedback
                 feedback.Student.Name?.ToString() ?? string.Empty,
                 feedback.Student.Group,
                 feedback.Student.Subgroup,
-                feedback.Student.Course
+                feedback.Student.Course,
+                feedback.MessageId
             };
             
             await AppendRequest(FeedbackRange, objectList).ExecuteAsync();

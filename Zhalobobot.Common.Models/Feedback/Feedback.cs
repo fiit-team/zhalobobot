@@ -7,5 +7,6 @@ namespace Zhalobobot.Common.Models.Feedback
         Student.Student Student,
         string? Message = null,
         Subject.Subject? Subject = null,
-        SubjectSurvey? SubjectSurvey = null);
+        SubjectSurvey? SubjectSurvey = null,
+        int MessageId = 0);
 }
