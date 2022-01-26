@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Telegram.Bot.Types;
 using Zhalobobot.Bot.Models;
 
 namespace Zhalobobot.Bot.Services
@@ -14,7 +15,7 @@ namespace Zhalobobot.Bot.Services
 
         public void StartSubjectFeedback(long chatId, string subjectName);
 
-        public void SaveMessage(long chatId, string message);
+        public void SaveMessage(long chatId, Message message);
 
         public void SaveRating(long chatId, int rating);
 
