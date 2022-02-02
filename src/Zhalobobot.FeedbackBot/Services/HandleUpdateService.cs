@@ -12,6 +12,7 @@ using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Bot.Schedule;
+using Zhalobobot.Bot.Services.Handlers;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
@@ -21,6 +22,7 @@ using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Student.Requests;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
+using Zhalobobot.Common.Models.Reply;
 using Emoji = Zhalobobot.Bot.Models.Emoji;
 
 namespace Zhalobobot.Bot.Services
@@ -36,6 +38,8 @@ namespace Zhalobobot.Bot.Services
         private EntitiesCache Cache { get; }
         private IScheduleMessageFormatter ScheduleMessageFormatter { get; }
 
+        private UpdateHandlerAdmin AdminHandler { get; }
+
         private bool IsFirstYearWeekOdd { get; }
 
         public HandleUpdateService(ITelegramBotClient botClient,
@@ -46,7 +50,8 @@ namespace Zhalobobot.Bot.Services
             EntitiesCache cache,
             IScheduleMessageFormatter scheduleMessageFormatter,
             ILogger<HandleUpdateService> logger, 
-            IConfiguration configuration)
+            IConfiguration configuration,
+            UpdateHandlerAdmin adminHandler)
         {
             BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             Client = client ?? throw new ArgumentNullException(nameof(client));
@@ -57,14 +62,27 @@ namespace Zhalobobot.Bot.Services
             ScheduleMessageFormatter = scheduleMessageFormatter;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             IsFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
+            AdminHandler = adminHandler;
         }
 
         public async Task EchoAsync(Update update)
         {
+            if (AdminHandler.Accept(update))
+            {
+                try
+                {
+                    await AdminHandler.HandleUpdate(update);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e.Message);
+                }
+            }
+            
             var chat = update.Message?.Chat;
             if (chat is not null && chat.Type != ChatType.Private)
             {
-                // Временно не обрабатываем логику бота в группе.
                 return;
             }
 
@@ -140,6 +158,11 @@ namespace Zhalobobot.Bot.Services
             if (message.Type != MessageType.Text)
                 return;
 
+            if (await TryHandleReplyMessage(message))
+            {
+                return;
+            }
+
             var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
             var action = message.Text.Trim() switch
@@ -158,6 +181,43 @@ namespace Zhalobobot.Bot.Services
 
             await action;
             Logger.LogInformation($"The message has been processed. MessageId: {message.MessageId}");
+        }
+
+         
+        private async Task<bool> TryHandleReplyMessage(Message message)
+        {
+            var replyToMessage = message.ReplyToMessage;
+
+            if (message.ReplyToMessage is null)
+            {
+                return false;
+            }
+
+            var reply = Cache.Replies.FindBySentMessage(replyToMessage.Chat.Id, replyToMessage.MessageId);
+            if (reply is null)
+            {
+                return false;
+            }
+
+            var sentMessage = await BotClient.SendTextMessageAsync(
+                reply.ChatId,
+                "На твоё сообщение ответили:\n\n" +
+                $"{message.Text}\n\n" +
+                $"Если хочешь продолжить общение, можешь ответить реплаем на это сообщение.",
+                replyToMessageId: reply.MessageId);
+
+            var newReply = new Reply(
+                message.From.Id, message.From.Username, message.Chat.Id,
+                message.MessageId, message.Text,
+                sentMessage.Chat.Id, sentMessage.MessageId, reply);
+
+            await BotClient.SendTextMessageAsync(
+                reply.ChildChatId,
+                "Сообщение отправлено");
+
+            Cache.Replies.Add(newReply);
+
+            return true;
         }
 
         private async Task<Message> HandleAlertFeedbackAsync(ITelegramBotClient bot, Message message)
@@ -214,7 +274,7 @@ namespace Zhalobobot.Bot.Services
 
         private async Task SaveFeedbackAsync(ITelegramBotClient bot, Message message)
         {
-            ConversationService.SaveMessage(message.Chat.Id, message.Text);
+            ConversationService.SaveMessage(message.Chat.Id, message);
             
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
