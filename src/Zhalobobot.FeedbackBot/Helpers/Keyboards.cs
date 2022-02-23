@@ -35,10 +35,11 @@ namespace Zhalobobot.Bot.Helpers
                 new KeyboardButton[] { Buttons.Alarm }
             };
 
-            if (student.Course < Course.Third)
-            {
-                buttons.Add(new KeyboardButton[] { Buttons.Schedule });
-            }
+            // todo: вернуть, когда починим расписание
+            // if (student.Course < Course.Third)
+            // {
+            //     buttons.Add(new KeyboardButton[] { Buttons.Schedule });
+            // }
             
             return new ReplyKeyboardMarkup(buttons)
             {
