@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,13 +8,12 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Bot.Schedule;
+using Zhalobobot.Bot.Services.Handlers;
 using Zhalobobot.Common.Clients.Core;
-using Zhalobobot.Common.Helpers;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Exceptions;
@@ -24,6 +22,7 @@ using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Student.Requests;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
+using Zhalobobot.Common.Models.Reply;
 using Emoji = Zhalobobot.Bot.Models.Emoji;
 
 namespace Zhalobobot.Bot.Services
@@ -39,6 +38,8 @@ namespace Zhalobobot.Bot.Services
         private EntitiesCache Cache { get; }
         private IScheduleMessageFormatter ScheduleMessageFormatter { get; }
 
+        private UpdateHandlerAdmin AdminHandler { get; }
+
         private bool IsFirstYearWeekOdd { get; }
 
         public HandleUpdateService(ITelegramBotClient botClient,
@@ -49,7 +50,8 @@ namespace Zhalobobot.Bot.Services
             EntitiesCache cache,
             IScheduleMessageFormatter scheduleMessageFormatter,
             ILogger<HandleUpdateService> logger, 
-            IConfiguration configuration)
+            IConfiguration configuration,
+            UpdateHandlerAdmin adminHandler)
         {
             BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             Client = client ?? throw new ArgumentNullException(nameof(client));
@@ -60,10 +62,24 @@ namespace Zhalobobot.Bot.Services
             ScheduleMessageFormatter = scheduleMessageFormatter;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             IsFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
+            AdminHandler = adminHandler;
         }
 
         public async Task EchoAsync(Update update)
         {
+            if (AdminHandler.Accept(update))
+            {
+                try
+                {
+                    await AdminHandler.HandleUpdate(update);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e.Message);
+                }
+            }
+            
             var chat = update.Message?.Chat;
             if (chat is not null && chat.Type != ChatType.Private)
             {
@@ -106,11 +122,18 @@ namespace Zhalobobot.Bot.Services
 
                     if (student == null)
                     {
-                        if (update.Type == UpdateType.CallbackQuery)
+                        if (Cache.StudentData.Find($"@{message.Chat.Username}") is { } data)
+                        {
+                            student = new Student(message.Chat.Id, message.Chat.Username, data.Course, data.Group, data.Subgroup, data.Name);
+                            Cache.Students.Add(student);
+                            await Client.Student.Add(new AddStudentRequest(student));
+                            await StartUsage(BotClient, message);
+                        }
+                        else if (update.Type == UpdateType.CallbackQuery)
                             await BotOnCallbackQueryReceived(update.CallbackQuery);
                         else
                             await AddStudent();
-                        
+
                         return true;
                     }
                 
@@ -121,7 +144,7 @@ namespace Zhalobobot.Bot.Services
                         await BotClient.SendTextMessageAsync(
                             message.Chat.Id,
                             "Привет! Мы с тобой еще не знакомы, так что ответь на пару моих вопросиков :)\nСначала укажи курс:",
-                            replyMarkup: WellKnownKeyboards.AddCourseKeyboard);
+                            replyMarkup: Keyboards.AddCourseKeyboard);
                     }
                 }
 
@@ -135,6 +158,11 @@ namespace Zhalobobot.Bot.Services
 
             if (message.Type != MessageType.Text)
                 return;
+
+            if (await TryHandleReplyMessage(message))
+            {
+                return;
+            }
 
             var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
@@ -156,6 +184,43 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"The message has been processed. MessageId: {message.MessageId}");
         }
 
+         
+        private async Task<bool> TryHandleReplyMessage(Message message)
+        {
+            var replyToMessage = message.ReplyToMessage;
+
+            if (message.ReplyToMessage is null)
+            {
+                return false;
+            }
+
+            var reply = Cache.Replies.FindBySentMessage(replyToMessage.Chat.Id, replyToMessage.MessageId);
+            if (reply is null)
+            {
+                return false;
+            }
+
+            var sentMessage = await BotClient.SendTextMessageAsync(
+                reply.ChatId,
+                "На твоё сообщение ответили:\n\n" +
+                $"{message.Text}\n\n" +
+                $"Если хочешь продолжить общение, можешь ответить реплаем на это сообщение.",
+                replyToMessageId: reply.MessageId);
+
+            var newReply = new Reply(
+                message.From.Id, message.From.Username, message.Chat.Id,
+                message.MessageId, message.Text,
+                sentMessage.Chat.Id, sentMessage.MessageId, reply);
+
+            await BotClient.SendTextMessageAsync(
+                reply.ChildChatId,
+                "Сообщение отправлено");
+
+            Cache.Replies.Add(newReply);
+
+            return true;
+        }
+
         private async Task<Message> HandleAlertFeedbackAsync(ITelegramBotClient bot, Message message)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
@@ -167,7 +232,7 @@ namespace Zhalobobot.Bot.Services
             return await BotClient.SendTextMessageAsync(
                 message.Chat.Id,
                 text,
-                replyMarkup: WellKnownKeyboards.SubmitKeyboard);
+                replyMarkup: Keyboards.SubmitKeyboard);
         }
 
         private async Task<Message> HandleGeneralFeedbackAsync(ITelegramBotClient bot, Message message)
@@ -179,7 +244,7 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 BuildStartFeedbackMessage(),
-                replyMarkup: WellKnownKeyboards.SubmitKeyboard);
+                replyMarkup: Keyboards.SubmitKeyboard);
         }
 
         private async Task<Message> HandleSubjectsAsync(ITelegramBotClient bot, Message message)
@@ -189,7 +254,7 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 "Выбери категорию",
-                replyMarkup: WellKnownKeyboards.GetSubjectCategoryKeyboard);
+                replyMarkup: Keyboards.GetSubjectCategoryKeyboard);
         }
 
         private async Task<Message> HandleScheduleAsync(ITelegramBotClient bot, Message message)
@@ -197,8 +262,7 @@ namespace Zhalobobot.Bot.Services
             var student = Cache.Students.Get(message.Chat.Id);
 
             var lastStudyWeekDay = Cache.ScheduleItems
-                .GetFullFor(student.Course, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd))
-                .FilterFor(student)
+                .GetFor(student, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd))
                 .LastStudyWeekDay();
 
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
@@ -206,12 +270,12 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 "Выбери нужный вариант",
-                replyMarkup: WellKnownKeyboards.ChooseScheduleDayKeyboard(lastStudyWeekDay));
+                replyMarkup: Keyboards.ChooseScheduleDayKeyboard(lastStudyWeekDay));
         }
 
         private async Task SaveFeedbackAsync(ITelegramBotClient bot, Message message)
         {
-            ConversationService.SaveMessage(message.Chat.Id, message.Text);
+            ConversationService.SaveMessage(message.Chat.Id, message);
             
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
@@ -230,7 +294,7 @@ namespace Zhalobobot.Bot.Services
 
             string text;
             var student = Cache.Students.Get(message.Chat.Id); //todo: убрать после того, как добавим обработку 3го курса
-            var replyMarkup = WellKnownKeyboards.DefaultKeyboard(student);
+            var replyMarkup = Keyboards.DefaultKeyboard(student);
 
             if (conversationStatus == ConversationStatus.AwaitingConfirmation)
             {
@@ -240,7 +304,7 @@ namespace Zhalobobot.Bot.Services
             else if (conversationStatus == ConversationStatus.AwaitingMessage)
             {
                 text = @"Отправь сообщение, а потом нажми ""Готово""";
-                replyMarkup = WellKnownKeyboards.SubmitKeyboard;
+                replyMarkup = Keyboards.SubmitKeyboard;
             }
             else
             {
@@ -321,7 +385,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.EditMessageReplyMarkupAsync(
                 chatId,
                 messageId,
-                GetSubjectsKeyboard(subjects));
+                Keyboards.GetSubjectsKeyboard(subjects));
         }
 
         private async Task HandleAddCourseCallback(long chatId, string data, int messageId)
@@ -331,12 +395,12 @@ namespace Zhalobobot.Bot.Services
             await BotClient.EditMessageTextAsync(
                 chatId,
                 messageId,
-                $"Окей, твой курс ФТ-{(int)course}, теперь давай узнаем группу");
+                $"Окей, твой курс {(int)course}й, теперь давай узнаем группу");
             
             await BotClient.EditMessageReplyMarkupAsync(
                 chatId,
                 messageId,
-                WellKnownKeyboards.AddCourseAndGroupKeyboard(course));
+                Keyboards.AddCourseAndGroupKeyboard(course));
         }
         
         private async Task HandleAddCourseAndGroupCallback(long chatId, string data, int messageId)
@@ -353,7 +417,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.EditMessageReplyMarkupAsync(
                 chatId,
                 messageId,
-                WellKnownKeyboards.AddCourseAndGroupAndSubgroupKeyboard(course, group));
+                Keyboards.AddCourseAndGroupAndSubgroupKeyboard(course, group));
         }
         
         private async Task HandleAddCourseAndGroupAndSubgroupCallback(long chatId, string data, Message message)
@@ -389,6 +453,8 @@ namespace Zhalobobot.Bot.Services
                 chatId,
                 message.MessageId,
                 $"Спасибо, записал тебе группу ФТ-{(int)course}0{(int)group}-{(int)subgroup}. Теперь можешь свободно пользоваться ботом!");
+            
+            await StartUsage(BotClient, message);
         }
 
         private async Task HandleFeedbackCallback(long chatId, string data, int messageId)
@@ -459,7 +525,7 @@ namespace Zhalobobot.Bot.Services
             await BotClient.SendTextMessageAsync(
                 chatId,
                 text,
-                replyMarkup: WellKnownKeyboards.RatingKeyboard);
+                replyMarkup: Keyboards.RatingKeyboard);
         }
 
         private async Task BotOnPollAnswerReceived(PollAnswer pollAnswer)
@@ -506,7 +572,7 @@ namespace Zhalobobot.Bot.Services
                 await BotClient.SendTextMessageAsync(
                     chatId,
                     BuildStartFeedbackMessage(true),
-                    replyMarkup: WellKnownKeyboards.SubmitKeyboard);
+                    replyMarkup: Keyboards.SubmitKeyboard);
             }
         }
 
@@ -541,20 +607,6 @@ namespace Zhalobobot.Bot.Services
 
             Logger.LogInformation(errorMessage);
             return Task.CompletedTask;
-        }
-
-        private static InlineKeyboardMarkup GetSubjectsKeyboard(IEnumerable<Subject> subjects)
-        {
-            var inlineKeyboard = new InlineKeyboardMarkup(
-                subjects
-                    .Select(subject => new[]
-                        {
-                            InlineKeyboardButton.WithCallbackData(
-                                subject.Name.Slice(),
-                                string.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.Name.GetHashCode()))
-                        }));
-
-            return inlineKeyboard;
         }
 
         private static string BuildStartFeedbackMessage(bool isSubjectFeedback = false)
@@ -594,7 +646,7 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 usage.ToString(),
-                replyMarkup: WellKnownKeyboards.DefaultKeyboard(student));
+                replyMarkup: Keyboards.DefaultKeyboard(student));
         }
 
         private async Task Usage(ITelegramBotClient bot, Message message)

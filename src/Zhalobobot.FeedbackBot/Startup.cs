@@ -10,6 +10,7 @@ using Zhalobobot.Bot.Quartz.Extensions;
 using Zhalobobot.Bot.Quartz.Jobs;
 using Zhalobobot.Bot.Schedule;
 using Zhalobobot.Bot.Services;
+using Zhalobobot.Bot.Services.Handlers;
 using Zhalobobot.Common.Clients.Core;
 
 namespace Zhalobobot.Bot
@@ -74,6 +75,7 @@ namespace Zhalobobot.Bot
             services.AddSingleton<IPollService, PollService>();
             services.AddSingleton<IConversationService, ConversationService>();
             services.AddSingleton<IScheduleMessageService, ScheduleMessageService>();
+            services.AddScoped<UpdateHandlerAdmin>();
             services.AddScoped<HandleUpdateService>();
         }
 
