@@ -47,8 +47,9 @@ namespace Zhalobobot.Bot
             services.AddSingleton<IZhalobobotApiClient>(
                 new ZhalobobotApiClient(Settings.ServerAddress));
 
-            services.AddControllers()
-                    .AddNewtonsoftJson();
+            services.AddControllers(options => options.UseDateOnlyTimeOnlyStringConverters())
+                .AddJsonOptions(options => options.UseDateOnlyTimeOnlyStringConverters())
+                .AddNewtonsoftJson();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

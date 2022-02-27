@@ -25,11 +25,13 @@ namespace Zhalobobot.Api.Server
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers()
+            services.AddControllers(options => options.UseDateOnlyTimeOnlyStringConverters())
+                .AddJsonOptions(options => options.UseDateOnlyTimeOnlyStringConverters())
                 .AddNewtonsoftJson();
             
             services.AddSwaggerGen(c =>
             {
+                c.UseDateOnlyTimeOnlyStringConverters();
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Zhalobobot.Api.Server", Version = "v1" });
             });
             
