@@ -104,7 +104,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                     var timeCorrect = TimeOnly.TryParse(item1, out var time);
                     
                     if (!timeCorrect || !dateCorrect)
-                        throw new Exception("Incorrect date or time format!");
+                        throw new Exception($"Incorrect date or time format! Date: {date}, Time: {time}");
                     
                     return (date, time);
                 }
