@@ -81,9 +81,13 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             if (str == "")
                 return null;
 
+            str = str.Trim();
+
             if (str.Contains(','))
             {
                 var (item1, item2) = str.SplitPair(',');
+                item1 = item1.Trim();
+                item2 = item2.Trim();
                 var dateCorrect = DateOnly.TryParse(item1, out var date);
                 if (dateCorrect)
                 {
@@ -155,7 +159,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                     yield return i;
             }
             else
-                yield return DateOnly.ParseExact(str, "dd.MM.yyyy", CultureInfo.InvariantCulture);
+                yield return DateOnly.Parse(str);
         }
     }
 }
