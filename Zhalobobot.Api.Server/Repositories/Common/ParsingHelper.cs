@@ -159,7 +159,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                     yield return i;
             }
             else
-                yield return DateOnly.Parse(str.Trim());
+                yield return DateOnly.ParseExact(str.Trim(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
         }
     }
 }
