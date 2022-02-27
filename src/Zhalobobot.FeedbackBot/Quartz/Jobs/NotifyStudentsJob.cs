@@ -31,7 +31,7 @@ namespace Zhalobobot.Bot.Quartz.Jobs
         {
             var ekbTime = DateHelper.EkbTime;
             var courses = Cache.ScheduleItems
-                .GetByDayOfWeekAndEndsAtHourAndMinute(ekbTime.DayOfWeek, new HourAndMinute(ekbTime.Hour, ekbTime.Minute));
+                .GetByDayOfWeekAndEndsAtTime(ekbTime.DayOfWeek, ekbTime.ToTimeOnly());
             
             foreach (var course in courses)
             {

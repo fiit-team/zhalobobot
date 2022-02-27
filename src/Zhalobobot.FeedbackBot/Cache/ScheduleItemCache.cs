@@ -42,12 +42,12 @@ namespace Zhalobobot.Bot.Cache
                 .Where(s => s.Group == student.Group && (!s.Subgroup.HasValue || s.Subgroup.Value == student.Subgroup))
                 .Distinct();
 
-        public IEnumerable<ScheduleItem> GetByDayOfWeekAndEndsAtHourAndMinute(DayOfWeek dayOfWeek, HourAndMinute hourAndMinute)
+        public IEnumerable<ScheduleItem> GetByDayOfWeekAndEndsAtTime(DayOfWeek dayOfWeek, TimeOnly hourAndMinute)
         {
             return All.Where(s => s.EventTime.DayOfWeek == dayOfWeek && EndTimeMatches(s));
 
             bool EndTimeMatches(ScheduleItem item)
-                => item.EventTime.Pair.HasValue && item.EventTime.Pair.Value.ToHourAndMinute().End == hourAndMinute
+                => item.EventTime.Pair.HasValue && item.EventTime.Pair.Value.ToTimeOnly().End == hourAndMinute
                    || item.EventTime.EndTime != null && item.EventTime.EndTime == hourAndMinute;
         } 
     }

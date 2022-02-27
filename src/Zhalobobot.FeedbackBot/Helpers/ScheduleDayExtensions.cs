@@ -10,36 +10,36 @@ namespace Zhalobobot.Bot.Helpers
         public static bool IsCurrentWeek(this ScheduleDay day) =>
             day is not (ScheduleDay.NextMonday or ScheduleDay.NextWeek);
 
-        public static DayAndMonth CurrentWeekDayAndMonth(this ScheduleDay date)
+        public static DateOnly CurrentWeekDayAndMonth(this ScheduleDay date)
         {
             if (date > ScheduleDay.Saturday)
                 throw new NotSupportedException(nameof(date));
             
-            return DateHelper.MondayDate.AddDays(date - ScheduleDay.Monday).ToDayAndMonth();
+            return DateHelper.MondayDate.AddDays(date - ScheduleDay.Monday).ToDateOnly();
         }
 
-        public static DayAndMonth OneDayAfterCurrentWeekDayAndMonth(this ScheduleDay date)
+        public static DateOnly OneDayAfterCurrentWeekDayAndMonth(this ScheduleDay date)
         {
             if (date > ScheduleDay.Saturday)
                 throw new NotSupportedException(nameof(date));
             
-            return DateHelper.MondayDate.AddDays(1 + date - ScheduleDay.Monday).ToDayAndMonth();
+            return DateHelper.MondayDate.AddDays(1 + date - ScheduleDay.Monday).ToDateOnly();
         }
         
-        public static DayAndMonth NextWeekDayAndMonth(this ScheduleDay date)
+        public static DateOnly NextWeekDayAndMonth(this ScheduleDay date)
         {
             if (date > ScheduleDay.Saturday)
                 throw new NotSupportedException(nameof(date));
             
-            return DateHelper.NextMondayDate.AddDays(date - ScheduleDay.Monday).ToDayAndMonth();
+            return DateHelper.NextMondayDate.AddDays(date - ScheduleDay.Monday).ToDateOnly();
         }
         
-        public static DayAndMonth OneDayAfterNextWeekDayAndMonth(this ScheduleDay date)
+        public static DateOnly OneDayAfterNextWeekDayAndMonth(this ScheduleDay date)
         {
             if (date > ScheduleDay.Saturday)
                 throw new NotSupportedException(nameof(date));
             
-            return DateHelper.NextMondayDate.AddDays(1 + date - ScheduleDay.Monday).ToDayAndMonth();
+            return DateHelper.NextMondayDate.AddDays(1 + date - ScheduleDay.Monday).ToDateOnly();
         }
     }
 }

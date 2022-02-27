@@ -8,7 +8,6 @@ using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Helpers.Extensions;
-using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Schedule;
 
@@ -27,7 +26,7 @@ namespace Zhalobobot.Bot.Schedule
             isFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
         }
         
-        public string Format(long chatId, ScheduleDay scheduleDay, out DayAndMonth? whenDelete)
+        public string Format(long chatId, ScheduleDay scheduleDay, out DateOnly? whenDelete)
         {
             if (scheduleDay.IsCurrentWeek())
                 return CurrentWeek(chatId, scheduleDay, out whenDelete);
@@ -36,7 +35,7 @@ namespace Zhalobobot.Bot.Schedule
             return NextWeek(chatId, scheduleDay);
         }
 
-        private string CurrentWeek(long chatId, ScheduleDay day, out DayAndMonth? whenDelete)
+        private string CurrentWeek(long chatId, ScheduleDay day, out DateOnly? whenDelete)
         {
             var student = cache.Students.Get(chatId);
 
@@ -121,21 +120,22 @@ namespace Zhalobobot.Bot.Schedule
 
             var date = currentWeek ? scheduleDay.CurrentWeekDayAndMonth() : scheduleDay.NextWeekDayAndMonth();
             var schedule = scheduleByDay[scheduleDay]
-                .EmptyWhenHolidays(date, cache.Holidays.All.ToHashSet());
+                .EmptyWhenHolidays(date, cache.Holidays.All.FromRecord().ToHashSet());
 
             if (schedule.Length == 0)
                 return "";
 
             var builder = new StringBuilder();
             var dayOfWeek = scheduleDay.AsString(EnumFormat.Description);
-            builder.Append($"{dayOfWeek} {date}".PutInCenterOf(' ', TelegramMessageWidth) + "\n");
+            builder.Append($"{dayOfWeek} {date.ToDayAndMonth()}".PutInCenterOf(' ', TelegramMessageWidth) + "\n");
 
-            var hourAndMinute = DateHelper.EkbTime.ToHourAndMinute();
+            var hourAndMinute = DateHelper.EkbTime.ToTimeOnly();
 
-            var orderedItems = schedule.OrderBy(i => GetSubjectDuration(i).Start.Hour)
-                .ThenBy(i => GetSubjectDuration(i).Start.Minute)
-                .ThenBy(i => GetSubjectDuration(i).End.Hour)
-                .ThenBy(i => GetSubjectDuration(i).End.Minute);
+            var actualSchedule = schedule
+                .GroupBy(s => s.Subject.Name)
+                .SelectMany(group => GetActualSchedule(group, date));
+
+            var orderedItems = OrderSchedule(actualSchedule);
 
             var firstItem = orderedItems.First();
 
@@ -149,7 +149,7 @@ namespace Zhalobobot.Bot.Schedule
                 if (previousEnd < hourAndMinute && hourAndMinute < nextStart && item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
                 {
                     var difference = nextStart - hourAndMinute;
-                    builder.Append($"[{hourAndMinute}, до пары {(difference.Hour == 0 ? $"{difference.Minute}мин" : difference)}]".PutInCenterOf('-', TelegramMessageWidth) + "\n");
+                    builder.Append($"[{hourAndMinute}, до пары {(difference.Hours == 0 ? $"{difference.Minutes}мин" : difference)}]".PutInCenterOf('-', TelegramMessageWidth) + "\n");
                 }
                 else if (SingleDayScheduleRequested())
                     builder.Append($"{new string(' ', TelegramMessageWidth)}\n");
@@ -173,7 +173,7 @@ namespace Zhalobobot.Bot.Schedule
                     item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
                 {
                     var difference = end - hourAndMinute;
-                    var timeBetweenStudy = $"[{hourAndMinute}, до конца {(difference.Hour == 0 ? $"{difference.Minute}мин" : difference)}]".PutInCenterOf('-', TelegramMessageWidth);
+                    var timeBetweenStudy = $"[{hourAndMinute}, до конца {(difference.Hours == 0 ? $"{difference.Minutes}мин" : difference)}]".PutInCenterOf('-', TelegramMessageWidth);
                     return $"{Crop(firstLine)}\n{timeBetweenStudy}\n{Crop(secondLine)}\n";
                 }
 
@@ -187,6 +187,62 @@ namespace Zhalobobot.Bot.Schedule
             {
                 var maxLength = Math.Min(TelegramMessageWidth, str.Length);
                 return $"{str[..maxLength]}{(str.Length > TelegramMessageWidth ? "…" : "")}";
+            }
+
+            IEnumerable<ScheduleItem> GetActualSchedule(IEnumerable<ScheduleItem> items, DateOnly day)
+            {
+                var hourAndMinuteToScheduleItem = items
+                    .GroupBy(i => GetSubjectDuration(i).Start)
+                    .ToDictionary(i => i.Key, i => i.ToArray());
+
+                foreach (var (_, scheduleItems) in hourAndMinuteToScheduleItem)
+                {
+                    switch (scheduleItems.Length)
+                    {
+                        case 1:
+                            yield return scheduleItems.First();
+                            break;
+                        case > 1:
+                        {
+                            var bothStartAndEndDay = scheduleItems
+                                .Where(k =>
+                                    k.EventTime.StartDay != null && k.EventTime.StartDay <= day &&
+                                    k.EventTime.EndDay != null && k.EventTime.EndDay >= day)
+                                .ToArray();
+                            if (bothStartAndEndDay.Length == 0)
+                            {
+                                var noStartAndEndDay = scheduleItems
+                                    .Where(o => o.EventTime.StartDay == null && o.EventTime.EndDay == null)
+                                    .ToArray();
+                                if (noStartAndEndDay.Length == 1)
+                                    yield return noStartAndEndDay.First();
+                                else
+                                {
+                                    var startOrEndDay = OrderSchedule(scheduleItems
+                                        .Where(o => o.EventTime.StartDay == null || o.EventTime.EndDay == null)
+                                        .ToArray());
+                                    yield return startOrEndDay.First();
+                                }
+                            }
+                            else
+                                yield return bothStartAndEndDay
+                                    .OrderBy(s => date.ToDateTime(TimeOnly.MinValue).Subtract(s.EventTime.StartDay!.Value.ToDateTime(TimeOnly.MinValue)))
+                                    .First();
+
+                            break;
+                        }
+                    }
+                }
+            }
+
+            static ScheduleItem[] OrderSchedule(IEnumerable<ScheduleItem> schedule)
+            {
+                return schedule
+                    .OrderBy(i => GetSubjectDuration(i).Start.Hour)
+                    .ThenBy(i => GetSubjectDuration(i).Start.Minute)
+                    .ThenBy(i => GetSubjectDuration(i).End.Hour)
+                    .ThenBy(i => GetSubjectDuration(i).End.Minute)
+                    .ToArray();
             }
         }
 
@@ -204,14 +260,14 @@ namespace Zhalobobot.Bot.Schedule
             return $"{start} {item.Subject.Name}";
         }
 
-        private static (HourAndMinute Start, HourAndMinute End) GetSubjectDuration(ScheduleItem item)
+        private static (TimeOnly Start, TimeOnly End) GetSubjectDuration(ScheduleItem item)
         {
             var start = item.EventTime.StartTime 
-               ?? item.EventTime.Pair?.ToHourAndMinute().Start 
+               ?? item.EventTime.Pair?.ToTimeOnly().Start 
                ?? throw new Exception();
             
             var end = item.EventTime.EndTime 
-               ?? item.EventTime.Pair?.ToHourAndMinute().End 
+               ?? item.EventTime.Pair?.ToTimeOnly().End 
                ?? throw new Exception();
 
             return (start, end);

@@ -6,9 +6,9 @@ namespace Zhalobobot.Common.Models.Subject
     public record EventTime(
         DayOfWeek DayOfWeek,
         Pair? Pair,
-        HourAndMinute? StartTime,
-        HourAndMinute? EndTime,
-        DayAndMonth? StartDay,
-        DayAndMonth? EndDay,
+        TimeOnly? StartTime,
+        TimeOnly? EndTime,
+        DateOnly? StartDay,
+        DateOnly? EndDay,
         WeekParity WeekParity);
 }

@@ -25,7 +25,7 @@ namespace Zhalobobot.Bot.Quartz.Jobs
 
             var chatsToDelete = new HashSet<long>();
             
-            var currentDay = DateHelper.EkbTime.ToDayAndMonth();
+            var currentDay = DateHelper.EkbTime.ToDateOnly();
             while (iterator.MoveNext())
             {
                 if (iterator.Current.Value.WhenDelete <= currentDay)

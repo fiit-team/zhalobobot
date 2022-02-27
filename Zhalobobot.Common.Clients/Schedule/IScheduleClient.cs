@@ -1,7 +1,6 @@
+using System;
 using System.Threading.Tasks;
 using Zhalobobot.Common.Clients.Core;
-using Zhalobobot.Common.Models.Commons;
-using Zhalobobot.Common.Models.Schedule;
 
 namespace Zhalobobot.Common.Clients.Schedule
 {
@@ -9,6 +8,6 @@ namespace Zhalobobot.Common.Clients.Schedule
     {
         Task<ZhalobobotResult<ScheduleItem[]>> GetAll();
         
-        Task<ZhalobobotResult<DayAndMonth[]>> GetHolidays();
+        Task<ZhalobobotResult<DateOnly[]>> GetHolidays();
     }
 }

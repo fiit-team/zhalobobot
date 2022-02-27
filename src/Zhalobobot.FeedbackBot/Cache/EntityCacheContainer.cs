@@ -18,6 +18,13 @@ namespace Zhalobobot.Bot.Cache
         }
 
         public EntityCacheContainer(
+            Func<Task<TEntity>> fetch,
+            Func<TEntity, TCache> construct)
+            : this(async () => construct(await fetch()))
+        {
+        }
+
+        public EntityCacheContainer(
             Func<Task<TEntity[]>> fetch, 
             Func<TEntity[], TCache> construct)
             : this(async () => construct(await fetch()))

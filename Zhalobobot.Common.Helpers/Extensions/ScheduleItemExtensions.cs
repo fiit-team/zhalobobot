@@ -14,7 +14,7 @@ namespace Zhalobobot.Common.Helpers.Extensions
                 .OrderByDescending(d => d)
                 .First();
 
-        public static ScheduleItem[] EmptyWhenHolidays(this IEnumerable<ScheduleItem> items, DayAndMonth date, HashSet<DayAndMonth> holidays)
+        public static ScheduleItem[] EmptyWhenHolidays(this IEnumerable<ScheduleItem> items, DateOnly date, HashSet<DateOnly> holidays)
         {
             return holidays.Contains(date) 
                 ? Array.Empty<ScheduleItem>() 

@@ -1,13 +1,11 @@
-using System.Collections.Generic;
+using System;
 using System.Threading.Tasks;
-using Zhalobobot.Common.Models.Commons;
-using Zhalobobot.Common.Models.Schedule;
 
 namespace Zhalobobot.Api.Server.Repositories.Schedule
 {
     public interface IScheduleRepository
     {
-        Task<IEnumerable<ScheduleItem>> GetAll();
-        Task<DayAndMonth[]> GetHolidays();
+        Task<Zhalobobot.Common.Models.Schedule.Schedule> GetAll();
+        Task<DateOnly[]> GetHolidays();
     }
 }

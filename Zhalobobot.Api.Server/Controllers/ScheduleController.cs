@@ -1,8 +1,7 @@
-using System.Linq;
+using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Zhalobobot.Api.Server.Repositories.Schedule;
-using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Schedule;
 
 namespace Zhalobobot.Api.Server.Controllers
@@ -22,7 +21,7 @@ namespace Zhalobobot.Api.Server.Controllers
             => (await repository.GetAll()).ToArray();
 
         [HttpPost("holidays")]
-        public async Task<DayAndMonth[]> GetHolidays() 
+        public async Task<DateOnly[]> GetHolidays()
             => await repository.GetHolidays();
     }
 }

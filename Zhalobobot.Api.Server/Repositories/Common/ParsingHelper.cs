@@ -93,7 +93,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             throw new Exception();
         }
 
-        public static (DayAndMonth? DayAndMonth, HourAndMinute? HourAndMinutes)? ParseDayAndMonthOrHourAndMinutes(object value)
+        public static (DateOnly? DateOnly, TimeOnly? TimeOnly)? ParseDateOnlyTimeOnly(object value)
         {
             if (value is not string str)
                 return null;
@@ -103,43 +103,33 @@ namespace Zhalobobot.Api.Server.Repositories.Common
 
             if (str.Contains(','))
             {
-                var parts = str.Split(',');
-                var dayAndMonth = parts.First(p => p.Contains('.')).Split('.');
-                var hourAndMinutes = parts.First(p => p.Contains(':')).Split(':');
-
-                var day = int.Parse(dayAndMonth[0].TrimStart('0'));
-                var month = int.Parse(dayAndMonth[1].TrimStart('0'));
-
-                if (!int.TryParse(hourAndMinutes[0].TrimStart('0'), out var hour))
-                    hour = 0;
-                
-                if (!int.TryParse(hourAndMinutes[1].TrimStart('0'), out var minutes))
-                    minutes = 0;
-
-                return new(new DayAndMonth(day, (Month)month), new HourAndMinute(hour, minutes));
+                var (item1, item2) = str.SplitPair(',');
+                var dateCorrect = DateOnly.TryParse(item1, out var date);
+                if (dateCorrect)
+                {
+                    var timeCorrect = TimeOnly.TryParse(item2, out var time);
+                    
+                    if (!timeCorrect)
+                        throw new Exception("Incorrect time format!");
+                    
+                    return (date, time);
+                }
+                else
+                {
+                    dateCorrect = DateOnly.TryParse(item2, out date);
+                    var timeCorrect = TimeOnly.TryParse(item1, out var time);
+                    
+                    if (!timeCorrect || !dateCorrect)
+                        throw new Exception("Incorrect date or time format!");
+                    
+                    return (date, time);
+                }
             }
 
-            if (str.Contains(':'))
-            {
-                var hourAndMinutes = str.Split(':');
-                
-                if (!int.TryParse(hourAndMinutes[0].TrimStart('0'), out var hour))
-                    hour = 0;
-                
-                if (!int.TryParse(hourAndMinutes[1].TrimStart('0'), out var minutes))
-                    minutes = 0;
-                return new ValueTuple<DayAndMonth?, HourAndMinute?>(null, new HourAndMinute(hour, minutes));
-            }
-
-            if (!str.Contains('.')) throw new Exception();
-            {
-                var dayAndMonth = str.Split('.');
-                
-                var day = int.Parse(dayAndMonth[0].TrimStart('0'));
-                var month = int.Parse(dayAndMonth[1].TrimStart('0'));
-
-                return new ValueTuple<DayAndMonth?, HourAndMinute?>(new DayAndMonth(day, (Month)month), null);
-            }
+            var dateOnlyCorrect = DateOnly.TryParse(str, out var dateOnly);
+            var timeOnlyCorrect = TimeOnly.TryParse(str, out var timeOnly);
+            
+            return (dateOnlyCorrect ? dateOnly : null, timeOnlyCorrect ? timeOnly : null);
         }
 
         public static IEnumerable<(Course, Group)> ParseFlow(object value)
@@ -165,31 +155,22 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             });
         }
 
-        public static IEnumerable<int> ParseRange(object value)
+        public static IEnumerable<DateOnly> ParseDateOnlyRange(object value)
         {
             if (value is not string str)
                 throw new Exception();
 
             if (str == "")
                 throw new Exception();
-
-            var parts = str.Split(',');
-
-            foreach (var part in parts)
+            
+            if (str.Contains('-'))
             {
-                if (part.Contains('-'))
-                {
-                    var (start, end) = part.SplitPair('-');
-                    for (var i = int.Parse(start); i <= int.Parse(end); i++)
-                    {
-                        yield return i;
-                    }
-                }
-                else
-                {
-                    yield return int.Parse(part);
-                }
+                var (start, end) = str.SplitPair('-');
+                for (var i = DateOnly.Parse(start); i <= DateOnly.Parse(end); i = i.AddDays(1))
+                    yield return i;
             }
+            else
+                yield return DateOnly.Parse(str);
         }
     }
 }

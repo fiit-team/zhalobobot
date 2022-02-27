@@ -68,13 +68,12 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             }
         }
 
-        public async Task<DayAndMonth[]> GetHolidays()
+        public async Task<DateOnly[]> GetHolidays()
         {
             var result = await GetRequest(HolidaysRange).ExecuteAsync();
 
             return result.Values
-                .SelectMany(row => ParsingHelper.ParseRange(row[1])
-                    .Select(day => new DayAndMonth(day, ParsingHelper.ParseMonth(row[0]))))
+                .SelectMany(row => ParsingHelper.ParseDateOnlyRange(row[0]))
                 .ToArray();
         }
 
@@ -85,9 +84,9 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
 
             var flow = ParsingHelper.ParseFlow(row[3]).ToArray();
             
-            var startDayAndMonthOrHourAndMinutes = ParsingHelper.ParseDayAndMonthOrHourAndMinutes(row[8]);
+            var startDayOrTime = ParsingHelper.ParseDateOnlyTimeOnly(row[8]);
             
-            var endDayAndMonthOrHourAndMinutes = ParsingHelper.ParseDayAndMonthOrHourAndMinutes(row[9]);
+            var endDayOrTime = ParsingHelper.ParseDateOnlyTimeOnly(row[9]);
     
             foreach (var (course, group) in flow)
             {
@@ -102,10 +101,10 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                 var eventTime = new EventTime(
                     ParsingHelper.ParseDay(row[0]),
                     ParsingHelper.ParseEnum<Pair>(row[1]),
-                    startDayAndMonthOrHourAndMinutes?.HourAndMinutes,
-                    endDayAndMonthOrHourAndMinutes?.HourAndMinutes,
-                    startDayAndMonthOrHourAndMinutes?.DayAndMonth,
-                    endDayAndMonthOrHourAndMinutes?.DayAndMonth,
+                    startDayOrTime?.TimeOnly,
+                    endDayOrTime?.TimeOnly,
+                    startDayOrTime?.DateOnly,
+                    endDayOrTime?.DateOnly,
                     ParsingHelper.ParseParity(row[7]));
 
                 var subgroup = ParsingHelper.ParseNullableInt(row[4]);

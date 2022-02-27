@@ -502,8 +502,8 @@ namespace Zhalobobot.Bot.Services
 
             var formattedMessage = ScheduleMessageFormatter.Format(chatId, scheduleDay, out var whenDelete);
 
-            if (whenDelete != null)
-                ScheduleMessageService.AddMessageToUpdate(chatId, (data, messageId, whenDelete));
+            if (whenDelete.HasValue)
+                ScheduleMessageService.AddMessageToUpdate(chatId, (data, messageId, whenDelete.Value));
 
             await BotClient.EditMessageTextAsync(
                 chatId,

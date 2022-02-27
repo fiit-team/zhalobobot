@@ -38,7 +38,7 @@ namespace Zhalobobot.Common.Models.Helpers
                 : date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
         }
 
-        public static DayAndMonth ToDayAndMonth(this DateTime date) => new(date.Day, (Month)date.Month);
-        public static HourAndMinute ToHourAndMinute(this DateTime date) => new(date.Hour, date.Minute);
+        public static DateOnly ToDateOnly(this DateTime date) => DateOnly.FromDateTime(date);
+        public static TimeOnly ToTimeOnly(this DateTime date) => TimeOnly.FromDateTime(date);
     }
 }

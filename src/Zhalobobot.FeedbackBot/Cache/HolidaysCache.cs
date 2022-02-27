@@ -1,10 +1,8 @@
-using Zhalobobot.Common.Models.Commons;
-
 namespace Zhalobobot.Bot.Cache
 {
-    public class HolidaysCache : EntityCacheBase<DayAndMonth>
+    public class HolidaysCache : EntityCacheBase<DateOnlyRecord>
     {
-        public HolidaysCache(DayAndMonth[] holidays) 
+        public HolidaysCache(DateOnlyRecord[] holidays) 
             : base(holidays)
         {
         }
