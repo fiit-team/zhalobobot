@@ -151,10 +151,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             if (str.Contains('-'))
             {
                 var (start, end) = str.SplitPair('-');
-                for (
-                    var i = DateOnly.ParseExact(start, "dd.MM.yyyy", CultureInfo.InvariantCulture); 
-                     i <= DateOnly.ParseExact(end, "dd.MM.yyyy", CultureInfo.InvariantCulture); 
-                     i = i.AddDays(1))
+                for (var i = DateOnly.Parse(start.Trim()); i <= DateOnly.Parse(end.Trim()); i = i.AddDays(1))
                     yield return i;
             }
             else
