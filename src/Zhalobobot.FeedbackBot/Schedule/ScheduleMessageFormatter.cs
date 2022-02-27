@@ -148,8 +148,8 @@ namespace Zhalobobot.Bot.Schedule
 
                 if (previousEnd < hourAndMinute && hourAndMinute < nextStart && item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
                 {
-                    var difference = nextStart - hourAndMinute;
-                    builder.Append($"[{hourAndMinute}, до пары {(difference.Hours == 0 ? $"{difference.Minutes}мин" : difference)}]".PutInCenterOf('-', TelegramMessageWidth) + "\n");
+                    var diff = nextStart - hourAndMinute;
+                    builder.Append($"[{hourAndMinute}, до пары {(diff.Hours == 0 ? $"{diff.Minutes}мин" : diff.ToHourAndMinute())}]".PutInCenterOf('-', TelegramMessageWidth) + "\n");
                 }
                 else if (SingleDayScheduleRequested())
                     builder.Append($"{new string(' ', TelegramMessageWidth)}\n");
@@ -172,8 +172,8 @@ namespace Zhalobobot.Bot.Schedule
                 if (start <= hourAndMinute && hourAndMinute <= end &&
                     item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
                 {
-                    var difference = end - hourAndMinute;
-                    var timeBetweenStudy = $"[{hourAndMinute}, до конца {(difference.Hours == 0 ? $"{difference.Minutes}мин" : difference)}]".PutInCenterOf('-', TelegramMessageWidth);
+                    var diff = end - hourAndMinute;
+                    var timeBetweenStudy = $"[{hourAndMinute}, до конца {(diff.Hours == 0 ? $"{diff.Minutes}мин" : diff.ToHourAndMinute())}]".PutInCenterOf('-', TelegramMessageWidth);
                     return $"{Crop(firstLine)}\n{timeBetweenStudy}\n{Crop(secondLine)}\n";
                 }
 
