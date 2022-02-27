@@ -36,10 +36,10 @@ namespace Zhalobobot.Bot.Helpers
             };
 
             // todo: вернуть, когда починим расписание
-            // if (student.Course < Course.Third)
-            // {
-            //     buttons.Add(new KeyboardButton[] { Buttons.Schedule });
-            // }
+            if (student.Course < Course.Second)
+            {
+                buttons.Add(new KeyboardButton[] { Buttons.Schedule });
+            }
             
             return new ReplyKeyboardMarkup(buttons)
             {

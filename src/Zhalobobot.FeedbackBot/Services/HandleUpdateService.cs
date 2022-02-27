@@ -172,7 +172,7 @@ namespace Zhalobobot.Bot.Services
                 Buttons.Alarm => HandleAlertFeedbackAsync(BotClient, message),
                 Buttons.Subjects => HandleSubjectsAsync(BotClient, message),
                 Buttons.GeneralFeedback => HandleGeneralFeedbackAsync(BotClient, message),
-                // Buttons.Schedule => HandleScheduleAsync(BotClient, message),
+                Buttons.Schedule => HandleScheduleAsync(BotClient, message),
                 Buttons.Submit => SendFeedbackAsync(BotClient, message),
                 Buttons.MainMenu => CancelFeedbackAsync(BotClient, message),
                 _ => conversationStatus == ConversationStatus.Default
@@ -638,12 +638,12 @@ namespace Zhalobobot.Bot.Services
             usage.AppendLine();
             usage.AppendLine($"{Buttons.Alarm} — это красная кнопка. Если всё очень плохо — нажми");
             
-            // todo: вернуть, когда обновим расписание
-            // if (student.Course < Course.Third) //todo: убрать после того, как добавим обработку 3го курса
-            // {
-            //     usage.AppendLine();
-            //     usage.AppendLine($"{Buttons.Schedule} — узнать, в каком кабинете следующая пара и какую домашку делать на завтра");
-            // }
+            // todo: вернуть для второго курса
+            if (student.Course < Course.Second) //todo: убрать после того, как добавим обработку 3го курса
+            {
+                usage.AppendLine();
+                usage.AppendLine($"{Buttons.Schedule} — узнать, в каком кабинете следующая пара и какую домашку делать на завтра");
+            }
 
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,

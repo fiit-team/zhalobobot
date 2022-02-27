@@ -34,20 +34,6 @@ namespace Zhalobobot.Api.Server.Repositories.Common
         public static bool ParseBool(object value)
             => value as string == "TRUE";
 
-        public static int? ParseCourse(object value)
-        {
-            if (!int.TryParse(value as string, out var admissionYear))
-            {
-                return null;
-            }
-
-            var zeroTime = new DateTime(1, 1, 1).ToEkbTime();
-            var admissionDate = new DateTime(admissionYear, 8, 1).ToEkbTime();
-            var now = DateHelper.EkbTime;
-            var diff = now - admissionDate;
-            return (zeroTime + diff).Year;
-        }
-
         public static SubjectCategory ParseSubjectCategory(object value)
         {
             var category = value as string ?? throw new ArgumentException("Category is empty");
@@ -67,13 +53,6 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                 "суббота" => DayOfWeek.Saturday,
                 _ => throw new NotImplementedException()
             };
-        }
-
-        public static Month ParseMonth(object value)
-        {
-            var month = value as string ?? throw new ArgumentException("Month is empty");
-
-            return month.FromDescriptionTo<Month>();
         }
 
         public static WeekParity ParseParity(object value)
