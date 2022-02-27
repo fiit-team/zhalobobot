@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
-using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
+using Group = Zhalobobot.Common.Models.Commons.Group;
 
 namespace Zhalobobot.Api.Server.Repositories.Common
 {
@@ -132,7 +132,9 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             return (dateOnlyCorrect ? dateOnly : null, timeOnlyCorrect ? timeOnly : null);
         }
 
-        public static IEnumerable<(Course, Group)> ParseFlow(object value)
+        private static readonly Regex ParseRegex = new(@"^ФТ-(?<course>[0-9])0(?<group>[0-9])(-(?<subgroup>[0-9]))*$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        public static IEnumerable<(Course, Group, Subgroup?)> ParseFlow(object value)
         {
             if (value is not string str)
                 throw new Exception();
@@ -142,17 +144,20 @@ namespace Zhalobobot.Api.Server.Repositories.Common
 
             var parts = str.Split(',');
 
-            return parts.Select(part =>
+            foreach (var part in parts)
             {
-                var items = part
-                    .Trim()
-                    .Split('-', 2)[1]
-                    .Split('0', 2)
-                    .Select(int.Parse)
-                    .ToArray();
+                var result = ParseRegex.Match(part.Trim());
+                if (result.Success)
+                {
+                    var subgroup = result.Groups["subgroup"];
 
-                return ((Course)items[0], (Group)items[1]);
-            });
+                    yield return (
+                        (Course)int.Parse(result.Groups["course"].Value),
+                        (Group)int.Parse(result.Groups["group"].Value),
+                        subgroup.Success ? (Subgroup)int.Parse(subgroup.Value) : null
+                    );
+                }
+            }
         }
 
         public static IEnumerable<DateOnly> ParseDateOnlyRange(object value)

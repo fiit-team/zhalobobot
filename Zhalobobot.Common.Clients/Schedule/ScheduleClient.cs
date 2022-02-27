@@ -12,8 +12,8 @@ namespace Zhalobobot.Common.Clients.Schedule
         {
         }
 
-        public Task<ZhalobobotResult<ScheduleItem[]>> GetAll()
-            => Method<ScheduleItem[]>("getAll").CallAsync();
+        public Task<ZhalobobotResult<Models.Schedule.Schedule>> GetAll()
+            => Method<Models.Schedule.Schedule>("getAll").CallAsync();
 
         public Task<ZhalobobotResult<DateOnly[]>> GetHolidays()
             => Method<DateOnly[]>("holidays").CallAsync();

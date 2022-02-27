@@ -29,42 +29,28 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             Log = log;
         }
 
-        public async Task<IEnumerable<ScheduleItem>> GetAll()
+        public async Task<Zhalobobot.Common.Models.Schedule.Schedule> GetAll()
         { 
-            IEnumerable<ScheduleItem> scheduleItems = await ParseScheduleRange(ScheduleRange);
+            var (shouldBeUpdated, scheduleItems) = await ParseScheduleRange(ScheduleRange);
 
-            return scheduleItems.Where(PairExists);
-            
-            async Task<IEnumerable<ScheduleItem>> ParseScheduleRange(string scheduleRange)
+            return shouldBeUpdated
+                ? new(true, scheduleItems.ToArray())
+                : new(false, Array.Empty<ScheduleItem>());
+
+            async Task<(bool ShouldBeUpdated, IEnumerable<ScheduleItem> Items)> ParseScheduleRange(string scheduleRange)
             {
                 var result = await GetRequest(scheduleRange).ExecuteAsync();
             
                 var checkbox = result.Values[0][0].ToString() ?? "";
             
                 if (checkbox.ToLower() != "true")
-                    return Array.Empty<ScheduleItem>(); //incorrect table or synchronized == false
+                    return (false, Array.Empty<ScheduleItem>()); //incorrect table or synchronized == false
 
                 var subjects = await SubjectRepository.GetAll();
 
-                return result.Values
+                return (true, result.Values
                     .Skip(2)
-                    .SelectMany(v => ParseRow(v, subjects));
-            }
-
-            bool PairExists(ScheduleItem item)
-            {
-                var now = new DayAndMonth(DateHelper.EkbTime.Day, (Month)DateHelper.EkbTime.Month);
-
-                if (item.EventTime.StartDay != null && item.EventTime.EndDay != null)
-                    return item.EventTime.StartDay >= now && item.EventTime.EndDay <= now;
-                
-                if (item.EventTime.StartDay != null)
-                    return item.EventTime.StartDay >= now;
-
-                if (item.EventTime.EndDay != null)
-                    return item.EventTime.EndDay <= now;
-
-                return true;
+                    .SelectMany(v => ParseRow(v, subjects)));
             }
         }
 
@@ -88,7 +74,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             
             var endDayOrTime = ParsingHelper.ParseDateOnlyTimeOnly(row[9]);
     
-            foreach (var (course, group) in flow)
+            foreach (var (course, group, flowSubgroup) in flow)
             {
                 var subject = subjects.FirstOrDefault(s => s.Course == course && s.Semester == semester && s.Name == subjectName);
 
@@ -113,9 +99,18 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                     subject,
                     eventTime,
                     group,
-                    subgroup != null ? (Subgroup)subgroup : null,
+                    SelectSubgroup(),
                     row[5] as string ?? string.Empty,
                     row[6] as string ?? string.Empty);
+
+                Subgroup? SelectSubgroup()
+                {
+                    if (flowSubgroup != null)
+                        return flowSubgroup;
+                    if (subgroup != null)
+                        return (Subgroup)subgroup;
+                    return null;
+                }
             }
         }
     }

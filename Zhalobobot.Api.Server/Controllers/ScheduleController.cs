@@ -17,8 +17,8 @@ namespace Zhalobobot.Api.Server.Controllers
         }
 
         [HttpPost("getAll")]
-        public async Task<ScheduleItem[]> GetAll()
-            => (await repository.GetAll()).ToArray();
+        public async Task<Schedule> GetAll()
+            => await repository.GetAll();
 
         [HttpPost("holidays")]
         public async Task<DateOnly[]> GetHolidays()
