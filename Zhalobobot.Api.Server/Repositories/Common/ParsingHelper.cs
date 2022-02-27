@@ -152,13 +152,13 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             {
                 var (start, end) = str.SplitPair('-');
                 for (
-                    var i = DateOnly.ParseExact(start, "dd/MM/yyyy", CultureInfo.InvariantCulture); 
-                     i <= DateOnly.ParseExact(end, "dd/MM/yyyy", CultureInfo.InvariantCulture); 
+                    var i = DateOnly.ParseExact(start, "dd.MM.yyyy", CultureInfo.InvariantCulture); 
+                     i <= DateOnly.ParseExact(end, "dd.MM.yyyy", CultureInfo.InvariantCulture); 
                      i = i.AddDays(1))
                     yield return i;
             }
             else
-                yield return DateOnly.ParseExact(str, "dd/MM/yyyy", CultureInfo.InvariantCulture);
+                yield return DateOnly.ParseExact(str, "dd.MM.yyyy", CultureInfo.InvariantCulture);
         }
     }
 }
