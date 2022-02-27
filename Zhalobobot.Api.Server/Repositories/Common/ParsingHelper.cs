@@ -88,7 +88,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                 var (item1, item2) = str.SplitPair(',');
                 item1 = item1.Trim();
                 item2 = item2.Trim();
-                var dateCorrect = DateOnly.TryParse(item1, out var date);
+                var dateCorrect = DateOnly.TryParseExact(item1, "dd.MM.yyyy", out var date);
                 if (dateCorrect)
                 {
                     var timeCorrect = TimeOnly.TryParse(item2, out var time);
@@ -100,7 +100,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                 }
                 else
                 {
-                    dateCorrect = DateOnly.TryParse(item2, out date);
+                    dateCorrect = DateOnly.TryParseExact(item2, "dd.MM.yyyy", out date);
                     var timeCorrect = TimeOnly.TryParse(item1, out var time);
                     
                     if (!timeCorrect || !dateCorrect)
@@ -110,7 +110,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                 }
             }
 
-            var dateOnlyCorrect = DateOnly.TryParse(str, out var dateOnly);
+            var dateOnlyCorrect = DateOnly.TryParseExact(str, "dd.MM.yyyy", out var dateOnly);
             var timeOnlyCorrect = TimeOnly.TryParse(str, out var timeOnly);
             
             return (dateOnlyCorrect ? dateOnly : null, timeOnlyCorrect ? timeOnly : null);
@@ -155,11 +155,11 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             if (str.Contains('-'))
             {
                 var (start, end) = str.SplitPair('-');
-                for (var i = DateOnly.Parse(start.Trim()); i <= DateOnly.Parse(end.Trim()); i = i.AddDays(1))
+                for (var i = DateOnly.ParseExact(start.Trim(), "dd.MM.yyyy"); i <= DateOnly.ParseExact(end.Trim(), "dd.MM.yyyy"); i = i.AddDays(1))
                     yield return i;
             }
             else
-                yield return DateOnly.ParseExact(str.Trim(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
+                yield return DateOnly.ParseExact(str.Trim(), "dd.MM.yyyy");
         }
     }
 }
