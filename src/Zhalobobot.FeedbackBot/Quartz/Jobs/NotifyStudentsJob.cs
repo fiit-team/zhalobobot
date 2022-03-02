@@ -15,7 +15,6 @@ namespace Zhalobobot.Bot.Quartz.Jobs
     [DisallowConcurrentExecution]
     public class NotifyStudentsJob : IJob
     {
-        private const int Percent = 10;
         private ITelegramBotClient BotClient { get; }
         private EntitiesCache Cache { get; }
         private ILogger<NotifyStudentsJob> Log { get; }
@@ -37,21 +36,23 @@ namespace Zhalobobot.Bot.Quartz.Jobs
             {
                 if (course.Subgroup.HasValue)
                 {
-                    await SendNotifyMessageToStudents(course.Subject.Course, course.Group, course.Subgroup.Value, course.Subject.Name);
+                    await SendNotifyMessageToStudents(course.Subject.Course, course.Group, course.Subgroup.Value, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
                 }
                 else
                 {
-                    await SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.First, course.Subject.Name);
-                    await SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.Second, course.Subject.Name);
+                    await SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.First, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
+                    await SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.Second, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
                 }
             }
             
-            async Task SendNotifyMessageToStudents(Course course, Group group, Subgroup subgroup, string name)
+            async Task SendNotifyMessageToStudents(Course course, Group group, Subgroup subgroup, string subjectName, int studentsPercentToNotify)
             {
                 Log.LogInformation($"Course: {course.ToPrettyJson()}, Group: {group.ToPrettyJson()}, Subgroup: {subgroup.ToPrettyJson()}");
                 var students = Cache.Students.Get((course, group, subgroup));
                 
-                var selectedStudentsCount = Math.Max(1, students.Count * Percent / 100);
+                var selectedStudentsCount = studentsPercentToNotify == 0 
+                    ? 0 
+                    : Math.Max(1, students.Count * studentsPercentToNotify / 100);
                     
                 var random = new Random();
                     
