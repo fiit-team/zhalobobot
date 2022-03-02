@@ -5,6 +5,7 @@ using System.Text;
 using EnumsNET;
 using Microsoft.Extensions.Configuration;
 using Zhalobobot.Bot.Cache;
+using Zhalobobot.Bot.Extensions;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Helpers.Extensions;
@@ -129,7 +130,7 @@ namespace Zhalobobot.Bot.Schedule
             var dayOfWeek = scheduleDay.AsString(EnumFormat.Description);
             builder.Append($"{dayOfWeek} {date.ToDayAndMonth()}".PutInCenterOf(' ', TelegramMessageWidth) + "\n");
 
-            var hourAndMinute = DateHelper.EkbTime.ToTimeOnly();
+            var currentTime = DateHelper.EkbTime.ToHourAndMinute();
 
             var actualSchedule = schedule
                 .GroupBy(s => s.Subject.Name)
@@ -146,10 +147,10 @@ namespace Zhalobobot.Bot.Schedule
                 var (_, previousEnd) = GetSubjectDuration(firstItem);
                 var (nextStart, _) = GetSubjectDuration(item);
 
-                if (previousEnd < hourAndMinute && hourAndMinute < nextStart && item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
+                if (previousEnd < currentTime && currentTime < nextStart && item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
                 {
-                    var diff = nextStart - hourAndMinute;
-                    builder.Append($"[{hourAndMinute}, до пары {(diff.Hours == 0 ? $"{diff.Minutes}мин" : diff.ToHourAndMinute())}]".PutInCenterOf('-', TelegramMessageWidth) + "\n");
+                    var diff = nextStart - currentTime;
+                    builder.Append($"[{currentTime}, до пары {(diff.Hour == 0 ? $"{diff.Minute}мин" : diff)}]".PutInCenterOf('-', TelegramMessageWidth) + "\n");
                 }
                 else if (SingleDayScheduleRequested())
                     builder.Append($"{new string(' ', TelegramMessageWidth)}\n");
@@ -169,11 +170,10 @@ namespace Zhalobobot.Bot.Schedule
 
                 var (firstLine, secondLine) = FormatItemForDay(item);
 
-                if (start <= hourAndMinute && hourAndMinute <= end &&
-                    item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
+                if (start <= currentTime && currentTime <= end && item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
                 {
-                    var diff = end - hourAndMinute;
-                    var timeBetweenStudy = $"[{hourAndMinute}, до конца {(diff.Hours == 0 ? $"{diff.Minutes}мин" : diff.ToHourAndMinute())}]".PutInCenterOf('-', TelegramMessageWidth);
+                    var diff = end - currentTime;
+                    var timeBetweenStudy = $"[{currentTime}, до конца {(diff.Hour == 0 ? $"{diff.Minute}мин" : diff)}]".PutInCenterOf('-', TelegramMessageWidth);
                     return $"{Crop(firstLine)}\n{timeBetweenStudy}\n{Crop(secondLine)}\n";
                 }
 
@@ -183,13 +183,13 @@ namespace Zhalobobot.Bot.Schedule
             bool SingleDayScheduleRequested() =>
                 target is >= ScheduleDay.Monday and <= ScheduleDay.Saturday;
 
-            string Crop(string str)
+            static string Crop(string str)
             {
                 var maxLength = Math.Min(TelegramMessageWidth, str.Length);
                 return $"{str[..maxLength]}{(str.Length > TelegramMessageWidth ? "…" : "")}";
             }
 
-            IEnumerable<ScheduleItem> GetActualSchedule(IEnumerable<ScheduleItem> items, DateOnly day)
+            static IEnumerable<ScheduleItem> GetActualSchedule(IEnumerable<ScheduleItem> items, DateOnly day)
             {
                 var hourAndMinuteToScheduleItem = items
                     .GroupBy(i => GetSubjectDuration(i).Start)
@@ -260,14 +260,14 @@ namespace Zhalobobot.Bot.Schedule
             return $"{start} {item.Subject.Name}";
         }
 
-        private static (TimeOnly Start, TimeOnly End) GetSubjectDuration(ScheduleItem item)
+        private static (HourAndMinute Start, HourAndMinute End) GetSubjectDuration(ScheduleItem item)
         {
-            var start = item.EventTime.StartTime 
-               ?? item.EventTime.Pair?.ToTimeOnly().Start 
+            var start = item.EventTime.StartTime?.ToHourAndMinute()
+               ?? item.EventTime.Pair?.ToHourAndMinute().Start 
                ?? throw new Exception();
             
-            var end = item.EventTime.EndTime 
-               ?? item.EventTime.Pair?.ToTimeOnly().End 
+            var end = item.EventTime.EndTime?.ToHourAndMinute() 
+               ?? item.EventTime.Pair?.ToHourAndMinute().End 
                ?? throw new Exception();
 
             return (start, end);
