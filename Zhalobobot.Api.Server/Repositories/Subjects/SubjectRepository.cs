@@ -29,7 +29,8 @@ namespace Zhalobobot.Api.Server.Repositories.Subjects
                     subject[0] as string ?? throw new ValidationException("Empty subject name"),
                     ParsingHelper.ParseEnum<Course>(subject[1]),
                     ParsingHelper.ParseEnum<Semester>(subject[2]),
-                    ParsingHelper.ParseSubjectCategory(subject[3])))
+                    ParsingHelper.ParseSubjectCategory(subject[3]),
+                    ParsingHelper.ParseInt(subject[4])))
                 .Where(s => s.Semester == semester)
                 .ToArray();
         }

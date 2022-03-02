@@ -6,5 +6,6 @@ namespace Zhalobobot.Common.Models.Subject
         string Name,
         Course Course,
         Semester Semester,
-        SubjectCategory Category);
+        SubjectCategory Category,
+        int StudentsToNotifyPercent);
 }
