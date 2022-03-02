@@ -193,6 +193,7 @@ namespace Zhalobobot.Bot.Schedule
             {
                 var hourAndMinuteToScheduleItem = items
                     .Where(i => i.EventTime.StartDay == null || i.EventTime.StartDay <= day)
+                    .Where(i => i.EventTime.EndDay == null || i.EventTime.EndDay >= day)
                     .GroupBy(i => GetSubjectDuration(i).Start)
                     .ToDictionary(i => i.Key, i => i.ToArray());
 
