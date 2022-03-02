@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Zhalobobot.Bot.Extensions;
+using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Schedule;
@@ -42,13 +44,20 @@ namespace Zhalobobot.Bot.Cache
                 .Where(s => s.Group == student.Group && (!s.Subgroup.HasValue || s.Subgroup.Value == student.Subgroup))
                 .Distinct();
 
-        public IEnumerable<ScheduleItem> GetByDayOfWeekAndEndsAtTime(DayOfWeek dayOfWeek, TimeOnly hourAndMinute)
+        public IEnumerable<ScheduleItem> GetByDayOfWeekAndEndsAtTime(DayOfWeek dayOfWeek, HourAndMinute currentTime)
         {
             return All.Where(s => s.EventTime.DayOfWeek == dayOfWeek && EndTimeMatches(s));
 
             bool EndTimeMatches(ScheduleItem item)
-                => item.EventTime.Pair.HasValue && item.EventTime.Pair.Value.ToTimeOnly().End == hourAndMinute
-                   || item.EventTime.EndTime != null && item.EventTime.EndTime == hourAndMinute;
+            {
+                HourAndMinute? end = null; 
+                if (item.EventTime.Pair.HasValue)
+                    end = item.EventTime.Pair.Value.ToHourAndMinute().End;
+                else if (item.EventTime.EndTime.HasValue)
+                    end = item.EventTime.EndTime.Value.ToHourAndMinute();
+
+                return end != null && end == currentTime;
+            }
         } 
     }
 }
