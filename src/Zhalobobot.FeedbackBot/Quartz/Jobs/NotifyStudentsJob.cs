@@ -69,10 +69,17 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                         $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {name}.",
                         "Пожалуйста, оставь обратную связь по нему, нужные кнопочки ниже :)");
 
-                    await BotClient.SendTextMessageAsync(
-                        student.Id, 
-                        message, 
-                        replyMarkup: Keyboards.SendFeedbackKeyboard(name));
+                    try
+                    {
+                        await BotClient.SendTextMessageAsync(
+                            student.Id,
+                            message,
+                            replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName));
+                    }
+                    catch (ChatNotFoundException)
+                    {
+                        // skip
+                    }
                 }
             }
         }
