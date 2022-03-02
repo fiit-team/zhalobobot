@@ -227,7 +227,7 @@ namespace Zhalobobot.Bot.Schedule
                             }
                             else
                                 yield return bothStartAndEndDay
-                                    .OrderBy(s => date.ToDateTime(TimeOnly.MinValue).Subtract(s.EventTime.StartDay!.Value.ToDateTime(TimeOnly.MinValue)))
+                                    .OrderBy(s => day.ToDateTime(TimeOnly.MinValue).Subtract(s.EventTime.StartDay!.Value.ToDateTime(TimeOnly.MinValue)))
                                     .First();
 
                             break;
