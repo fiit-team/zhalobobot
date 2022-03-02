@@ -192,6 +192,7 @@ namespace Zhalobobot.Bot.Schedule
             static IEnumerable<ScheduleItem> GetActualSchedule(IEnumerable<ScheduleItem> items, DateOnly day)
             {
                 var hourAndMinuteToScheduleItem = items
+                    .Where(i => i.EventTime.StartDay == null || i.EventTime.StartDay <= day)
                     .GroupBy(i => GetSubjectDuration(i).Start)
                     .ToDictionary(i => i.Key, i => i.ToArray());
 
