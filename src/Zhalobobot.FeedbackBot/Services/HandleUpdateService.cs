@@ -459,14 +459,9 @@ namespace Zhalobobot.Bot.Services
 
         private async Task HandleFeedbackCallback(long chatId, string data, int messageId)
         {
-            ConversationService.StartSubjectFeedback(chatId, data);
+            await BotClient.DeleteMessageAsync(chatId, messageId);
 
-            await BotClient.EditMessageTextAsync(
-                chatId,
-                messageId,
-                "Я тебя внимательно слушаю");
-
-            await BotClient.EditMessageReplyMarkupAsync(chatId, messageId, null);
+            await StartSubjectFeedback(chatId, data);
         }
 
         private async Task HandleSubjectCallback(long chatId, string data, int messageId)
