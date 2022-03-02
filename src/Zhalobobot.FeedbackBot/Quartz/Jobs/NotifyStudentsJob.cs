@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Zhalobobot.Bot.Cache;
+using Zhalobobot.Bot.Extensions;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
@@ -30,8 +32,13 @@ namespace Zhalobobot.Bot.Quartz.Jobs
         {
             var ekbTime = DateHelper.EkbTime;
             var courses = Cache.ScheduleItems
-                .GetByDayOfWeekAndEndsAtTime(ekbTime.DayOfWeek, ekbTime.ToTimeOnly());
+                .GetByDayOfWeekAndEndsAtTime(ekbTime.DayOfWeek, ekbTime.ToHourAndMinute())
+                .Where(i => i.EventTime.StartDay == null || i.EventTime.StartDay <= ekbTime.ToDateOnly())
+                .Where(i => i.EventTime.EndDay == null || i.EventTime.EndDay >= ekbTime.ToDateOnly())
+                .ToArray();
             
+            Log.LogInformation($"Select {courses.Length} courses to notify");
+
             foreach (var course in courses)
             {
                 if (course.Subgroup.HasValue)
@@ -66,8 +73,8 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                 foreach (var student in selectedStudents)
                 {
                     var message = string.Join("\n",
-                        $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {name}.",
-                        "Пожалуйста, оставь обратную связь по нему, нужные кнопочки ниже :)");
+                        $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {subjectName}.",
+                        "Пожалуйста, оставь обратную связь по нему :)");
 
                     try
                     {
