@@ -86,7 +86,7 @@ namespace Zhalobobot.Bot
             {
                 q.UseMicrosoftDependencyInjectionJobFactory();
 
-                // q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
+                q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
                 
                 q.AddJobAndTrigger<UpdateCacheJob>(SimpleScheduleBuilder.Create().WithIntervalInMinutes(1).RepeatForever());
                 q.AddJobAndTrigger<UpdateScheduleMessageJob>("0 * * * * ?");
