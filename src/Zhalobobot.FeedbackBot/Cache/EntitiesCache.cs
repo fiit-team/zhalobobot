@@ -26,8 +26,7 @@ namespace Zhalobobot.Bot.Cache
             subjects = new EntityCacheContainer<Subject, SubjectCache>(() => client.Subject.GetAll().GetResult(), items => new SubjectCache(items));
             holidays = new EntityCacheContainer<DateOnlyRecord, HolidaysCache>(() => client.Schedule.GetHolidays().GetResult().AsRecord(), items => new HolidaysCache(items));
             studentsData = new EntityCacheContainer<StudentData, StudentDataCache>(() => client.Student.GetAllData().GetResult(), items => new StudentDataCache(items));
-            
-            replies = new EntityCacheContainer<Reply, RepliesCache>(async () => new RepliesCache(Array.Empty<Reply>()));
+            replies = new EntityCacheContainer<Reply, RepliesCache>(() => client.Reply.GetAll().GetResult(), items => new RepliesCache(items));
             replies.Update(true).Wait();
 
             allContainersToUpdate = new IEntityCacheContainer[]
@@ -45,7 +44,6 @@ namespace Zhalobobot.Bot.Cache
         public SubjectCache Subjects => subjects.Cache;
         public HolidaysCache Holidays => holidays.Cache;
         public StudentDataCache StudentData => studentsData.Cache;
-        
         public RepliesCache Replies => replies.Cache;
 
         public async Task UpdateAll()
