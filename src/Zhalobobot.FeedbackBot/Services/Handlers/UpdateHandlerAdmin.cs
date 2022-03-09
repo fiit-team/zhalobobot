@@ -8,6 +8,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Reply;
+using Zhalobobot.Common.Models.Reply.Requests;
 
 namespace Zhalobobot.Bot.Services.Handlers
 {
@@ -55,7 +56,7 @@ namespace Zhalobobot.Bot.Services.Handlers
                 chat = update.CallbackQuery.Message.Chat;
             }
 
-            return chat?.Id == Settings.UrgentFeedbackChatId;
+            return chat?.Id == Settings.UrgentFeedbackChatId || chat?.Id == Settings.DesignFeedbackChatId;
         }
 
         public async Task HandleUpdate(Update update)
@@ -109,13 +110,14 @@ namespace Zhalobobot.Bot.Services.Handlers
             var newReply = new Reply(
                 message.From.Id, message.From.Username, message.Chat.Id,
                 message.MessageId, message.Text,
-                sentMessage.Chat.Id, sentMessage.MessageId, reply);
+                sentMessage.Chat.Id, sentMessage.MessageId);
 
             await BotClient.SendTextMessageAsync(
                 reply.ChildChatId,
                 "Сообщение отправлено");
 
             Cache.Replies.Add(newReply);
+            await Client.Reply.Add(new AddReplyRequest(newReply));
         }
 
         private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery)
@@ -126,7 +128,7 @@ namespace Zhalobobot.Bot.Services.Handlers
             }
 
             await BotClient.EditMessageReplyMarkupAsync(
-                Settings.UrgentFeedbackChatId,
+                callbackQuery.Message.Chat.Id,
                 callbackQuery.Message.MessageId,
                 replyMarkup: new InlineKeyboardMarkup(new InlineKeyboardButton()
                 {

@@ -25,7 +25,7 @@ namespace Zhalobobot.Bot.Services
 
         public void ProcessPollAnswer(long chatId, ICollection<string> result, bool isLikedPoints = false);
 
-        public Task SendFeedbackAsync(long chatId);
+        public Task SendFeedbackAsync(long chatId, int messageId);
 
         public ConversationStatus GetConversationStatus(long chatId);
     }

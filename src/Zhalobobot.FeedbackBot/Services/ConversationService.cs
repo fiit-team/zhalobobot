@@ -15,6 +15,7 @@ using Zhalobobot.Common.Models.Feedback;
 using Zhalobobot.Common.Models.Feedback.Requests;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Reply;
+using Zhalobobot.Common.Models.Reply.Requests;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
 
@@ -107,7 +108,7 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"Subject feedback started successfully. ChatId {chatId}, Subject {subjectName}");
         }
 
-        public async Task SendFeedbackAsync(long chatId)
+        public async Task SendFeedbackAsync(long chatId, int messageId)
         {
             if (!Conversations.TryGetValue(chatId, out var value))
             {
@@ -119,7 +120,7 @@ namespace Zhalobobot.Bot.Services
 
             var feedback = value.Feedback with { Student = student };
             
-            await SaveStructuredFeedback(chatId, feedback).ConfigureAwait(false);
+            await SaveStructuredFeedback(chatId, feedback, messageId).ConfigureAwait(false);
 
             Conversations.Remove(chatId);
         }
@@ -198,7 +199,7 @@ namespace Zhalobobot.Bot.Services
                 conversation.Feedback.SubjectSurvey!.UnlikedPoints = result;
         }
 
-        private async Task SaveStructuredFeedback(long chatId, Feedback feedback)
+        private async Task SaveStructuredFeedback(long chatId, Feedback feedback, int messageId)
         {
             if (!Conversations.TryGetValue(chatId, out var conversation))
             {
@@ -206,40 +207,36 @@ namespace Zhalobobot.Bot.Services
                 throw new Exception($"Chat not found. ChatId {chatId}");
             }
 
+            if (conversation.Messages.Count == 0)
+            {
+                conversation.Messages = new List<Message> { new Message { MessageId = messageId } };
+            }
+
             foreach (var entity in conversation.Messages
                 .Select(message => feedback with { Message = message.Text, MessageId = message.MessageId }))
             {
                 await Client.Feedback.AddFeedback(new AddFeedbackRequest(entity));
 
+                var message = FormFeedbackMessage(entity);
+
                 if (feedback.Type == FeedbackType.Urgent)
                 {
-                    await SendUrgentFeedback(chatId, entity).ConfigureAwait(false);
+                    await SendFeedback(message, chatId, Settings.UrgentFeedbackChatId, entity)
+                        .ConfigureAwait(false);
+                }
+                
+                if (feedback.Type == FeedbackType.Subject && feedback.Subject!.Name == "Дизайн")
+                {
+                    await SendFeedback(message, chatId, Settings.DesignFeedbackChatId, entity)
+                        .ConfigureAwait(false);
                 }
             }
 
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
         }
 
-        private async Task SendUrgentFeedback(long chatId, Feedback feedback)
+        private async Task SendFeedback(string message, long chatId, long feedbackChatId, Feedback feedback)
         {
-            var student = feedback.Student;
-
-            var builder = new StringBuilder();
-
-            builder.AppendLine("@disturm"); // костыли любимые
-            builder.AppendLine("Алерт! Кто-то оставил срочную обратную связь");
-            builder.AppendLine();
-            builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
-            builder.AppendLine($"ФТ-{(int) student.Course}0{(int) student.Group}-{(int) student.Subgroup}");
-
-            if (student.Username?.Length > 1)
-            {
-                builder.AppendLine(student.Username);
-            }
-
-            builder.AppendLine();
-            builder.AppendLine(feedback.Message);
-
             var replyMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton
             {
                 Text = "Занять",
@@ -247,18 +244,66 @@ namespace Zhalobobot.Bot.Services
             });
 
             var sentMessage = await BotClient.SendTextMessageAsync(
-                Settings.UrgentFeedbackChatId,
-                builder.ToString(),
+                feedbackChatId,
+                message,
                 replyMarkup: replyMarkup);
 
             var reply = new Reply(
-                student.Id, student.Username, 
-                chatId, feedback.MessageId, feedback.Message, 
+                feedback.Student.Id, feedback.Student.Username,
+                chatId, feedback.MessageId, feedback.Message,
                 sentMessage.Chat.Id, sentMessage.MessageId);
 
             Cache.Replies.Add(reply);
+            await Client.Reply.Add(new AddReplyRequest(reply));
 
-            Logger.LogInformation("Sent urgent feedback successfully.");
+            Logger.LogInformation($"Send feedback to chat {feedbackChatId} successfully.");
+        }
+
+        private string FormFeedbackMessage(Feedback feedback)
+        {
+            var student = feedback.Student;
+
+            var builder = new StringBuilder();
+
+            builder.AppendLine("Кто-то оставил обратную связь!");
+            builder.AppendLine();
+            builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
+            builder.AppendLine($"ФТ-{(int)student.Course}0{(int)student.Group}-{(int)student.Subgroup}");
+
+            if (!string.IsNullOrEmpty(student.Username))
+            {
+                builder.AppendLine($"@{student.Username}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(feedback.Message))
+            {
+                builder.AppendLine();
+                builder.AppendLine(feedback.Message);
+            }
+
+            if (feedback.SubjectSurvey != null)
+            {
+                builder.AppendLine();
+                builder.AppendLine($"{feedback.Subject!.Name}");
+
+                builder.AppendLine();
+                builder.AppendLine($"Оценка: {feedback.SubjectSurvey.Rating}");
+
+                var likedPoints = string.Join("; ", feedback.SubjectSurvey.LikedPoints);
+                var unlikedPoints = string.Join("; ", feedback.SubjectSurvey.UnlikedPoints);
+
+                if (!string.IsNullOrEmpty(likedPoints))
+                {
+                    builder.AppendLine($"Что понравилось: {likedPoints}");
+                }
+
+                if (!string.IsNullOrEmpty(unlikedPoints))
+                {
+                    builder.AppendLine($"Что не понравилось: {unlikedPoints}");
+                }
+            }
+
+            return builder.ToString();
         }
     }
 }

@@ -62,6 +62,7 @@ namespace Zhalobobot.Api.Server
         private static void ConfigureRepositories(IServiceCollection services)
         {
             services.AddSingleton<IFeedbackRepository, FeedbackRepository>();
+            services.AddSingleton<IReplyRepository, ReplyRepository>();
             services.AddSingleton<ISubjectRepository, SubjectRepository>();
             services.AddSingleton<IScheduleRepository, ScheduleRepository>();
             services.AddSingleton<IStudentRepository, StudentRepository>();

@@ -24,6 +24,7 @@ using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
 using Zhalobobot.Common.Models.Reply;
 using Emoji = Zhalobobot.Bot.Models.Emoji;
+using Zhalobobot.Common.Models.Reply.Requests;
 
 namespace Zhalobobot.Bot.Services
 {
@@ -210,13 +211,14 @@ namespace Zhalobobot.Bot.Services
             var newReply = new Reply(
                 message.From.Id, message.From.Username, message.Chat.Id,
                 message.MessageId, message.Text,
-                sentMessage.Chat.Id, sentMessage.MessageId, reply);
+                sentMessage.Chat.Id, sentMessage.MessageId);
 
             await BotClient.SendTextMessageAsync(
                 reply.ChildChatId,
                 "Сообщение отправлено");
 
             Cache.Replies.Add(newReply);
+            await Client.Reply.Add(new AddReplyRequest(newReply));
 
             return true;
         }
@@ -298,7 +300,7 @@ namespace Zhalobobot.Bot.Services
 
             if (conversationStatus == ConversationStatus.AwaitingConfirmation)
             {
-                await ConversationService.SendFeedbackAsync(message.Chat.Id);
+                await ConversationService.SendFeedbackAsync(message.Chat.Id, message.MessageId);
                 text = "Спасибо, я всё записал!";
             }
             else if (conversationStatus == ConversationStatus.AwaitingMessage)
