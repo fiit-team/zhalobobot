@@ -16,6 +16,7 @@ using Zhalobobot.Common.Models.Feedback.Requests;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Reply;
 using Zhalobobot.Common.Models.Reply.Requests;
+using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
 
@@ -217,16 +218,16 @@ namespace Zhalobobot.Bot.Services
             {
                 await Client.Feedback.AddFeedback(new AddFeedbackRequest(entity));
 
-                var message = FormFeedbackMessage(entity);
-
                 if (feedback.Type == FeedbackType.Urgent)
                 {
+                    var message = FormFeedbackMessage(entity, true);
                     await SendFeedback(message, chatId, Settings.UrgentFeedbackChatId, entity)
                         .ConfigureAwait(false);
                 }
                 
                 if (feedback.Type == FeedbackType.Subject && feedback.Subject!.Name == "Дизайн")
                 {
+                    var message = FormFeedbackMessage(entity);
                     await SendFeedback(message, chatId, Settings.DesignFeedbackChatId, entity)
                         .ConfigureAwait(false);
                 }
@@ -259,20 +260,18 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"Send feedback to chat {feedbackChatId} successfully.");
         }
 
-        private string FormFeedbackMessage(Feedback feedback)
+        private string FormFeedbackMessage(Feedback feedback, bool includeStudentInfo = false)
         {
             var student = feedback.Student;
 
             var builder = new StringBuilder();
 
             builder.AppendLine("Кто-то оставил обратную связь!");
-            builder.AppendLine();
-            builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
-            builder.AppendLine($"ФТ-{(int)student.Course}0{(int)student.Group}-{(int)student.Subgroup}");
 
-            if (!string.IsNullOrEmpty(student.Username))
+            if (includeStudentInfo)
             {
-                builder.AppendLine($"@{student.Username}");
+                builder.AppendLine();
+                builder.AppendLine(FormStudentInfo(feedback.Student));
             }
 
             if (!string.IsNullOrWhiteSpace(feedback.Message))
@@ -301,6 +300,21 @@ namespace Zhalobobot.Bot.Services
                 {
                     builder.AppendLine($"Что не понравилось: {unlikedPoints}");
                 }
+            }
+
+            return builder.ToString();
+        }
+
+        private string FormStudentInfo(Student student)
+        {
+            var builder = new StringBuilder();
+
+            builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
+            builder.AppendLine($"ФТ-{(int)student.Course}0{(int)student.Group}-{(int)student.Subgroup}");
+
+            if (!string.IsNullOrEmpty(student.Username))
+            {
+                builder.AppendLine($"@{student.Username}");
             }
 
             return builder.ToString();
