@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Enums.NET" Version="4.0.0" />
+      <PackageReference Include="Quartz" Version="3.3.3" />
+      <PackageReference Include="Telegram.Bot" Version="16.0.2" />
+      <PackageReference Include="Vostok.Commons.Time" Version="0.1.2" />
+      <PackageReference Include="Vostok.Logging.Abstractions" Version="1.0.30" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Jobs\GroupMessageExecutorJob.cs" />
+      <Compile Remove="Jobs\UserMessageExecutorJob.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Jobs" />
+    </ItemGroup>
+
+</Project>

@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Zhalobobot.Common.Clients\Zhalobobot.Common.Clients.csproj" />
     <ProjectReference Include="..\..\Zhalobobot.Common.Models\Zhalobobot.Common.Models.csproj" />
+    <ProjectReference Include="..\..\Zhalobobot.TelegramMessageQueue\Zhalobobot.TelegramMessageQueue.csproj" />
   </ItemGroup>
 	
 </Project>

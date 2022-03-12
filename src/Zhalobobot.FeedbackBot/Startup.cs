@@ -12,6 +12,7 @@ using Zhalobobot.Bot.Schedule;
 using Zhalobobot.Bot.Services;
 using Zhalobobot.Bot.Services.Handlers;
 using Zhalobobot.Common.Clients.Core;
+using Zhalobobot.TelegramMessageQueue;
 
 namespace Zhalobobot.Bot
 {
@@ -78,6 +79,7 @@ namespace Zhalobobot.Bot
             services.AddSingleton<IScheduleMessageService, ScheduleMessageService>();
             services.AddScoped<UpdateHandlerAdmin>();
             services.AddScoped<HandleUpdateService>();
+            services.AddSingleton<MessageBroker>();
         }
 
         private static void RegisterQuartz(IServiceCollection services, IConfiguration configuration)
