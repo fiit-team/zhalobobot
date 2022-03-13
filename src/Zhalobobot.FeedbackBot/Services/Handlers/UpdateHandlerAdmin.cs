@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
@@ -21,7 +22,7 @@ namespace Zhalobobot.Bot.Services.Handlers
         private IScheduleMessageService ScheduleMessageService { get; }
         private ILogger<UpdateHandlerAdmin> Logger { get; }
         private EntitiesCache Cache { get; }
-        private Settings Settings { get; }
+        private Settings.Settings Settings { get; }
 
         public UpdateHandlerAdmin(
             ITelegramBotClient botClient,
@@ -31,7 +32,7 @@ namespace Zhalobobot.Bot.Services.Handlers
             IScheduleMessageService scheduleMessageService,
             EntitiesCache cache,
             ILogger<UpdateHandlerAdmin> logger,
-            Settings settings)
+            Settings.Settings settings)
         {
             BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             Client = client ?? throw new ArgumentNullException(nameof(client));
@@ -56,7 +57,7 @@ namespace Zhalobobot.Bot.Services.Handlers
                 chat = update.CallbackQuery.Message.Chat;
             }
 
-            return chat?.Id == Settings.UrgentFeedbackChatId || chat?.Id == Settings.DesignFeedbackChatId;
+            return Settings.FeedbackChatSettings.Any(x => x.ChatId == chat?.Id);
         }
 
         public async Task HandleUpdate(Update update)

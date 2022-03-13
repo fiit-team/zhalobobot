@@ -9,6 +9,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Cache;
+using Zhalobobot.Bot.Settings;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Feedback;
@@ -26,7 +27,7 @@ namespace Zhalobobot.Bot.Services
     {
         private ITelegramBotClient BotClient { get; }
         private IZhalobobotApiClient Client { get; }
-        private Settings Settings { get; }
+        private Settings.Settings Settings { get; }
         private EntitiesCache Cache { get; }
         private ILogger Logger { get; }
 
@@ -36,7 +37,7 @@ namespace Zhalobobot.Bot.Services
         public ConversationService(
             ITelegramBotClient botClient,
             IZhalobobotApiClient client,
-            Settings settings,
+            Settings.Settings settings,
             EntitiesCache cache,
             ILogger<ConversationService> logger)
         {
@@ -70,11 +71,11 @@ namespace Zhalobobot.Bot.Services
         public void StartUrgentFeedback(long chatId)
         {
             var student = Cache.Students.Get(chatId);
-            
+
             Conversations[chatId] = new Conversation
             {
                 Feedback = new Feedback(FeedbackType.Urgent, student)
-            }; 
+            };
 
             Logger.LogInformation($"Urgent feedback started successfully. ChatId {chatId}");
         }
@@ -82,7 +83,7 @@ namespace Zhalobobot.Bot.Services
         public void StartGeneralFeedback(long chatId)
         {
             var student = Cache.Students.Get(chatId);
-            
+
             Conversations[chatId] = new Conversation
             {
                 Feedback = new Feedback(FeedbackType.General, student)
@@ -98,7 +99,7 @@ namespace Zhalobobot.Bot.Services
             var subject = Cache.Subjects
                 .Get(subjectName)
                 .First(s => s.Course == student.Course && s.Semester == SemesterHelper.Current);
-            
+
             var feedback = new Feedback(FeedbackType.Subject, student, null, subject, new SubjectSurvey());
 
             Conversations[chatId] = new Conversation
@@ -120,7 +121,7 @@ namespace Zhalobobot.Bot.Services
             var student = Cache.Students.Get(chatId);
 
             var feedback = value.Feedback with { Student = student };
-            
+
             await SaveStructuredFeedback(chatId, feedback, messageId).ConfigureAwait(false);
 
             Conversations.Remove(chatId);
@@ -218,22 +219,39 @@ namespace Zhalobobot.Bot.Services
             {
                 await Client.Feedback.AddFeedback(new AddFeedbackRequest(entity));
 
-                if (feedback.Type == FeedbackType.Urgent)
+                foreach (var feedbackChatInfo in Settings.FeedbackChatSettings)
                 {
-                    var message = FormFeedbackMessage(entity, true);
-                    await SendFeedback(message, chatId, Settings.UrgentFeedbackChatId, entity)
-                        .ConfigureAwait(false);
-                }
-                
-                if (feedback.Type == FeedbackType.Subject && feedback.Subject!.Name == "Дизайн")
-                {
-                    var message = FormFeedbackMessage(entity);
-                    await SendFeedback(message, chatId, Settings.DesignFeedbackChatId, entity)
-                        .ConfigureAwait(false);
+                    await ProcessFeedbackChatSending(feedbackChatInfo, entity, chatId);
                 }
             }
 
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
+        }
+
+        private async Task ProcessFeedbackChatSending(FeedbackChatSettings settings, Feedback feedback, long chatId)
+        {
+            var message = FormFeedbackMessage(feedback, settings.IncludeStudentInfo);
+
+            if (settings.FeedbackTypes.Any() && !settings.FeedbackTypes.Any(x => x == feedback.Type))
+            {
+                return;
+            }
+
+            if (settings.Subjects.Any() && !settings.Subjects.Any(x => x == feedback.Subject?.Name))
+            {
+                return;
+            }
+
+            if (settings.StudentSettings.Any() && !settings.StudentSettings.Any(x => 
+                x.Course == feedback.Student.Course
+                && (!x.Group.HasValue || x.Group != feedback.Student.Group)
+                && (!x.Subgroup.HasValue || x.Subgroup != feedback.Student.Subgroup)))
+            {
+                return;
+            }
+
+            await SendFeedback(message, chatId, settings.ChatId, feedback)
+                .ConfigureAwait(false);
         }
 
         private async Task SendFeedback(string message, long chatId, long feedbackChatId, Feedback feedback)

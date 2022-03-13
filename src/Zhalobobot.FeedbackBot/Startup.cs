@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Quartz;
 using Telegram.Bot;
 using Zhalobobot.Bot.Cache;
+using Zhalobobot.Bot.Settings;
 using Zhalobobot.Bot.Quartz.Extensions;
 using Zhalobobot.Bot.Quartz.Jobs;
 using Zhalobobot.Bot.Schedule;
@@ -19,13 +20,13 @@ namespace Zhalobobot.Bot
     {
         public IConfiguration Configuration { get; }
         private BotConfiguration BotConfig { get; }
-        private Settings Settings { get; }
+        private Settings.Settings Settings { get; }
 
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
             BotConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>();
-            Settings = configuration.GetSection("Settings").Get<Settings>();
+            Settings = configuration.GetSection("Settings").Get<Settings.Settings>();
         }
 
         public void ConfigureServices(IServiceCollection services)
