@@ -108,13 +108,16 @@ public class MessageBroker : IDisposable
                 while (!queue.IsEmpty(priority))
                 {
                     if (counter >= MessageBrokerSettings.GroupMessagesPerMinuteLimit)
-                        continue;
+                        break;
                     if (!queue.TryDequeue(priority, out var taskToExecute) || taskToExecute == null) 
                         continue;
 
                     counter += 1;
                     yield return taskToExecute;
                 }
+                
+                if (counter >= MessageBrokerSettings.GroupMessagesPerMinuteLimit)
+                    break;
             }
 
             groupIdToQueue[groupId] = (queue, counter);
