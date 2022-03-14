@@ -35,14 +35,17 @@ public class MessageBroker : IDisposable
         {
             foreach (var (groupId, (queue, sendCountPerMinute)) in groupIdToQueue)
             {
+                if (sendCountPerMinute == 0)
+                    continue;
                 if (groupIdToQueue.TryUpdate(groupId, (queue, 0), (queue, sendCountPerMinute))) 
                     continue;
                 
                 while (true)
                 {
                     var foundValue = groupIdToQueue.TryGetValue(groupId, out var oldResult);
-
-                    if (!foundValue || groupIdToQueue.TryUpdate(groupId, (oldResult.Queue, 0), oldResult))
+                    if (!foundValue || oldResult.SendCountPerMinute == 0)
+                        break;
+                    if (groupIdToQueue.TryUpdate(groupId, (oldResult.Queue, 0), oldResult))
                         break;
                 }
             }
