@@ -33,9 +33,18 @@ public class MessageBroker : IDisposable
 
         async Task ClearSendCountPerMinute()
         {
-            foreach (var (groupId, (queue, _)) in groupIdToQueue)
+            foreach (var (groupId, (queue, sendCountPerMinute)) in groupIdToQueue)
             {
-                groupIdToQueue[groupId] = (queue, 0);
+                if (groupIdToQueue.TryUpdate(groupId, (queue, 0), (queue, sendCountPerMinute))) 
+                    continue;
+                
+                while (true)
+                {
+                    var foundValue = groupIdToQueue.TryGetValue(groupId, out var oldResult);
+
+                    if (!foundValue || groupIdToQueue.TryUpdate(groupId, (oldResult.Queue, 0), oldResult))
+                        break;
+                }
             }
         }
 
@@ -94,7 +103,7 @@ public class MessageBroker : IDisposable
         }
     }
 
-    internal IEnumerable<Task<Message>> GroupTasksToExecute()
+    private IEnumerable<Task<Message>> GroupTasksToExecute()
     {
         foreach (var (groupId, (queue, sendPerMinuteCount)) in groupIdToQueue)
         {
@@ -120,7 +129,7 @@ public class MessageBroker : IDisposable
                     break;
             }
 
-            groupIdToQueue[groupId] = (queue, counter);
+            groupIdToQueue.TryUpdate(groupId, (queue, counter), (queue, sendPerMinuteCount));
         }
     }
 
