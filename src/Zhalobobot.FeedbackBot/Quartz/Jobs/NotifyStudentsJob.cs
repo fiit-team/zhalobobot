@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Quartz;
@@ -76,16 +78,33 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                         $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {subjectName}.",
                         "Пожалуйста, оставь обратную связь по нему :)");
 
-                    try
+                    while (true)
                     {
-                        await BotClient.SendTextMessageAsync(
-                            student.Id,
-                            message,
-                            replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName));
-                    }
-                    catch (ChatNotFoundException)
-                    {
-                        // skip
+                        try
+                        {
+                            await BotClient.SendTextMessageAsync(
+                                student.Id,
+                                message,
+                                replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName));
+
+                            break;
+                        }
+                        catch (ChatNotFoundException)
+                        {
+                            // skip
+                            break;
+                        }
+                        catch (HttpRequestException e)
+                        {
+                            if (e.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                            {
+                                Thread.Sleep(1000);
+                            }
+                            else
+                            {
+                                throw;
+                            }
+                        }
                     }
                 }
             }
