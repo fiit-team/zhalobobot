@@ -87,18 +87,21 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                                 message,
                                 replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName));
 
+                            Log.LogInformation($"Successfuly notified student. StudentId {student.Id}");
                             break;
                         }
-                        catch (ChatNotFoundException)
+                        catch (ChatNotFoundException e)
                         {
                             // skip
+                            Log.LogError($"Skip notify student. Error {e.ToPrettyJson()}");
                             break;
                         }
                         catch (HttpRequestException e)
                         {
                             if (e.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                             {
-                                Thread.Sleep(1000);
+                                await Task.Delay(1000);
+                                Log.LogError($"Error 429 when trying to notify a student. Error {e.ToPrettyJson()}");
                             }
                             else
                             {
