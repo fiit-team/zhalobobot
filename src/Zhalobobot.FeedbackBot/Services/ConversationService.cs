@@ -239,7 +239,7 @@ namespace Zhalobobot.Bot.Services
                 return;
             }
 
-            if (settings.Subjects.Any() && !settings.Subjects.Any(x => x == feedback.Subject?.Name))
+            if (settings.Subjects.Any() && !settings.Subjects.Any(x => x == feedback.Subject?.Name.GetHashCode().ToString()))
             {
                 return;
             }
@@ -254,8 +254,6 @@ namespace Zhalobobot.Bot.Services
 
             await SendFeedback(message, chatId, settings.ChatId, feedback)
                 .ConfigureAwait(false);
-
-            Logger.LogInformation($"Successfully sent feedback to chat {settings.ChatId}.");
         }
 
         private async Task SendFeedback(string message, long chatId, long feedbackChatId, Feedback feedback)
@@ -284,8 +282,6 @@ namespace Zhalobobot.Bot.Services
 
         private string FormFeedbackMessage(Feedback feedback, bool includeStudentInfo = false)
         {
-            var student = feedback.Student;
-
             var builder = new StringBuilder();
 
             builder.AppendLine("Кто-то оставил обратную связь!");
