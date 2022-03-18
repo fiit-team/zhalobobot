@@ -106,6 +106,7 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                             else
                             {
                                 Log.LogError($"Error code: {e.StatusCode}, Message: {e.Message}");
+                                break;
                             }
                         }
                     }
