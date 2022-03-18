@@ -103,11 +103,11 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                                 await Task.Delay(1000);
                                 Log.LogError($"Error 429 when trying to notify a student. Error {e.ToPrettyJson()}");
                             }
-                            else
-                            {
-                                Log.LogError($"Error code: {e.StatusCode}, Message: {e.Message}");
-                                break;
-                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Log.LogError($"Error: {e.ToPrettyJson()}");
+                            break;
                         }
                     }
                 }
