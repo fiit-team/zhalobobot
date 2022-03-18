@@ -8,7 +8,7 @@ namespace Zhalobobot.Bot.Settings
 
         public FeedbackType[] FeedbackTypes { get; init; } = new FeedbackType[0];
 
-        public string[] Subjects { get; init; } = new string[0];
+        public int[] Subjects { get; init; } = new int[0];
 
         public StudentSettings[] StudentSettings { get; init; } = new StudentSettings[0];
 

@@ -237,22 +237,23 @@ namespace Zhalobobot.Bot.Services
 
             if (settings.FeedbackTypes.Any() && !settings.FeedbackTypes.Any(x => x == feedback.Type))
             {
-                Logger.LogInformation($"Failed FeedbackType Check. ChatId {chatId}");
+                Logger.LogInformation($"Failed FeedbackType Check. ChatId {settings.ChatId}");
                 return;
             }
 
-            if (settings.Subjects.Any() && !settings.Subjects.Any(x => x == feedback.Subject?.Name.GetHashCode().ToString()))
+            var subjectHash = feedback.Subject?.Name.GetHashCode();
+            if (settings.Subjects.Any() && !settings.Subjects.Any(x => x == subjectHash))
             {
-                Logger.LogInformation($"Failed Subject Check. ChatId {chatId}");
+                Logger.LogInformation($"Failed Subject Check. ChatId {settings.ChatId}. Subject Hash {subjectHash}.");
                 return;
             }
 
-            if (settings.StudentSettings.Any() && !settings.StudentSettings.Any(x => 
+            if (settings.StudentSettings.Any() && !settings.StudentSettings.Any(x =>
                 x.Course == feedback.Student.Course
                 && (!x.Group.HasValue || x.Group != feedback.Student.Group)
                 && (!x.Subgroup.HasValue || x.Subgroup != feedback.Student.Subgroup)))
             {
-                Logger.LogInformation($"Failed Student Check. ChatId {chatId}");
+                Logger.LogInformation($"Failed Student Check. ChatId {settings.ChatId}");
                 return;
             }
 
