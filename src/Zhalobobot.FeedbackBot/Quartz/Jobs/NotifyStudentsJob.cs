@@ -82,6 +82,7 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                     {
                         try
                         {
+                            Log.LogInformation($"Try notify student {student.Id}.");
                             await BotClient.SendTextMessageAsync(
                                 student.Id,
                                 message,
@@ -93,7 +94,7 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                         catch (ChatNotFoundException e)
                         {
                             // skip
-                            Log.LogError($"Skip notify student. Error {e.ToPrettyJson()}");
+                            Log.LogError($"Skip notify student due to ChatNotFoundException. Error {e.ToPrettyJson()}");
                             break;
                         }
                         catch (HttpRequestException e)
