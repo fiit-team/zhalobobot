@@ -230,6 +230,8 @@ namespace Zhalobobot.Bot.Services
 
         private async Task ProcessFeedbackChatSending(FeedbackChatSettings settings, Feedback feedback, long chatId)
         {
+            Logger.LogInformation($"Start processing feedback for chat {settings.ChatId}.");
+
             var message = FormFeedbackMessage(feedback, settings.IncludeStudentInfo);
 
             if (settings.FeedbackTypes.Any() && !settings.FeedbackTypes.Any(x => x == feedback.Type))
@@ -252,6 +254,8 @@ namespace Zhalobobot.Bot.Services
 
             await SendFeedback(message, chatId, settings.ChatId, feedback)
                 .ConfigureAwait(false);
+
+            Logger.LogInformation($"Successfully sent feedback to chat {settings.ChatId}.");
         }
 
         private async Task SendFeedback(string message, long chatId, long feedbackChatId, Feedback feedback)
