@@ -20,6 +20,7 @@ using Zhalobobot.Common.Models.Reply.Requests;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
+using Zhalobobot.Common.Models.Serialization;
 
 namespace Zhalobobot.Bot.Services
 {
@@ -230,17 +231,19 @@ namespace Zhalobobot.Bot.Services
 
         private async Task ProcessFeedbackChatSending(FeedbackChatSettings settings, Feedback feedback, long chatId)
         {
-            Logger.LogInformation($"Start processing feedback for chat {settings.ChatId}.");
+            Logger.LogInformation($"Start processing feedback for chat {settings.ChatId}. Feedback {feedback.ToPrettyJson()}. Settings {settings.ToPrettyJson()}");
 
             var message = FormFeedbackMessage(feedback, settings.IncludeStudentInfo);
 
             if (settings.FeedbackTypes.Any() && !settings.FeedbackTypes.Any(x => x == feedback.Type))
             {
+                Logger.LogInformation($"Failed FeedbackType Check. ChatId {chatId}");
                 return;
             }
 
             if (settings.Subjects.Any() && !settings.Subjects.Any(x => x == feedback.Subject?.Name.GetHashCode().ToString()))
             {
+                Logger.LogInformation($"Failed Subject Check. ChatId {chatId}");
                 return;
             }
 
@@ -249,6 +252,7 @@ namespace Zhalobobot.Bot.Services
                 && (!x.Group.HasValue || x.Group != feedback.Student.Group)
                 && (!x.Subgroup.HasValue || x.Subgroup != feedback.Student.Subgroup)))
             {
+                Logger.LogInformation($"Failed Student Check. ChatId {chatId}");
                 return;
             }
 
