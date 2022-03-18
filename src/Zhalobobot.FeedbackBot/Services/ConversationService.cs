@@ -233,7 +233,7 @@ namespace Zhalobobot.Bot.Services
         {
             Logger.LogInformation($"Start processing feedback for chat {settings.ChatId}. Feedback {feedback.ToPrettyJson()}. Settings {settings.ToPrettyJson()}");
 
-            var message = FormFeedbackMessage(feedback, settings.IncludeStudentInfo);
+            var message = FormFeedbackMessage(feedback, settings);
 
             if (settings.FeedbackTypes.Any() && !settings.FeedbackTypes.Any(x => x == feedback.Type))
             {
@@ -241,10 +241,9 @@ namespace Zhalobobot.Bot.Services
                 return;
             }
 
-            var subjectHash = feedback.Subject?.Name.GetHashCode();
-            if (settings.Subjects.Any() && !settings.Subjects.Any(x => x == subjectHash))
+            if (settings.Subjects.Any() && !settings.Subjects.Any(x => x == "Design" && feedback.Subject?.Name == "Дизайн"))
             {
-                Logger.LogInformation($"Failed Subject Check. ChatId {settings.ChatId}. Subject Hash {subjectHash}.");
+                Logger.LogInformation($"Failed Subject Check. ChatId {settings.ChatId}.");
                 return;
             }
 
@@ -285,17 +284,14 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"Send feedback to chat {feedbackChatId} successfully.");
         }
 
-        private string FormFeedbackMessage(Feedback feedback, bool includeStudentInfo = false)
+        private string FormFeedbackMessage(Feedback feedback, FeedbackChatSettings settings)
         {
             var builder = new StringBuilder();
 
             builder.AppendLine("Кто-то оставил обратную связь!");
 
-            if (includeStudentInfo)
-            {
-                builder.AppendLine();
-                builder.AppendLine(FormStudentInfo(feedback.Student));
-            }
+            builder.AppendLine();
+            builder.AppendLine(FormStudentInfo(feedback.Student, settings.IncludeFullStudentInfo));
 
             if (!string.IsNullOrWhiteSpace(feedback.Message))
             {
@@ -328,14 +324,18 @@ namespace Zhalobobot.Bot.Services
             return builder.ToString();
         }
 
-        private string FormStudentInfo(Student student)
+        private string FormStudentInfo(Student student, bool inludeFullStudentInfo = false)
         {
             var builder = new StringBuilder();
 
-            builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
+            if (inludeFullStudentInfo)
+            {
+                builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
+            }
+
             builder.AppendLine($"ФТ-{(int)student.Course}0{(int)student.Group}-{(int)student.Subgroup}");
 
-            if (!string.IsNullOrEmpty(student.Username))
+            if (inludeFullStudentInfo && !string.IsNullOrEmpty(student.Username))
             {
                 builder.AppendLine($"@{student.Username}");
             }
