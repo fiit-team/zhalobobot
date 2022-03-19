@@ -13,4 +13,8 @@
       <PackageReference Include="Vostok.Commons.Time" Version="0.1.2" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Zhalobobot.Common.Models\Zhalobobot.Common.Models.csproj" />
+    </ItemGroup>
+
 </Project>
