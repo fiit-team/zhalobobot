@@ -24,8 +24,10 @@ public class MessageBroker : IDisposable
         userMessageQueue = new MessageQueue();
         groupIdToQueue = new ConcurrentDictionary<long, (MessageQueue Queue, int SendCountPerMinute)>();
         clearSendCountRoutine = new PeriodicalAction(ClearSendCountPerMinute, LogError, () => TimeSpan.FromMinutes(1));
-        executeUserMessagesRoutine = new AsyncPeriodicalAction(ExecuteUserMessages, LogError, () => TimeSpan.FromSeconds(1));
-        executeGroupMessagesRoutine = new AsyncPeriodicalAction(ExecuteGroupMessages, LogError, () => TimeSpan.FromSeconds(1));
+
+        var executionTimeoutInSeconds = (double)1 / MessageBrokerSettings.BrokerExecutionCallsPerSecondCount;
+        executeUserMessagesRoutine = new AsyncPeriodicalAction(ExecuteUserMessages, LogError, () => TimeSpan.FromSeconds(executionTimeoutInSeconds));
+        executeGroupMessagesRoutine = new AsyncPeriodicalAction(ExecuteGroupMessages, LogError, () => TimeSpan.FromSeconds(executionTimeoutInSeconds));
         
         clearSendCountRoutine.Start();
         executeUserMessagesRoutine.Start();
