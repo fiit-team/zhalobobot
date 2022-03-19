@@ -5,7 +5,6 @@ using Telegram.Bot.Types;
 using Vostok.Commons.Time;
 using Zhalobobot.Common.Models.Serialization;
 using Zhalobobot.TelegramMessageQueue.Core;
-using Zhalobobot.TelegramMessageQueue.Models;
 using Zhalobobot.TelegramMessageQueue.Settings;
 
 namespace Zhalobobot.TelegramMessageQueue;
@@ -55,31 +54,28 @@ public class MessageBroker : IDisposable
 
     private void ClearSendCountPerMinute()
     {
-        foreach (var (groupId, (queue, sendCountPerMinute)) in groupIdToQueue)
+        foreach (var (groupId, items) in groupIdToQueue)
         {
-            if (sendCountPerMinute == 0)
-                continue;
-            if (groupIdToQueue.TryUpdate(groupId, (queue, 0), (queue, sendCountPerMinute))) 
-                continue;
-                
+            var oldResult = items;
+            var foundValue = true;
             while (true)
             {
-                var foundValue = groupIdToQueue.TryGetValue(groupId, out var oldResult);
                 if (!foundValue || oldResult.SendCountPerMinute == 0)
                     break;
                 if (groupIdToQueue.TryUpdate(groupId, (oldResult.Queue, 0), oldResult))
                     break;
-            }
+                foundValue = groupIdToQueue.TryGetValue(groupId, out oldResult);
+            }    
         }
     }
     
     private void LogError(Exception e) => log.LogError(e.Message);
     
     private async Task ExecuteUserMessages() 
-        => await Task.WhenAll(UserItemsToExecute().Select(Execute));
+        => await Task.WhenAll(UserItemsToExecute(MessageBrokerSettings.AllUserMessagesPerSecondLimit).Select(Execute));
 
     private async Task ExecuteGroupMessages() 
-        => await Task.WhenAll(GroupItemsToExecute().Select(Execute));
+        => await Task.WhenAll(GroupItemsToExecute(MessageBrokerSettings.GroupMessagesPerMinuteLimit).Select(Execute));
 
     private async Task Execute(QueueItem item)
     {
@@ -108,18 +104,18 @@ public class MessageBroker : IDisposable
         }
     }
 
-    private IEnumerable<QueueItem> UserItemsToExecute()
-        => GetItemsToExecute(userMessageQueue, MessageBrokerSettings.UserMessagesLimit);
+    private IEnumerable<QueueItem> UserItemsToExecute(int limit)
+        => GetItemsToExecute(userMessageQueue, limit);
 
-    private IEnumerable<QueueItem> GroupItemsToExecute()
+    private IEnumerable<QueueItem> GroupItemsToExecute(int limitPerGroup)
     {
         foreach (var (groupId, (queue, sendPerMinuteCount)) in groupIdToQueue)
         {
-            if (sendPerMinuteCount >= MessageBrokerSettings.GroupMessagesPerMinuteLimit)
+            if (sendPerMinuteCount >= limitPerGroup)
                 continue;
 
             var counter = sendPerMinuteCount;
-            var allowedCount = MessageBrokerSettings.GroupMessagesPerMinuteLimit - sendPerMinuteCount;
+            var allowedCount = limitPerGroup - sendPerMinuteCount;
 
             foreach (var item in GetItemsToExecute(queue, allowedCount))
             {
@@ -139,11 +135,11 @@ public class MessageBroker : IDisposable
             {
                 if (allowedCount <= 0)
                     yield break;
-                if (!queue.TryDequeue(priority, out var taskToExecute) || taskToExecute == null)
+                if (!queue.TryDequeue(priority, out var itemToExecute) || itemToExecute == null)
                     continue;
 
                 allowedCount -= 1;
-                yield return taskToExecute;
+                yield return itemToExecute;
             }
         }
     }

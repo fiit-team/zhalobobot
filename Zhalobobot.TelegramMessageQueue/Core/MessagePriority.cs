@@ -1,4 +1,4 @@
-namespace Zhalobobot.TelegramMessageQueue.Models;
+namespace Zhalobobot.TelegramMessageQueue.Core;
 
 public enum MessagePriority
 {

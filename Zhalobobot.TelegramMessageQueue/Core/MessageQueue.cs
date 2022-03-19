@@ -1,16 +1,15 @@
 using System.Collections.Concurrent;
 using Telegram.Bot.Types;
-using Zhalobobot.TelegramMessageQueue.Models;
 
 namespace Zhalobobot.TelegramMessageQueue.Core;
 
 internal class MessageQueue
 {
-    private readonly ConcurrentDictionary<MessagePriority, ConcurrentQueue<QueueItem>> priorityToQueue;
+    private readonly Dictionary<MessagePriority, ConcurrentQueue<QueueItem>> priorityToQueue;
 
     public MessageQueue()
     {
-        priorityToQueue = new ConcurrentDictionary<MessagePriority, ConcurrentQueue<QueueItem>>();
+        priorityToQueue = new Dictionary<MessagePriority, ConcurrentQueue<QueueItem>>();
         foreach (var priority in Enum.GetValues<MessagePriority>())
             priorityToQueue[priority] = new ConcurrentQueue<QueueItem>();
     }
