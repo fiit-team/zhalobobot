@@ -37,47 +37,53 @@ namespace Zhalobobot.Bot.Quartz.Jobs
 
             foreach (var course in courses)
             {
-                if (course.Subgroup.HasValue)
-                {
-                    SendNotifyMessageToStudents(course.Subject.Course, course.Group, course.Subgroup.Value, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
-                }
-                else
-                {
-                    SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.First, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
-                    SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.Second, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
-                }
+                SendNotifyMessageToStudents(
+                    course.Subject.Course,
+                    course.Group,
+                    course.Subgroup,
+                    course.Subject.Name,
+                    course.Subject.StudentsToNotifyPercent);
             }
-            
-            void SendNotifyMessageToStudents(Course course, Group group, Subgroup subgroup, string subjectName, int studentsPercentToNotify)
-            {
-                Log.LogInformation($"Course: {course.ToPrettyJson()}, Group: {group.ToPrettyJson()}, Subgroup: {subgroup.ToPrettyJson()}");
-                var students = Cache.Students.Get((course, group, subgroup));
-                
-                var selectedStudentsCount = studentsPercentToNotify == 0 
-                    ? 0 
-                    : Math.Max(1, students.Count * studentsPercentToNotify / 100);
-                    
-                var random = new Random();
-                    
-                var selectedStudents = students
-                    .OrderBy(_ => random.Next())
-                    .Take(selectedStudentsCount)
-                    .ToArray();
-                
-                Log.LogInformation($"Selected students: {selectedStudents.Select(s => s.Username).ToPrettyJson()}");
 
-                foreach (var student in selectedStudents)
-                {
-                    var message = string.Join("\n",
-                        $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {subjectName}.",
-                        "Пожалуйста, оставь обратную связь по нему :)");
-                    
-                    MessageSender.SendToUser(() => BotClient.SendTextMessageAsync(
-                        student.Id,
-                        message,
-                        replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName)));
-                }
+            return Task.CompletedTask;
+        }
+
+        private void SendNotifyMessageToStudents(Course course, Group group, Subgroup subgroup, string subjectName, int studentsPercentToNotify)
+        {
+            Log.LogInformation($"Course: {course.ToPrettyJson()}, Group: {group.ToPrettyJson()}, Subgroup: {subgroup.ToPrettyJson()}");
+
+            var studentsToNotify = GetStudentsToNotify(course, group, subgroup, studentsPercentToNotify);
+
+            Log.LogInformation($"Selected students: {studentsToNotify.Select(s => s.Username).ToPrettyJson()}");
+
+            foreach (var student in studentsToNotify)
+            {
+                var message = string.Join("\n",
+                    $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {subjectName}.",
+                    "Пожалуйста, оставь обратную связь по нему :)");
+
+                MessageSender.SendToUser(() => BotClient.SendTextMessageAsync(
+                    student.Id,
+                    message,
+                    replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName)));
             }
+        }
+
+        private Student[] GetStudentsToNotify(Course course, Group group, Subgroup subgroup, int studentsPercentToNotify)
+        {
+            if (studentsPercentToNotify == 0)
+                return Array.Empty<Student>();
+
+            var students = Cache.Students.Get((course, group, subgroup));
+
+            var selectedStudentsCount = Math.Max(1, students.Count * studentsPercentToNotify / 100);
+
+            var random = new Random();
+
+            return students
+                .OrderBy(_ => random.Next())
+                .Take(selectedStudentsCount)
+                .ToArray();
         }
     }
 }
