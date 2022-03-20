@@ -12,7 +12,6 @@ public static class ScheduleItemExtensions
 {
     public static IEnumerable<ScheduleItem> ActualWeekSchedule(
         this IEnumerable<ScheduleItem> items,
-        HashSet<DateOnly> holidays,
         DateTime mondayDate,
         DayWithoutPairs[] daysWithoutPair)
     {
@@ -20,14 +19,13 @@ public static class ScheduleItemExtensions
         var itemsArray = items.ToArray();
 
         for (var date = mondayDate; date < mondayDate.AddDays(7); date = date.AddDays(1))
-            result = result.Concat(ActualDaySchedule(itemsArray, holidays, date, daysWithoutPair, true));
+            result = result.Concat(ActualDaySchedule(itemsArray, date, daysWithoutPair, true));
 
         return result;
     }
 
     public static IEnumerable<ScheduleItem> ActualDaySchedule(
         this IEnumerable<ScheduleItem> items,
-        HashSet<DateOnly> holidays,
         DateTime date,
         IEnumerable<DayWithoutPairs> daysWithoutPair,
         bool skipEndTimeCheck)
@@ -35,7 +33,6 @@ public static class ScheduleItemExtensions
         var day = date.ToDateOnly();
 
         var startHourAndMinuteToScheduleItems = items
-            .EmptyWhenHolidays(date.ToDateOnly(), holidays)
             .Where(FilterActualDayScheduleItem)
             .GroupBy(i => GetSubjectDuration(i).Start);
         
@@ -151,11 +148,6 @@ public static class ScheduleItemExtensions
         
         return item.Subject.Course == student.Course && item.Group == student.Group && item.Subgroup == student.Subgroup;
     }
-
-    private static IEnumerable<ScheduleItem> EmptyWhenHolidays(this IEnumerable<ScheduleItem> items, DateOnly date, IReadOnlySet<DateOnly> holidays)
-        => holidays.Contains(date) 
-            ? Enumerable.Empty<ScheduleItem>() 
-            : items;
 
     private static bool ShouldSkipItem(this ScheduleItem item, IEnumerable<DayWithoutPairs> daysWithoutPairs, DateTime date)
     {

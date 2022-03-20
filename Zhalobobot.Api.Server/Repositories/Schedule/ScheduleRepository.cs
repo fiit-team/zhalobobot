@@ -16,7 +16,6 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
     public class ScheduleRepository : GoogleSheetsRepositoryBase, IScheduleRepository
     {
         private string ScheduleRange { get; }
-        private string HolidaysRange { get; }
         private string DayWithoutPairsRange { get; }
         private ISubjectRepository SubjectRepository { get; }
         private ILogger<ScheduleRepository> Log { get; }
@@ -25,7 +24,6 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             : base(configuration, configuration["ScheduleSpreadSheetId"])
         {
             ScheduleRange = configuration["ScheduleRange"];
-            HolidaysRange = configuration["HolidaysRange"];
             DayWithoutPairsRange = configuration["DayWithoutPairsRange"];
             SubjectRepository = subjectRepository;
             Log = log;
@@ -54,15 +52,6 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                     .Skip(2)
                     .SelectMany(v => ParseRow(v, subjects)));
             }
-        }
-
-        public async Task<DateOnly[]> GetHolidays()
-        {
-            var result = await GetRequest(HolidaysRange).ExecuteAsync();
-
-            return result.Values
-                .SelectMany(row => ParsingHelper.ParseDateOnlyRange(row[0]))
-                .ToArray();
         }
 
         public async Task<DayWithoutPairs[]> GetDaysWithoutPairs()

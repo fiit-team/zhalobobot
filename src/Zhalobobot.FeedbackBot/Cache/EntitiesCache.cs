@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Clients.Core.Extensions;
@@ -20,7 +19,6 @@ namespace Zhalobobot.Bot.Cache
         private readonly EntityCacheContainer<Student, StudentCache> students;
         private readonly EntityCacheContainer<StudentData, StudentDataCache> studentsData;
         private readonly EntityCacheContainer<Subject, SubjectCache> subjects;
-        private readonly EntityCacheContainer<DateOnlyRecord, HolidaysCache> holidays;
         private readonly EntityCacheContainer<Reply, RepliesCache> replies;
         private readonly EntityCacheContainer<DayWithoutPairs, DaysWithoutPairsCache> daysWithoutPairs;
 
@@ -31,7 +29,6 @@ namespace Zhalobobot.Bot.Cache
             schedule = new EntityCacheContainer<Common.Models.Schedule.Schedule, ScheduleItemCache>(() => client.Schedule.GetAll().GetResult(), s => s.ShouldBeUpdated ? new ScheduleItemCache(s.Items) : ScheduleItems);
             students = new EntityCacheContainer<Student, StudentCache>(() => client.Student.GetAll().GetResult(), items => new StudentCache(items));
             subjects = new EntityCacheContainer<Subject, SubjectCache>(() => client.Subject.GetAll().GetResult(), items => new SubjectCache(items));
-            holidays = new EntityCacheContainer<DateOnlyRecord, HolidaysCache>(() => client.Schedule.GetHolidays().GetResult().AsRecord(), items => new HolidaysCache(items));
             studentsData = new EntityCacheContainer<StudentData, StudentDataCache>(() => client.Student.GetAllData().GetResult(), items => new StudentDataCache(items));
             daysWithoutPairs = new EntityCacheContainer<DayWithoutPairs, DaysWithoutPairsCache>(() => client.Schedule.GetDaysWithoutPairs().GetResult(), items => new DaysWithoutPairsCache(items));
 
@@ -43,20 +40,19 @@ namespace Zhalobobot.Bot.Cache
                 schedule,
                 students,
                 subjects,
-                holidays,
                 studentsData,
                 daysWithoutPairs
             };
         }
 
         public IEnumerable<ScheduleItem> ActualWeekSchedule(DateTime mondayDate) =>
-            ScheduleItems.All.ActualWeekSchedule(Holidays.All.FromRecord().ToHashSet(), mondayDate, DaysWithoutPairs.All);
+            ScheduleItems.All.ActualWeekSchedule(mondayDate, DaysWithoutPairs.All);
 
         public IEnumerable<ScheduleItem> ActualWeekSchedule(Student student, WeekParity weekParity, DateTime mondayDate) =>
             ActualWeekSchedule(mondayDate).For(student, weekParity);
         
         public IEnumerable<ScheduleItem> ActualSchedule(bool skipEndTimeCheck) =>
-            ScheduleItems.All.ActualDaySchedule(Holidays.All.FromRecord().ToHashSet(), DateHelper.EkbTime, DaysWithoutPairs.All, skipEndTimeCheck);
+            ScheduleItems.All.ActualDaySchedule(DateHelper.EkbTime, DaysWithoutPairs.All, skipEndTimeCheck);
 
         public IEnumerable<ScheduleItem> ActualSchedule(Student student, WeekParity weekParity, bool skipEndTimeCheck) =>
             ActualSchedule(skipEndTimeCheck).For(student, weekParity);
@@ -64,7 +60,6 @@ namespace Zhalobobot.Bot.Cache
         private ScheduleItemCache ScheduleItems => schedule.Cache;
         public StudentCache Students => students.Cache;
         public SubjectCache Subjects => subjects.Cache;
-        private HolidaysCache Holidays => holidays.Cache;
         public StudentDataCache StudentData => studentsData.Cache;
         private DaysWithoutPairsCache DaysWithoutPairs => daysWithoutPairs.Cache;
         
