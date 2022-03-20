@@ -23,5 +23,9 @@ namespace Zhalobobot.Api.Server.Controllers
         [HttpPost("holidays")]
         public async Task<DateOnly[]> GetHolidays()
             => await repository.GetHolidays();
+
+        [HttpPost("daysWithoutPairs")]
+        public async Task<DayWithoutPairs[]> GetDaysWithoutPairs()
+            => await repository.GetDaysWithoutPairs();
     }
 }

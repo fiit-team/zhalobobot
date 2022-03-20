@@ -17,6 +17,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
     {
         private string ScheduleRange { get; }
         private string HolidaysRange { get; }
+        private string DayWithoutPairsRange { get; }
         private ISubjectRepository SubjectRepository { get; }
         private ILogger<ScheduleRepository> Log { get; }
 
@@ -25,6 +26,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
         {
             ScheduleRange = configuration["ScheduleRange"];
             HolidaysRange = configuration["HolidaysRange"];
+            DayWithoutPairsRange = configuration["DayWithoutPairs"];
             SubjectRepository = subjectRepository;
             Log = log;
         }
@@ -61,6 +63,44 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             return result.Values
                 .SelectMany(row => ParsingHelper.ParseDateOnlyRange(row[0]))
                 .ToArray();
+        }
+
+        public async Task<DayWithoutPairs[]> GetDaysWithoutPairs()
+        {
+            var result = await GetRequest(DayWithoutPairsRange).ExecuteAsync();
+
+            return result.Values
+                .SelectMany(ParseDayWithoutPairs)
+                .Distinct()
+                .ToArray();
+        }
+
+        private static IEnumerable<DayWithoutPairs> ParseDayWithoutPairs(IList<object> row)
+        {
+            var startTimes = row.Count >= 4
+                ? ParsingHelper.ParseTimeOnlyRange(row[3]).ToArray()
+                : null;
+
+            var dates = ParsingHelper.ParseDateOnlyRange(row[0]);
+
+            var subjectName = row[1] as string ?? throw new Exception("Invalid subject name");
+            
+            foreach (var date in dates)
+            foreach (var (course, group, subgroup) in ParsingHelper.ParseFlow(row[2]))
+            {
+                var possibleSubgroups = subgroup.HasValue 
+                    ? new[] { subgroup.Value } 
+                    : Enum.GetValues<Subgroup>().ToArray();
+
+                foreach (var possibleSubgroup in possibleSubgroups)
+                {
+                    if (startTimes != null)
+                        foreach (var startTime in startTimes)
+                            yield return new DayWithoutPairs(date, subjectName, course, group, possibleSubgroup, startTime);
+                    else
+                        yield return new DayWithoutPairs(date, subjectName, course, group, possibleSubgroup, null);
+                }
+            }
         }
 
         private IEnumerable<ScheduleItem> ParseRow(IList<object> row, Subject[] subjects)
