@@ -34,5 +34,5 @@ public record HourAndMinute(int Hour, int Minute) : IComparable<HourAndMinute>
     }
 
     public override string ToString()
-        => $"{Hour.WithLeadingZeroIfLessThanTen()}:{Minute.WithLeadingZeroIfLessThanTen()}";
+        => $"{Hour:00}:{Minute:00}";
 }
