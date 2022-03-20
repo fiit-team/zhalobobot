@@ -16,9 +16,11 @@ namespace Zhalobobot.Bot.Models
         Friday = 5,
         [Description("Суббота")]
         Saturday = 6,
-        FullWeek = 7,
-        UntilWeekEnd = 8,
-        NextMonday = 9,
-        NextWeek = 10
+        [Description("Воскресенье")]
+        Sunday = 7,
+        FullWeek = 8,
+        UntilWeekEnd = 9,
+        NextMonday = 10,
+        NextWeek = 11
     }
 }

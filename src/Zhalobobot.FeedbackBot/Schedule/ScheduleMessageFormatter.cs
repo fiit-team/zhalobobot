@@ -55,8 +55,7 @@ namespace Zhalobobot.Bot.Schedule
             
             switch (day)
             {
-                case >= ScheduleDay.Monday and <= ScheduleDay.Saturday:
-                    message = FormatDay(weekByDay, day, day, true);
+                case >= ScheduleDay.Monday and <= ScheduleDay.Sunday:
                     whenDelete = day.OneDayAfterCurrentWeekDayAndMonth();
                     break;
                 case ScheduleDay.UntilWeekEnd:
@@ -181,7 +180,7 @@ namespace Zhalobobot.Bot.Schedule
             }
 
             bool SingleDayScheduleRequested() =>
-                target is >= ScheduleDay.Monday and <= ScheduleDay.Saturday;
+                target is >= ScheduleDay.Monday and <= ScheduleDay.Sunday;
 
             static string Crop(string str)
             {

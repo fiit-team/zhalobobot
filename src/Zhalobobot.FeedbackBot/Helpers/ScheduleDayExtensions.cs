@@ -11,34 +11,36 @@ namespace Zhalobobot.Bot.Helpers
 
         public static DateOnly CurrentWeekDayAndMonth(this ScheduleDay date)
         {
-            if (date > ScheduleDay.Saturday)
-                throw new NotSupportedException(nameof(date));
+            EnsureCorrect(date);
             
             return DateHelper.MondayDate.AddDays(date - ScheduleDay.Monday).ToDateOnly();
         }
 
         public static DateOnly OneDayAfterCurrentWeekDayAndMonth(this ScheduleDay date)
         {
-            if (date > ScheduleDay.Saturday)
-                throw new NotSupportedException(nameof(date));
+            EnsureCorrect(date);
             
             return DateHelper.MondayDate.AddDays(1 + date - ScheduleDay.Monday).ToDateOnly();
         }
         
         public static DateOnly NextWeekDayAndMonth(this ScheduleDay date)
         {
-            if (date > ScheduleDay.Saturday)
-                throw new NotSupportedException(nameof(date));
+            EnsureCorrect(date);
             
             return DateHelper.NextMondayDate.AddDays(date - ScheduleDay.Monday).ToDateOnly();
         }
         
         public static DateOnly OneDayAfterNextWeekDayAndMonth(this ScheduleDay date)
         {
-            if (date > ScheduleDay.Saturday)
-                throw new NotSupportedException(nameof(date));
+            EnsureCorrect(date);
             
             return DateHelper.NextMondayDate.AddDays(1 + date - ScheduleDay.Monday).ToDateOnly();
+        }
+
+        private static void EnsureCorrect(ScheduleDay date)
+        {
+            if (date > ScheduleDay.Sunday)
+                throw new NotSupportedException(nameof(date));
         }
     }
 }
