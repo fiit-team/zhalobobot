@@ -7,7 +7,7 @@ namespace Zhalobobot.Common.Models.Schedule
         Subject.Subject Subject,
         EventTime EventTime,
         Group Group,
-        Subgroup? Subgroup,
+        Subgroup Subgroup,
         string Cabinet,
         string Teacher);
 }

@@ -127,28 +127,33 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
                 var eventTime = new EventTime(
                     ParsingHelper.ParseDay(row[0]),
                     ParsingHelper.ParseEnum<Pair>(row[1]),
-                    startDayOrTime?.TimeOnly,
-                    endDayOrTime?.TimeOnly,
-                    startDayOrTime?.DateOnly,
-                    endDayOrTime?.DateOnly,
+                    startDayOrTime.TimeOnly,
+                    endDayOrTime.TimeOnly,
+                    startDayOrTime.DateOnly,
+                    endDayOrTime.DateOnly,
                     ParsingHelper.ParseParity(row[7]));
 
-                var subgroup = ParsingHelper.ParseNullableInt(row[4]);
+                var subgroup = GetSubgroup(flowSubgroup, ParsingHelper.ParseNullableInt(row[4]));
 
-                yield return new ScheduleItem(
-                    subject,
-                    eventTime,
-                    group,
-                    SelectSubgroup(),
-                    row[5] as string ?? string.Empty,
-                    row[6] as string ?? string.Empty);
+                var subgroups = subgroup.HasValue ? new[] { subgroup.Value } : Enum.GetValues<Subgroup>();
 
-                Subgroup? SelectSubgroup()
+                foreach (var sub in subgroups)
                 {
-                    if (flowSubgroup != null)
-                        return flowSubgroup;
-                    if (subgroup != null)
-                        return (Subgroup)subgroup;
+                    yield return new ScheduleItem(
+                        subject,
+                        eventTime,
+                        group,
+                        sub,
+                        row[5] as string ?? string.Empty,
+                        row[6] as string ?? string.Empty);
+                }
+
+                static Subgroup? GetSubgroup(Subgroup? flowSubgroup, int? subgroupValue)
+                {
+                    if (flowSubgroup.HasValue)
+                        return flowSubgroup.Value;
+                    if (subgroupValue.HasValue)
+                        return (Subgroup)subgroupValue.Value;
                     return null;
                 }
             }
