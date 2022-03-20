@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Zhalobobot.Common.Helpers.Extensions;
@@ -31,9 +31,6 @@ namespace Zhalobobot.Api.Server.Repositories.Common
         
         public static long ParseLong(object value)
             => long.TryParse(value as string, out var result) ? result : throw new Exception();
-
-        public static bool ParseBool(object value)
-            => value as string == "TRUE";
 
         public static SubjectCategory ParseSubjectCategory(object value)
         {
@@ -73,13 +70,9 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             throw new Exception();
         }
 
-        public static (DateOnly? DateOnly, TimeOnly? TimeOnly)? ParseDateOnlyTimeOnly(object value)
+        public static (DateOnly? DateOnly, TimeOnly? TimeOnly) ParseDateOnlyTimeOnly(object value)
         {
-            if (value is not string str)
-                return null;
-
-            if (str == "")
-                return null;
+            var str = EnsureCorrectString(value);
 
             str = str.Trim();
 
@@ -116,21 +109,37 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             return (dateOnlyCorrect ? dateOnly : null, timeOnlyCorrect ? timeOnly : null);
         }
 
-        private static readonly Regex ParseRegex = new(@"^ФТ-(?<course>[0-9])0(?<group>[0-9])(-(?<subgroup>[0-9]))*$",
+        private static readonly Regex CourseGroupSubgroupRegex = new(@"^ФТ-(?<course>[0-9])0(?<group>[0-9])(-(?<subgroup>[0-9]))*$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        private static readonly Regex CourseRegex = new(@"(?<course>[0-9])\s*курс", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         public static IEnumerable<(Course, Group, Subgroup?)> ParseFlow(object value)
         {
-            if (value is not string str)
-                throw new Exception();
-
-            if (str == "")
-                throw new Exception();
+            var str = EnsureCorrectString(value);
 
             var parts = str.Split(',');
 
+            if (parts.Any(part => part.ToLower() == "все"))
+            {
+                foreach (var course in Enum.GetValues<Course>())
+                foreach (var group in Enum.GetValues<Group>())
+                foreach (var subgroup in Enum.GetValues<Subgroup>())
+                    yield return (course, group, subgroup);
+                yield break;
+            }
+
             foreach (var part in parts)
             {
-                var result = ParseRegex.Match(part.Trim());
+                var result = CourseRegex.Match(part.Trim());
+                if (result.Success)
+                {
+                    var course = (Course)int.Parse(result.Groups["course"].Value);
+                    foreach (var group in Enum.GetValues<Group>())
+                    foreach (var subgroup in Enum.GetValues<Subgroup>())
+                        yield return (course, group, subgroup);
+                }
+                
+                result = CourseGroupSubgroupRegex.Match(part.Trim());
                 if (result.Success)
                 {
                     var subgroup = result.Groups["subgroup"];
@@ -146,20 +155,46 @@ namespace Zhalobobot.Api.Server.Repositories.Common
 
         public static IEnumerable<DateOnly> ParseDateOnlyRange(object value)
         {
+            var str = EnsureCorrectString(value);
+
+            return ParseDateOnlyRangeInternal(str);
+        }
+
+        public static IEnumerable<TimeOnly> ParseTimeOnlyRange(object value)
+        {
+            var str = EnsureCorrectString(value);
+
+            var parts = str.Split(",");
+
+            foreach (var part in parts)
+                yield return TimeOnly.Parse(part.Trim());
+        }
+
+        private static IEnumerable<DateOnly> ParseDateOnlyRangeInternal(string str, string format = "dd.MM.yyyy")
+        {
+            var parts = str.Split(',');
+            foreach (var part in parts)
+            {
+                if (part.Contains('-'))
+                {
+                    var (start, end) = part.SplitPair('-');
+                    for (var i = DateOnly.ParseExact(start.Trim(), format); i <= DateOnly.ParseExact(end.Trim(), format); i = i.AddDays(1))
+                        yield return i;
+                }
+                else
+                    yield return DateOnly.ParseExact(part.Trim(), format);
+            }
+        }
+
+        private static string EnsureCorrectString(object value)
+        {
             if (value is not string str)
                 throw new Exception();
 
             if (str == "")
                 throw new Exception();
-            
-            if (str.Contains('-'))
-            {
-                var (start, end) = str.SplitPair('-');
-                for (var i = DateOnly.ParseExact(start.Trim(), "dd.MM.yyyy"); i <= DateOnly.ParseExact(end.Trim(), "dd.MM.yyyy"); i = i.AddDays(1))
-                    yield return i;
-            }
-            else
-                yield return DateOnly.ParseExact(str.Trim(), "dd.MM.yyyy");
+
+            return str;
         }
     }
 }
