@@ -80,7 +80,7 @@ namespace Zhalobobot.Bot
             services.AddSingleton<IScheduleMessageService, ScheduleMessageService>();
             services.AddScoped<UpdateHandlerAdmin>();
             services.AddScoped<HandleUpdateService>();
-            services.AddSingleton<MessageBroker>();
+            services.AddSingleton<MessageSender>();
         }
 
         private static void RegisterQuartz(IServiceCollection services, IConfiguration configuration)

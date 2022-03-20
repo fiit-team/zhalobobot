@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot.Exceptions;
-using Telegram.Bot.Types;
 using Vostok.Commons.Time;
 using Zhalobobot.Common.Models.Serialization;
 using Zhalobobot.TelegramMessageQueue.Core;
@@ -9,23 +8,23 @@ using Zhalobobot.TelegramMessageQueue.Settings;
 
 namespace Zhalobobot.TelegramMessageQueue;
 
-public class MessageBroker : IDisposable
+public class MessageSender : IDisposable
 {
     private readonly MessageQueue userMessageQueue;
     private readonly ConcurrentDictionary<long, (MessageQueue Queue, int SendCountPerMinute)> groupIdToQueue;
     private readonly PeriodicalAction clearSendCountRoutine;
     private readonly AsyncPeriodicalAction executeUserMessagesRoutine;
     private readonly AsyncPeriodicalAction executeGroupMessagesRoutine;
-    private readonly ILogger<MessageBroker> log;
+    private readonly ILogger<MessageSender> log;
 
-    private MessageBroker(ILogger<MessageBroker> log)
+    public MessageSender(ILogger<MessageSender> log)
     {
         this.log = log;
         userMessageQueue = new MessageQueue();
         groupIdToQueue = new ConcurrentDictionary<long, (MessageQueue Queue, int SendCountPerMinute)>();
         clearSendCountRoutine = new PeriodicalAction(ClearSendCountPerMinute, LogError, () => TimeSpan.FromMinutes(1));
 
-        var executionTimeoutInSeconds = (double)1 / MessageBrokerSettings.BrokerExecutionCallsPerSecondCount;
+        var executionTimeoutInSeconds = (double)1 / MessageSenderSettings.SenderExecutionCallsPerSecondCount;
         executeUserMessagesRoutine = new AsyncPeriodicalAction(ExecuteUserMessages, LogError, () => TimeSpan.FromSeconds(executionTimeoutInSeconds));
         executeGroupMessagesRoutine = new AsyncPeriodicalAction(ExecuteGroupMessages, LogError, () => TimeSpan.FromSeconds(executionTimeoutInSeconds));
         
@@ -34,10 +33,10 @@ public class MessageBroker : IDisposable
         executeGroupMessagesRoutine.Start();
     }
 
-    public void SendToUser(MessagePriority priority, Func<Task<Message>> taskGenerator)
+    public void SendToUser(Func<Task> taskGenerator, MessagePriority priority = MessagePriority.Normal)
         => userMessageQueue.Enqueue(new QueueItem(priority, taskGenerator, null));
 
-    public void SendToGroupChat(long groupId, MessagePriority priority, Func<Task<Message>> taskGenerator)
+    public void SendToGroupChat(long groupId, Func<Task> taskGenerator, MessagePriority priority = MessagePriority.Normal)
     {
         if (!groupIdToQueue.ContainsKey(groupId))
             groupIdToQueue.TryAdd(groupId, (new MessageQueue(), 0));
@@ -74,16 +73,26 @@ public class MessageBroker : IDisposable
     private void LogError(Exception e) => log.LogError(e.Message);
     
     private async Task ExecuteUserMessages() 
-        => await Task.WhenAll(UserItemsToExecute(MessageBrokerSettings.AllUserMessagesPerSecondLimit).Select(Execute));
+        => await Task.WhenAll(UserItemsToExecute(MessageSenderSettings.AllUserMessagesPerSecondLimit).Select(Execute));
 
     private async Task ExecuteGroupMessages() 
-        => await Task.WhenAll(GroupItemsToExecute(MessageBrokerSettings.GroupMessagesPerMinuteLimit).Select(Execute));
+        => await Task.WhenAll(GroupItemsToExecute(MessageSenderSettings.GroupMessagesPerMinuteLimit).Select(Execute));
 
     private async Task Execute(QueueItem item)
     {
         try
         {
+            log.LogInformation("Try execute..");
             await item.TaskGenerator();
+            log.LogInformation("Successful execution.");
+        }
+        catch (ChatNotFoundException)
+        {
+            log.LogWarning("Chat not found.");
+        }
+        catch (MessageIsNotModifiedException)
+        {
+            log.LogWarning("Message not modified.");
         }
         catch (ApiRequestException e)
         {
@@ -95,9 +104,15 @@ public class MessageBroker : IDisposable
                 log.LogWarning("Api limit is already reached!");
 
                 if (item.GroupChatId.HasValue)
+                {
+                    log.LogInformation($"Enqueue in queue for {item.GroupChatId.Value} group..");
                     groupIdToQueue[item.GroupChatId.Value].Queue.Enqueue(item);
+                }
                 else
+                {
+                    log.LogInformation("Enqueue in users queue..");
                     userMessageQueue.Enqueue(item);
+                }
             }
         }
         catch (Exception e)

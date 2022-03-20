@@ -1,5 +1,3 @@
-using Telegram.Bot.Types;
-
 namespace Zhalobobot.TelegramMessageQueue.Core;
 
-public record QueueItem(MessagePriority Priority, Func<Task<Message>> TaskGenerator, long? GroupChatId);
+public record QueueItem(MessagePriority Priority, Func<Task> TaskGenerator, long? GroupChatId);
