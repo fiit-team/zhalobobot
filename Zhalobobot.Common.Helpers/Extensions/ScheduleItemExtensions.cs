@@ -10,17 +10,33 @@ namespace Zhalobobot.Common.Helpers.Extensions;
 
 public static class ScheduleItemExtensions
 {
-    public static IEnumerable<ScheduleItem> ActualSchedule(
+    public static IEnumerable<ScheduleItem> ActualWeekSchedule(
+        this IEnumerable<ScheduleItem> items,
+        HashSet<DateOnly> holidays,
+        DateTime mondayDate,
+        DayWithoutPairs[] daysWithoutPair)
+    {
+        var result = Enumerable.Empty<ScheduleItem>();
+        var itemsArray = items.ToArray();
+
+        for (var date = mondayDate; date < mondayDate.AddDays(7); date = date.AddDays(1))
+            result = result.Concat(ActualDaySchedule(itemsArray, holidays, date, daysWithoutPair, true));
+
+        return result;
+    }
+
+    public static IEnumerable<ScheduleItem> ActualDaySchedule(
         this IEnumerable<ScheduleItem> items,
         HashSet<DateOnly> holidays,
         DateTime date,
-        IEnumerable<DayWithoutPairs> daysWithoutPair)
+        IEnumerable<DayWithoutPairs> daysWithoutPair,
+        bool skipEndTimeCheck)
     {
         var day = date.ToDateOnly();
 
         var startHourAndMinuteToScheduleItems = items
             .EmptyWhenHolidays(date.ToDateOnly(), holidays)
-            .Where(FilterActualScheduleItem)
+            .Where(FilterActualDayScheduleItem)
             .GroupBy(i => GetSubjectDuration(i).Start);
         
         foreach (var scheduleItemsStartsAndEndsInSameTime in startHourAndMinuteToScheduleItems)
@@ -39,12 +55,12 @@ public static class ScheduleItemExtensions
             }
         }
 
-        bool FilterActualScheduleItem(ScheduleItem item)
+        bool FilterActualDayScheduleItem(ScheduleItem item)
         {
             if (item.EventTime.DayOfWeek != date.DayOfWeek)
                 return false;
             
-            if (item.GetSubjectDuration().End != date.ToHourAndMinute())
+            if (!skipEndTimeCheck && item.GetSubjectDuration().End != date.ToHourAndMinute())
                 return false;
 
             if (item.EventTime.StartDay.HasValue && item.EventTime.StartDay.Value > date.ToDateOnly())
