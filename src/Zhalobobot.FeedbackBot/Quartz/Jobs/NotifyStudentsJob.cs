@@ -13,18 +13,21 @@ using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Serialization;
+using Zhalobobot.TelegramMessageQueue;
 
 namespace Zhalobobot.Bot.Quartz.Jobs
 {
     [DisallowConcurrentExecution]
     public class NotifyStudentsJob : IJob
     {
+        private MessageSender MessageSender { get; }
         private ITelegramBotClient BotClient { get; }
         private EntitiesCache Cache { get; }
         private ILogger<NotifyStudentsJob> Log { get; }
 
-        public NotifyStudentsJob(ITelegramBotClient botClient, EntitiesCache cache, ILogger<NotifyStudentsJob> log)
+        public NotifyStudentsJob(MessageSender messageSender, ITelegramBotClient botClient, EntitiesCache cache, ILogger<NotifyStudentsJob> log)
         {
+            MessageSender = messageSender;
             BotClient = botClient;
             Cache = cache;
             Log = log;
@@ -45,16 +48,16 @@ namespace Zhalobobot.Bot.Quartz.Jobs
             {
                 if (course.Subgroup.HasValue)
                 {
-                    await SendNotifyMessageToStudents(course.Subject.Course, course.Group, course.Subgroup.Value, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
+                    SendNotifyMessageToStudents(course.Subject.Course, course.Group, course.Subgroup.Value, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
                 }
                 else
                 {
-                    await SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.First, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
-                    await SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.Second, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
+                    SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.First, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
+                    SendNotifyMessageToStudents(course.Subject.Course, course.Group, Subgroup.Second, course.Subject.Name, course.Subject.StudentsToNotifyPercent);
                 }
             }
             
-            async Task SendNotifyMessageToStudents(Course course, Group group, Subgroup subgroup, string subjectName, int studentsPercentToNotify)
+            void SendNotifyMessageToStudents(Course course, Group group, Subgroup subgroup, string subjectName, int studentsPercentToNotify)
             {
                 Log.LogInformation($"Course: {course.ToPrettyJson()}, Group: {group.ToPrettyJson()}, Subgroup: {subgroup.ToPrettyJson()}");
                 var students = Cache.Students.Get((course, group, subgroup));
@@ -77,45 +80,11 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                     var message = string.Join("\n",
                         $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {subjectName}.",
                         "Пожалуйста, оставь обратную связь по нему :)");
-
-                    while (true)
-                    {
-                        try
-                        {
-                            Log.LogInformation($"Try notify student {student.Id}.");
-                            await BotClient.SendTextMessageAsync(
-                                student.Id,
-                                message,
-                                replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName));
-
-                            Log.LogInformation($"Successfuly notified student. StudentId {student.Id}");
-                            break;
-                        }
-                        catch (ChatNotFoundException e)
-                        {
-                            // skip
-                            Log.LogError($"Skip notify student due to ChatNotFoundException. Error {e.ToPrettyJson()}");
-                            break;
-                        }
-                        catch (HttpRequestException e)
-                        {
-                            if (e.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                            {
-                                await Task.Delay(1000);
-                                Log.LogError($"Error 429 when trying to notify a student. Error {e.ToPrettyJson()}");
-                            }
-                            else
-                            {
-                                Log.LogError($"HttpError: {e.ToPrettyJson()}");
-                                break;
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Log.LogError($"Error: {e.ToPrettyJson()}");
-                            break;
-                        }
-                    }
+                    
+                    MessageSender.SendToUser(() => BotClient.SendTextMessageAsync(
+                        student.Id,
+                        message,
+                        replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName)));
                 }
             }
         }

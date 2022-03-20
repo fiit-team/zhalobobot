@@ -1,20 +1,23 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Quartz;
-using Telegram.Bot.Exceptions;
 using Zhalobobot.Bot.Services;
 using Zhalobobot.Common.Models.Helpers;
+using Zhalobobot.TelegramMessageQueue;
+using Zhalobobot.TelegramMessageQueue.Core;
 
 namespace Zhalobobot.Bot.Quartz.Jobs
 {
     [DisallowConcurrentExecution]
     public class UpdateScheduleMessageJob : IJob
     {
+        private MessageSender MessageSender { get; }
         private IScheduleMessageService ScheduleMessageService { get; }
         private HandleUpdateService HandleUpdateService { get; }
 
-        public UpdateScheduleMessageJob(IScheduleMessageService scheduleMessageService, HandleUpdateService handleUpdateService)
+        public UpdateScheduleMessageJob(MessageSender messageSender, IScheduleMessageService scheduleMessageService, HandleUpdateService handleUpdateService)
         {
+            MessageSender = messageSender;
             ScheduleMessageService = scheduleMessageService;
             HandleUpdateService = handleUpdateService;
         }
@@ -32,16 +35,12 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                     chatsToDelete.Add(iterator.Current.Key);
                 else
                 {
-                    try
-                    {
-                        await HandleUpdateService.HandleChooseScheduleRange(iterator.Current.Key,
+                    MessageSender.SendToUser(
+                        () => HandleUpdateService.HandleChooseScheduleRange(
+                            iterator.Current.Key,
                             iterator.Current.Value.Data,
-                            iterator.Current.Value.MessageId);
-                    }
-                    catch (MessageIsNotModifiedException)
-                    {
-                        // continue
-                    }
+                            iterator.Current.Value.MessageId),
+                        MessagePriority.Low);
                 }
             }
 
