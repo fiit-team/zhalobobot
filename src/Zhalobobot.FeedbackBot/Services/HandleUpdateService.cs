@@ -37,7 +37,6 @@ namespace Zhalobobot.Bot.Services
         private IScheduleMessageService ScheduleMessageService { get; }
         private ILogger<HandleUpdateService> Logger { get; }
         private EntitiesCache Cache { get; }
-        private IScheduleMessageFormatter ScheduleMessageFormatter { get; }
 
         private UpdateHandlerAdmin AdminHandler { get; }
 
@@ -49,7 +48,6 @@ namespace Zhalobobot.Bot.Services
             IPollService pollService,
             IScheduleMessageService scheduleMessageService,
             EntitiesCache cache,
-            IScheduleMessageFormatter scheduleMessageFormatter,
             ILogger<HandleUpdateService> logger, 
             IConfiguration configuration,
             UpdateHandlerAdmin adminHandler)
@@ -60,7 +58,6 @@ namespace Zhalobobot.Bot.Services
             PollService = pollService ?? throw new ArgumentNullException(nameof(pollService));
             ScheduleMessageService = scheduleMessageService;
             Cache = cache;
-            ScheduleMessageFormatter = scheduleMessageFormatter;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             IsFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
             AdminHandler = adminHandler;
