@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EnumsNET;
-using Microsoft.Extensions.Configuration;
-using Zhalobobot.Bot.Cache;
-using Zhalobobot.Bot.Extensions;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Helpers.Extensions;
@@ -143,8 +140,8 @@ namespace Zhalobobot.Bot.Schedule
 
             foreach (var item in orderedItems.Skip(1))
             {
-                var (_, previousEnd) = GetSubjectDuration(firstItem);
-                var (nextStart, _) = GetSubjectDuration(item);
+                var (_, previousEnd) = firstItem.GetSubjectDuration();
+                var (nextStart, _) = item.GetSubjectDuration();
 
                 if (previousEnd < currentTime && currentTime < nextStart && item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
                 {
@@ -152,7 +149,7 @@ namespace Zhalobobot.Bot.Schedule
                     builder.Append($"[{currentTime}, до пары {(diff.Hour == 0 ? $"{diff.Minute}мин" : diff)}]".PutInCenterOf('-', TelegramMessageWidth) + "\n");
                 }
                 else if (SingleDayScheduleRequested())
-                    builder.Append($"{new string(' ', TelegramMessageWidth)}\n");
+                    builder.Append('\n');
                 
                 builder.Append(SingleDayScheduleRequested() ? ForDay(item) : ForWeek(item));
 
@@ -165,7 +162,7 @@ namespace Zhalobobot.Bot.Schedule
 
             string ForDay(ScheduleItem item)
             {
-                var (start, end) = GetSubjectDuration(item);
+                var (start, end) = item.GetSubjectDuration();
 
                 var (firstLine, secondLine) = FormatItemForDay(item);
 
@@ -187,91 +184,20 @@ namespace Zhalobobot.Bot.Schedule
                 var maxLength = Math.Min(TelegramMessageWidth, str.Length);
                 return $"{str[..maxLength]}{(str.Length > TelegramMessageWidth ? "…" : "")}";
             }
-
-            static IEnumerable<ScheduleItem> GetActualSchedule(IEnumerable<ScheduleItem> items, DateOnly day)
-            {
-                var hourAndMinuteToScheduleItem = items
-                    .Where(i => i.EventTime.StartDay == null || i.EventTime.StartDay <= day)
-                    .Where(i => i.EventTime.EndDay == null || i.EventTime.EndDay >= day)
-                    .GroupBy(i => GetSubjectDuration(i).Start)
-                    .ToDictionary(i => i.Key, i => i.ToArray());
-
-                foreach (var (_, scheduleItems) in hourAndMinuteToScheduleItem)
-                {
-                    switch (scheduleItems.Length)
-                    {
-                        case 1:
-                            yield return scheduleItems.First();
-                            break;
-                        case > 1:
-                        {
-                            var bothStartAndEndDay = scheduleItems
-                                .Where(k =>
-                                    k.EventTime.StartDay != null && k.EventTime.StartDay <= day &&
-                                    k.EventTime.EndDay != null && k.EventTime.EndDay >= day)
-                                .ToArray();
-                            if (bothStartAndEndDay.Length == 0)
-                            {
-                                var noStartAndEndDay = scheduleItems
-                                    .Where(o => o.EventTime.StartDay == null && o.EventTime.EndDay == null)
-                                    .ToArray();
-                                if (noStartAndEndDay.Length == 1)
-                                    yield return noStartAndEndDay.First();
-                                else
-                                {
-                                    var startOrEndDay = OrderSchedule(scheduleItems
-                                        .Where(o => o.EventTime.StartDay == null || o.EventTime.EndDay == null)
-                                        .ToArray());
-                                    yield return startOrEndDay.First();
-                                }
-                            }
-                            else
-                                yield return bothStartAndEndDay
-                                    .OrderBy(s => day.ToDateTime(TimeOnly.MinValue).Subtract(s.EventTime.StartDay!.Value.ToDateTime(TimeOnly.MinValue)))
-                                    .First();
-
-                            break;
-                        }
-                    }
-                }
-            }
-
-            static ScheduleItem[] OrderSchedule(IEnumerable<ScheduleItem> schedule)
-            {
-                return schedule
-                    .OrderBy(i => GetSubjectDuration(i).Start.Hour)
-                    .ThenBy(i => GetSubjectDuration(i).Start.Minute)
-                    .ThenBy(i => GetSubjectDuration(i).End.Hour)
-                    .ThenBy(i => GetSubjectDuration(i).End.Minute)
-                    .ToArray();
-            }
         }
 
         private static (string FirstLine, string SecondLine) FormatItemForDay(ScheduleItem item)
         {
-            var (start, end) = GetSubjectDuration(item);
+            var (start, end) = item.GetSubjectDuration();
 
             return ($"{start} {item.Subject.Name}", $"{end} {item.Cabinet}");
         }
 
         private static string FormatItemForPeriod(ScheduleItem item)
         {
-            var (start, _) = GetSubjectDuration(item);
+            var (start, _) = item.GetSubjectDuration();
 
             return $"{start} {item.Subject.Name}";
-        }
-
-        private static (HourAndMinute Start, HourAndMinute End) GetSubjectDuration(ScheduleItem item)
-        {
-            var start = item.EventTime.StartTime?.ToHourAndMinute()
-               ?? item.EventTime.Pair?.ToHourAndMinute().Start 
-               ?? throw new Exception();
-            
-            var end = item.EventTime.EndTime?.ToHourAndMinute() 
-               ?? item.EventTime.Pair?.ToHourAndMinute().End 
-               ?? throw new Exception();
-
-            return (start, end);
         }
     }
 }
