@@ -97,11 +97,9 @@ namespace Zhalobobot.Bot.Schedule
 
             var currentTime = dateTime.ToHourAndMinute();
 
-            var actualSchedule = schedule
-                .GroupBy(s => s.Subject.Name)
-                .SelectMany(group => GetActualSchedule(group, date));
-
-            var orderedItems = OrderSchedule(actualSchedule);
+            var orderedItems = schedule
+                .OrderSchedule()
+                .ToArray();
 
             var firstItem = orderedItems.First();
 
