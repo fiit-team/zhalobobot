@@ -120,7 +120,8 @@ public static class ScheduleItemExtensions
     public static DayOfWeek LastStudyWeekDay(this IEnumerable<ScheduleItem> items) =>
         items.Select(i => i.EventTime.DayOfWeek)
             .Distinct()
-            .Max();
+            .OrderByDescending(d => d == DayOfWeek.Sunday ? 7 : (int)d)
+            .First();
     
     public static IEnumerable<ScheduleItem> For(this IEnumerable<ScheduleItem> items, Student student, WeekParity weekParity) 
         => items
