@@ -26,7 +26,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
         {
             ScheduleRange = configuration["ScheduleRange"];
             HolidaysRange = configuration["HolidaysRange"];
-            DayWithoutPairsRange = configuration["DayWithoutPairs"];
+            DayWithoutPairsRange = configuration["DayWithoutPairsRange"];
             SubjectRepository = subjectRepository;
             Log = log;
         }
