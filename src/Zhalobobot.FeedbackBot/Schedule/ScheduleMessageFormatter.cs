@@ -14,7 +14,7 @@ using Zhalobobot.Common.Models.Schedule;
 
 namespace Zhalobobot.Bot.Schedule
 {
-    public class ScheduleMessageFormatter : IScheduleMessageFormatter
+    public static class ScheduleMessageFormatter
     {
         private const int TelegramMessageWidth = 30;
 

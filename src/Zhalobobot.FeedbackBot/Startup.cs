@@ -36,8 +36,6 @@ namespace Zhalobobot.Bot
             RegisterServices(services);
             RegisterCache(services);
 
-            services.AddSingleton<IScheduleMessageFormatter, ScheduleMessageFormatter>();
-
             services.AddHostedService<ConfigureWebhook>();
 
             services.AddHttpClient("tgwebhook")
