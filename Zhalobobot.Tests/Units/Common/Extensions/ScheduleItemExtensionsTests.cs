@@ -31,7 +31,7 @@ public class ScheduleItemExtensionsTests
         
         var scheduleItems = new[] { GenerateScheduleItem() };
 
-        scheduleItems.ActualSchedule(holidays, DateDefault, Array.Empty<DayWithoutPairs>()).Should().BeEmpty();
+        scheduleItems.ActualDaySchedule(holidays, DateDefault, Array.Empty<DayWithoutPairs>(), false).Should().BeEmpty();
     }
 
     [Test]
@@ -50,7 +50,7 @@ public class ScheduleItemExtensionsTests
 
         var scheduleItems = new[] { notFilteredItem, filteredItem };
 
-        scheduleItems.ActualSchedule(new HashSet<DateOnly>(), DateDefault, daysWithoutPair)
+        scheduleItems.ActualDaySchedule(new HashSet<DateOnly>(), DateDefault, daysWithoutPair, false)
             .Should().BeEquivalentTo(new[] { notFilteredItem }, c => c.WithoutStrictOrdering());
     }
     
@@ -71,7 +71,7 @@ public class ScheduleItemExtensionsTests
 
         var scheduleItems = new[] { notFilteredItem, filteredItem };
 
-        scheduleItems.ActualSchedule(new HashSet<DateOnly>(), DateDefault, daysWithoutPair)
+        scheduleItems.ActualDaySchedule(new HashSet<DateOnly>(), DateDefault, daysWithoutPair, false)
             .Should().BeEquivalentTo(new[] { notFilteredItem });
     }
 
@@ -80,7 +80,7 @@ public class ScheduleItemExtensionsTests
     {
         var scheduleItems = new[] { filteredItem, notFilteredItem };
 
-        scheduleItems.ActualSchedule(new HashSet<DateOnly>(), DateDefault, Array.Empty<DayWithoutPairs>())
+        scheduleItems.ActualDaySchedule(new HashSet<DateOnly>(), DateDefault, Array.Empty<DayWithoutPairs>(), false)
             .Should().BeEquivalentTo(new[] { notFilteredItem });
     }
 
@@ -98,8 +98,20 @@ public class ScheduleItemExtensionsTests
 
         var scheduleItems = new[] { notFilteredItem, filteredItem };
 
-        scheduleItems.ActualSchedule(new HashSet<DateOnly>(), DateDefault, Array.Empty<DayWithoutPairs>())
+        scheduleItems.ActualDaySchedule(new HashSet<DateOnly>(), DateDefault, Array.Empty<DayWithoutPairs>(), false)
             .Should().BeEquivalentTo(new[] { notFilteredItem });
+    }
+    
+    [Test]
+    public void Should_take_all_items_if_skipEndTimeCheck_is_true()
+    {
+        var notFilteredItem1 = GenerateScheduleItem(endTime: DateDefault.ToTimeOnly());
+        var notFilteredItem2 = GenerateScheduleItem(endTime: DateDefault.AddHours(3).ToTimeOnly());
+
+        var scheduleItems = new[] { notFilteredItem1, notFilteredItem2 };
+
+        scheduleItems.ActualDaySchedule(new HashSet<DateOnly>(), DateDefault, Array.Empty<DayWithoutPairs>(), true)
+            .Should().BeEquivalentTo(new[] { notFilteredItem1, notFilteredItem2 }, c => c.WithoutStrictOrdering());
     }
 
     private static IEnumerable<TestCaseData> GetItemsWithSameNameStartsAndEndsInSameTimeData()
