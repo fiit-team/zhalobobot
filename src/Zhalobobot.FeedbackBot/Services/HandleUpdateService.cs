@@ -260,8 +260,8 @@ namespace Zhalobobot.Bot.Services
         {
             var student = Cache.Students.Get(message.Chat.Id);
 
-            var lastStudyWeekDay = Cache.ScheduleItems
-                .GetFor(student, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd))
+            var lastStudyWeekDay = Cache
+                .ActualSchedule(student, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd))
                 .LastStudyWeekDay();
 
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
@@ -492,9 +492,20 @@ namespace Zhalobobot.Bot.Services
 
         public async Task HandleChooseScheduleRange(long chatId, string data, int messageId)
         {
+            var student = Cache.Students.Get(chatId);
+            
             var scheduleDay = (ScheduleDay)int.Parse(data);
-
-            var formattedMessage = ScheduleMessageFormatter.Format(chatId, scheduleDay, out var whenDelete);
+            
+            var actualSchedule = Cache
+                .ActualSchedule(
+                    student, 
+                    scheduleDay.IsCurrentWeek() 
+                        ? DateHelper.CurrentWeekParity(IsFirstYearWeekOdd) 
+                        : DateHelper.NextWeekParity(IsFirstYearWeekOdd)
+                 )
+                .ToArray();
+            
+            var formattedMessage = ScheduleMessageFormatter.Format(actualSchedule, scheduleDay, out var whenDelete);
 
             if (whenDelete.HasValue)
                 ScheduleMessageService.AddMessageToUpdate(chatId, (data, messageId, whenDelete.Value));
