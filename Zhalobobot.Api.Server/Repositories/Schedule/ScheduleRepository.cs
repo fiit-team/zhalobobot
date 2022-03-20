@@ -57,14 +57,15 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
         public async Task<DayWithoutPairs[]> GetDaysWithoutPairs()
         {
             var result = await GetRequest(DayWithoutPairsRange).ExecuteAsync();
+            var subjects = await SubjectRepository.GetAll();
 
             return result.Values
-                .SelectMany(ParseDayWithoutPairs)
+                .SelectMany(row => ParseDayWithoutPairs(row, subjects))
                 .Distinct()
                 .ToArray();
         }
 
-        private static IEnumerable<DayWithoutPairs> ParseDayWithoutPairs(IList<object> row)
+        private static IEnumerable<DayWithoutPairs> ParseDayWithoutPairs(IList<object> row, Subject[] subjects)
         {
             var startTimes = row.Count >= 4
                 ? ParsingHelper.ParseTimeOnlyRange(row[3]).ToArray()
@@ -83,11 +84,18 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
 
                 foreach (var possibleSubgroup in possibleSubgroups)
                 {
-                    if (startTimes != null)
-                        foreach (var startTime in startTimes)
-                            yield return new DayWithoutPairs(date, subjectName, course, group, possibleSubgroup, startTime);
-                    else
-                        yield return new DayWithoutPairs(date, subjectName, course, group, possibleSubgroup, null);
+                    var subjectNames = subjectName.ToLowerInvariant() == "все"
+                        ? subjects.Where(s => s.Course == course).Select(s => s.Name).ToArray()
+                        : new[] { subjectName };
+                    
+                    foreach (var name in subjectNames)
+                    {
+                        if (startTimes != null)
+                            foreach (var startTime in startTimes)
+                                yield return new DayWithoutPairs(date, name, course, group, possibleSubgroup, startTime);
+                        else
+                            yield return new DayWithoutPairs(date, name, course, group, possibleSubgroup, null);
+                    }
                 }
             }
         }
