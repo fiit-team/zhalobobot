@@ -1,8 +1,13 @@
-using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Clients.Core.Extensions;
+using Zhalobobot.Common.Helpers.Extensions;
+using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Reply;
+using Zhalobobot.Common.Models.Schedule;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.Subject;
 
@@ -43,10 +48,16 @@ namespace Zhalobobot.Bot.Cache
             };
         }
 
-        public ScheduleItemCache ScheduleItems => schedule.Cache;
+        public IEnumerable<ScheduleItem> ActualSchedule() =>
+            ScheduleItems.All.ActualSchedule(Holidays.All.FromRecord().ToHashSet(), DateHelper.EkbTime, DaysWithoutPairs.All);
+
+        public IEnumerable<ScheduleItem> ActualSchedule(Student student, WeekParity weekParity) =>
+            ActualSchedule().For(student, weekParity);
+
+        private ScheduleItemCache ScheduleItems => schedule.Cache;
         public StudentCache Students => students.Cache;
         public SubjectCache Subjects => subjects.Cache;
-        public HolidaysCache Holidays => holidays.Cache;
+        private HolidaysCache Holidays => holidays.Cache;
         public StudentDataCache StudentData => studentsData.Cache;
         private DaysWithoutPairsCache DaysWithoutPairs => daysWithoutPairs.Cache;
         
