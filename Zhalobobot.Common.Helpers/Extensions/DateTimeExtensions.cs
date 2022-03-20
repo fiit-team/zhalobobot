@@ -1,7 +1,7 @@
 using System;
-using Zhalobobot.Bot.Models;
+using Zhalobobot.Common.Models.Commons;
 
-namespace Zhalobobot.Bot.Extensions;
+namespace Zhalobobot.Common.Helpers.Extensions;
 
 public static class DateTimeExtensions
 {
