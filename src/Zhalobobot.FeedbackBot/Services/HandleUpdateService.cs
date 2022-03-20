@@ -646,8 +646,7 @@ namespace Zhalobobot.Bot.Services
             usage.AppendLine();
             usage.AppendLine($"{Buttons.Alarm} — это красная кнопка. Если всё очень плохо — нажми");
             
-            // todo: вернуть для второго курса
-            if (student.Course < Course.Second) //todo: убрать после того, как добавим обработку 3го курса
+            if (student.Course < Course.Third) //todo: убрать после того, как добавим обработку 3го курса
             {
                 usage.AppendLine();
                 usage.AppendLine($"{Buttons.Schedule} — узнать, в каком кабинете следующая пара и какую домашку делать на завтра");

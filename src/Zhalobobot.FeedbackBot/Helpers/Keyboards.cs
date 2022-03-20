@@ -36,7 +36,7 @@ namespace Zhalobobot.Bot.Helpers
             };
 
             // todo: вернуть, когда починим расписание
-            if (student.Course < Course.Second)
+            if (student.Course < Course.Third)
             {
                 buttons.Add(new KeyboardButton[] { Buttons.Schedule });
             }
