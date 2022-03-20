@@ -1,18 +1,14 @@
 using System;
 using System.Linq;
-using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using Telegram.Bot;
-using Telegram.Bot.Exceptions;
 using Zhalobobot.Bot.Cache;
-using Zhalobobot.Bot.Extensions;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Common.Models.Commons;
-using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Serialization;
+using Zhalobobot.Common.Models.Student;
 using Zhalobobot.TelegramMessageQueue;
 
 namespace Zhalobobot.Bot.Quartz.Jobs
@@ -33,15 +29,10 @@ namespace Zhalobobot.Bot.Quartz.Jobs
             Log = log;
         }
 
-        public async Task Execute(IJobExecutionContext context)
+        public Task Execute(IJobExecutionContext context)
         {
-            var ekbTime = DateHelper.EkbTime;
-            var courses = Cache.ScheduleItems
-                .GetByDayOfWeekAndEndsAtTime(ekbTime.DayOfWeek, ekbTime.ToHourAndMinute())
-                .Where(i => i.EventTime.StartDay == null || i.EventTime.StartDay <= ekbTime.ToDateOnly())
-                .Where(i => i.EventTime.EndDay == null || i.EventTime.EndDay >= ekbTime.ToDateOnly())
-                .ToArray();
-            
+            var courses = Cache.ActualSchedule().ToArray();
+
             Log.LogInformation($"Select {courses.Length} courses to notify");
 
             foreach (var course in courses)
