@@ -29,7 +29,7 @@ public static class ScheduleItemExtensions
                 yield return scheduleItemsStartsAndEndsInSameTime.First();
             else
             {
-                foreach (var subjects in scheduleItemsStartsAndEndsInSameTime.GroupBy(i => i.Subject.Name))
+                foreach (var subjects in scheduleItemsStartsAndEndsInSameTime.GroupBy(i => (i.Subject.Name, i.Subject.Course, i.Group, i.Subgroup)))
                 {
                     if (subjects.Count() == 1)
                         yield return subjects.First();
@@ -59,7 +59,7 @@ public static class ScheduleItemExtensions
             return true;
         }
 
-        ScheduleItem SelectItemFromItemsWithEqualName(IGrouping<string, ScheduleItem> subjects)
+        ScheduleItem SelectItemFromItemsWithEqualName(IGrouping<(string, Course, Group, Subgroup), ScheduleItem> subjects)
         {
             var bothStartAndEndDay = subjects
                 .Where(i => i.EventTime.StartDay.HasValue && i.EventTime.EndDay.HasValue)
