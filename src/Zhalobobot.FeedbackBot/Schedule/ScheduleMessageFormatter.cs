@@ -15,109 +15,78 @@ namespace Zhalobobot.Bot.Schedule
     {
         private const int TelegramMessageWidth = 30;
 
-        private readonly EntitiesCache cache;
-        private readonly bool isFirstYearWeekOdd;
-
-        public ScheduleMessageFormatter(EntitiesCache cache, IConfiguration configuration)
+        public static string Format(ScheduleItem[] schedule, ScheduleDay scheduleDay, out DateOnly? whenDelete)
         {
-            this.cache = cache;
-            isFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
-        }
-        
-        public string Format(long chatId, ScheduleDay scheduleDay, out DateOnly? whenDelete)
-        {
-            if (scheduleDay.IsCurrentWeek())
-                return CurrentWeek(chatId, scheduleDay, out whenDelete);
-
-            whenDelete = null;
-            return NextWeek(chatId, scheduleDay);
-        }
-
-        private string CurrentWeek(long chatId, ScheduleDay day, out DateOnly? whenDelete)
-        {
-            var student = cache.Students.Get(chatId);
-
-            var weekSchedule = cache.ScheduleItems
-                .GetFor(student, DateHelper.CurrentWeekParity(isFirstYearWeekOdd))
-                .ToArray();
-
-            var weekByDay = weekSchedule
+            var dayToSchedule = schedule
                 .GroupBy(s => s.EventTime.DayOfWeek)
                 .ToDictionary(s => (ScheduleDay)(int)s.Key, s => s.ToArray());
 
-            var lastStudyWeekDay = weekSchedule.LastStudyWeekDay();
+            var lastStudyWeekDay = schedule.LastStudyWeekDay();
+            
+            if (scheduleDay.IsCurrentWeek())
+                return CurrentWeek(dayToSchedule, lastStudyWeekDay, scheduleDay, DateHelper.EkbTime, out whenDelete);
 
-            string message;
+            whenDelete = null;
+            return NextWeek(dayToSchedule, lastStudyWeekDay, scheduleDay, DateHelper.EkbTime);
+        }
+
+        private static string CurrentWeek(IReadOnlyDictionary<ScheduleDay, ScheduleItem[]> dayToSchedule, DayOfWeek lastStudyWeekDay, ScheduleDay day, DateTime dateTime, out DateOnly? whenDelete)
+        {
             whenDelete = null;
             
             switch (day)
             {
                 case >= ScheduleDay.Monday and <= ScheduleDay.Sunday:
                     whenDelete = day.OneDayAfterCurrentWeekDayAndMonth();
-                    break;
+                    return FormatMessage(dayToSchedule, day, day, true, dateTime);
                 case ScheduleDay.UntilWeekEnd:
                 {
-                    var currentDay = (int)DateHelper.EkbTime.DayOfWeek;
+                    var currentDay = (int)dateTime.DayOfWeek;
 
                     var days = Enum.GetValues<ScheduleDay>()
                         .Where(d => d >= (ScheduleDay)currentDay && d <= (ScheduleDay)(int)lastStudyWeekDay);
 
-                    message = string.Join("\n", days.Select(d => FormatDay(weekByDay, d, d, true)).Where(s => s.Length > 0));
-                    break;
+                    return string.Join("\n", days.Select(d => FormatMessage(dayToSchedule, d, d, true, dateTime)).Where(s => s.Length > 0));
                 }
                 case ScheduleDay.FullWeek:
                     var weekDays = Enum.GetValues<ScheduleDay>()
                         .Where(d => d >= ScheduleDay.Monday && d <= (ScheduleDay)(int)lastStudyWeekDay);
                     
-                    message = string.Join("\n", weekDays.Select(d => FormatDay(weekByDay, d, day, true)).Where(s => s.Length > 0));
-                    break;
+                    return string.Join("\n", weekDays.Select(d => FormatMessage(dayToSchedule, d, day, true, dateTime)).Where(s => s.Length > 0));
                 default:
                     throw new NotSupportedException();
             }
-            
-            return message;
         }
 
-        private string NextWeek(long chatId, ScheduleDay day)
+        private static string NextWeek(IReadOnlyDictionary<ScheduleDay, ScheduleItem[]> dayToSchedule, DayOfWeek lastStudyWeekDay, ScheduleDay day, DateTime dateTime)
         {
-            var student = cache.Students.Get(chatId);
-
-            var weekSchedule = cache.ScheduleItems
-                .GetFor(student, DateHelper.NextWeekParity(isFirstYearWeekOdd))
-                .ToArray();
-            
-            var weekByDay = weekSchedule
-                .GroupBy(s => s.EventTime.DayOfWeek)
-                .ToDictionary(s => (ScheduleDay)(int)s.Key, s => s.ToArray());
-            
-            string message;
-
             switch (day)
             {
                 case ScheduleDay.NextMonday:
-                    message = FormatDay(weekByDay, ScheduleDay.Monday, ScheduleDay.Monday, false);
-                    break;
+                    return FormatMessage(dayToSchedule, ScheduleDay.Monday, ScheduleDay.Monday, false, dateTime);
                 case ScheduleDay.NextWeek:
                     var weekDays = Enum.GetValues<ScheduleDay>()
-                        .Where(d => d >= ScheduleDay.Monday && d <= (ScheduleDay)(int)weekSchedule.LastStudyWeekDay());
+                        .Where(d => d >= ScheduleDay.Monday && d <= (ScheduleDay)(int)lastStudyWeekDay);
 
-                    message = string.Join("\n", weekDays.Select(d => FormatDay(weekByDay, d, ScheduleDay.FullWeek, false)).Where(s => s.Length > 0));
-                    break;
+                    return string.Join("\n", weekDays.Select(d => FormatMessage(dayToSchedule, d, ScheduleDay.FullWeek, false, dateTime)).Where(s => s.Length > 0));
                 default:
                     throw new NotSupportedException();
             }
-
-            return message;
         }
         
-        private string FormatDay(IReadOnlyDictionary<ScheduleDay, ScheduleItem[]> scheduleByDay, ScheduleDay scheduleDay, ScheduleDay target, bool currentWeek)
+        private static string FormatMessage(
+            IReadOnlyDictionary<ScheduleDay, ScheduleItem[]> dayToSchedule, 
+            ScheduleDay scheduleDay, 
+            ScheduleDay target, 
+            bool currentWeek,
+            DateTime dateTime)
         {
-            if (!scheduleByDay.ContainsKey(scheduleDay))
+            if (!dayToSchedule.ContainsKey(scheduleDay))
                 return "";
 
             var date = currentWeek ? scheduleDay.CurrentWeekDayAndMonth() : scheduleDay.NextWeekDayAndMonth();
-            var schedule = scheduleByDay[scheduleDay]
-                .EmptyWhenHolidays(date, cache.Holidays.All.FromRecord().ToHashSet());
+            
+            var schedule = dayToSchedule[scheduleDay];
 
             if (schedule.Length == 0)
                 return "";
@@ -126,7 +95,7 @@ namespace Zhalobobot.Bot.Schedule
             var dayOfWeek = scheduleDay.AsString(EnumFormat.Description);
             builder.Append($"{dayOfWeek} {date.ToDayAndMonth()}".PutInCenterOf(' ', TelegramMessageWidth) + "\n");
 
-            var currentTime = DateHelper.EkbTime.ToHourAndMinute();
+            var currentTime = dateTime.ToHourAndMinute();
 
             var actualSchedule = schedule
                 .GroupBy(s => s.Subject.Name)
@@ -143,7 +112,7 @@ namespace Zhalobobot.Bot.Schedule
                 var (_, previousEnd) = firstItem.GetSubjectDuration();
                 var (nextStart, _) = item.GetSubjectDuration();
 
-                if (previousEnd < currentTime && currentTime < nextStart && item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
+                if (previousEnd < currentTime && currentTime < nextStart && item.EventTime.DayOfWeek == dateTime.DayOfWeek)
                 {
                     var diff = nextStart - currentTime;
                     builder.Append($"[{currentTime}, до пары {(diff.Hour == 0 ? $"{diff.Minute}мин" : diff)}]".PutInCenterOf('-', TelegramMessageWidth) + "\n");
@@ -166,7 +135,7 @@ namespace Zhalobobot.Bot.Schedule
 
                 var (firstLine, secondLine) = FormatItemForDay(item);
 
-                if (start <= currentTime && currentTime <= end && item.EventTime.DayOfWeek == DateHelper.EkbTime.DayOfWeek)
+                if (start <= currentTime && currentTime <= end && item.EventTime.DayOfWeek == dateTime.DayOfWeek)
                 {
                     var diff = end - currentTime;
                     var timeBetweenStudy = $"[{currentTime}, до конца {(diff.Hour == 0 ? $"{diff.Minute}мин" : diff)}]".PutInCenterOf('-', TelegramMessageWidth);
