@@ -261,7 +261,7 @@ namespace Zhalobobot.Bot.Services
             var student = Cache.Students.Get(message.Chat.Id);
 
             var lastStudyWeekDay = Cache
-                .ActualSchedule(student, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd))
+                .ActualWeekSchedule(student, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd), DateHelper.MondayDate)
                 .LastStudyWeekDay();
 
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
@@ -497,11 +497,14 @@ namespace Zhalobobot.Bot.Services
             var scheduleDay = (ScheduleDay)int.Parse(data);
             
             var actualSchedule = Cache
-                .ActualSchedule(
+                .ActualWeekSchedule(
                     student, 
                     scheduleDay.IsCurrentWeek() 
                         ? DateHelper.CurrentWeekParity(IsFirstYearWeekOdd) 
-                        : DateHelper.NextWeekParity(IsFirstYearWeekOdd)
+                        : DateHelper.NextWeekParity(IsFirstYearWeekOdd),
+                    scheduleDay.IsCurrentWeek() 
+                        ? DateHelper.MondayDate
+                        : DateHelper.NextMondayDate
                  )
                 .ToArray();
             

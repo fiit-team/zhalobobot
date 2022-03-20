@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -48,11 +49,17 @@ namespace Zhalobobot.Bot.Cache
             };
         }
 
-        public IEnumerable<ScheduleItem> ActualSchedule() =>
-            ScheduleItems.All.ActualSchedule(Holidays.All.FromRecord().ToHashSet(), DateHelper.EkbTime, DaysWithoutPairs.All);
+        public IEnumerable<ScheduleItem> ActualWeekSchedule(DateTime mondayDate) =>
+            ScheduleItems.All.ActualWeekSchedule(Holidays.All.FromRecord().ToHashSet(), mondayDate, DaysWithoutPairs.All);
 
-        public IEnumerable<ScheduleItem> ActualSchedule(Student student, WeekParity weekParity) =>
-            ActualSchedule().For(student, weekParity);
+        public IEnumerable<ScheduleItem> ActualWeekSchedule(Student student, WeekParity weekParity, DateTime mondayDate) =>
+            ActualWeekSchedule(mondayDate).For(student, weekParity);
+        
+        public IEnumerable<ScheduleItem> ActualSchedule(bool skipEndTimeCheck) =>
+            ScheduleItems.All.ActualDaySchedule(Holidays.All.FromRecord().ToHashSet(), DateHelper.EkbTime, DaysWithoutPairs.All, skipEndTimeCheck);
+
+        public IEnumerable<ScheduleItem> ActualSchedule(Student student, WeekParity weekParity, bool skipEndTimeCheck) =>
+            ActualSchedule(skipEndTimeCheck).For(student, weekParity);
 
         private ScheduleItemCache ScheduleItems => schedule.Cache;
         public StudentCache Students => students.Cache;

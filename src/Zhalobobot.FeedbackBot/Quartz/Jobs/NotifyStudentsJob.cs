@@ -31,7 +31,7 @@ namespace Zhalobobot.Bot.Quartz.Jobs
 
         public Task Execute(IJobExecutionContext context)
         {
-            var courses = Cache.ActualSchedule().ToArray();
+            var courses = Cache.ActualSchedule(skipEndTimeCheck: false).ToArray();
 
             Log.LogInformation($"Select {courses.Length} courses to notify");
 
