@@ -122,7 +122,7 @@ public class MessageSender : IDisposable
     }
 
     private IEnumerable<QueueItem> UserItemsToExecute(int limit)
-        => GetItemsToExecute(userMessageQueue, limit);
+        => userMessageQueue.GetItemsToExecute(limit);
 
     private IEnumerable<QueueItem> GroupItemsToExecute(int limitPerGroup)
     {
@@ -134,30 +134,13 @@ public class MessageSender : IDisposable
             var counter = sendPerMinuteCount;
             var allowedCount = limitPerGroup - sendPerMinuteCount;
 
-            foreach (var item in GetItemsToExecute(queue, allowedCount))
+            foreach (var item in queue.GetItemsToExecute(allowedCount))
             {
                 counter++;
                 yield return item;
             }
 
             groupIdToQueue.TryUpdate(groupId, (queue, counter), (queue, sendPerMinuteCount));
-        }
-    }
-
-    private static IEnumerable<QueueItem> GetItemsToExecute(MessageQueue queue, int allowedCount)
-    {
-        foreach (var priority in Enum.GetValues<MessagePriority>())
-        {
-            while (!queue.IsEmpty(priority))
-            {
-                if (allowedCount <= 0)
-                    yield break;
-                if (!queue.TryDequeue(priority, out var itemToExecute) || itemToExecute == null)
-                    continue;
-
-                allowedCount -= 1;
-                yield return itemToExecute;
-            }
         }
     }
 

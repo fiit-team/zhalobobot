@@ -1,9 +1,8 @@
 using System.Collections.Concurrent;
-using Telegram.Bot.Types;
 
 namespace Zhalobobot.TelegramMessageQueue.Core;
 
-internal class MessageQueue
+public class MessageQueue
 {
     private readonly Dictionary<MessagePriority, ConcurrentQueue<QueueItem>> priorityToQueue;
 
