@@ -14,6 +14,7 @@ using Zhalobobot.Bot.Services;
 using Zhalobobot.Bot.Services.Handlers;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.TelegramMessageQueue;
+using Zhalobobot.TelegramMessageQueue.Settings;
 
 namespace Zhalobobot.Bot
 {
@@ -78,6 +79,8 @@ namespace Zhalobobot.Bot
             services.AddSingleton<IScheduleMessageService, ScheduleMessageService>();
             services.AddScoped<UpdateHandlerAdmin>();
             services.AddScoped<HandleUpdateService>();
+            // todo: put MessageSenderSettings in MessageSender arguments
+            services.AddSingleton<MessageSenderSettings>();
             services.AddSingleton<MessageSender>();
         }
 

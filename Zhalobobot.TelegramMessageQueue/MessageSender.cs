@@ -16,9 +16,11 @@ public class MessageSender : IDisposable
     private readonly AsyncPeriodicalAction executeUserMessagesRoutine;
     private readonly AsyncPeriodicalAction executeGroupMessagesRoutine;
     private readonly ILogger<MessageSender> log;
+    private readonly MessageSenderSettings settings;
 
-    public MessageSender(ILogger<MessageSender> log)
+    public MessageSender(MessageSenderSettings settings, ILogger<MessageSender> log)
     {
+        this.settings = settings;
         this.log = log;
         userMessageQueue = new MessageQueue();
         groupIdToQueue = new ConcurrentDictionary<long, (MessageQueue Queue, int SendCountPerMinute)>();
@@ -73,10 +75,10 @@ public class MessageSender : IDisposable
     private void LogError(Exception e) => log.LogError(e.Message);
     
     private async Task ExecuteUserMessages() 
-        => await Task.WhenAll(UserItemsToExecute(MessageSenderSettings.AllUserMessagesPerSecondLimit).Select(Execute));
+        => await Task.WhenAll(UserItemsToExecute(settings.AllUserMessagesPerSecondLimit).Select(Execute));
 
     private async Task ExecuteGroupMessages() 
-        => await Task.WhenAll(GroupItemsToExecute(MessageSenderSettings.GroupMessagesPerMinuteLimit).Select(Execute));
+        => await Task.WhenAll(GroupItemsToExecute(settings.GroupMessagesPerMinuteLimit).Select(Execute));
 
     private async Task Execute(QueueItem item)
     {
@@ -97,11 +99,12 @@ public class MessageSender : IDisposable
         catch (ApiRequestException e)
         {
             // https://core.telegram.org/bots/faq#how-can-i-message-all-of-my-bot-39s-subscribers-at-once
-            if (e.ErrorCode != 429)
-                log.LogError($"Telegram api error: {e.ToPrettyJson()}");
-            else
+            if (e.ErrorCode == 429)
             {
                 log.LogWarning("Api limit is already reached!");
+                
+                // note (d.stukov): fix the ability to call the same task until the end of the message limit
+                await Task.Delay(500);
 
                 if (item.GroupChatId.HasValue)
                 {
@@ -113,6 +116,10 @@ public class MessageSender : IDisposable
                     log.LogInformation("Enqueue in users queue..");
                     userMessageQueue.Enqueue(item);
                 }
+            }
+            else
+            {
+                log.LogError($"Telegram api error: {e.ToPrettyJson()}");
             }
         }
         catch (Exception e)
