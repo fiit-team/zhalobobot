@@ -1,12 +1,15 @@
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Serialization;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.TelegramMessageQueue;
@@ -29,15 +32,16 @@ namespace Zhalobobot.Bot.Quartz.Jobs
             Log = log;
         }
 
-        public Task Execute(IJobExecutionContext context)
+        public async Task Execute(IJobExecutionContext context)
         {
+            Log.LogInformation($"Time: {DateHelper.EkbTime}");
             var courses = Cache.ActualSchedule(skipEndTimeCheck: false).ToArray();
 
             Log.LogInformation($"Select {courses.Length} courses to notify");
 
             foreach (var course in courses)
             {
-                SendNotifyMessageToStudents(
+                await SendNotifyMessageToStudents(
                     course.Subject.Course,
                     course.Group,
                     course.Subgroup,
@@ -45,10 +49,10 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                     course.Subject.StudentsToNotifyPercent);
             }
 
-            return Task.CompletedTask;
+            // return Task.CompletedTask;
         }
 
-        private void SendNotifyMessageToStudents(Course course, Group group, Subgroup subgroup, string subjectName, int studentsPercentToNotify)
+        private async Task SendNotifyMessageToStudents(Course course, Group group, Subgroup subgroup, string subjectName, int studentsPercentToNotify)
         {
             Log.LogInformation($"Course: {course.ToPrettyJson()}, Group: {group.ToPrettyJson()}, Subgroup: {subgroup.ToPrettyJson()}");
 
@@ -61,11 +65,50 @@ namespace Zhalobobot.Bot.Quartz.Jobs
                 var message = string.Join("\n",
                     $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {subjectName}.",
                     "Пожалуйста, оставь обратную связь по нему :)");
+                
+                while (true)
+                {
+                    try
+                    {
+                        Log.LogInformation($"Try notify student {student.Id}.");
+                        await BotClient.SendTextMessageAsync(
+                            student.Id,
+                            message,
+                            replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName));
 
-                MessageSender.SendToUser(() => BotClient.SendTextMessageAsync(
-                    student.Id,
-                    message,
-                    replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName)));
+                        Log.LogInformation($"Successfuly notified student. StudentId {student.Id}");
+                        break;
+                    }
+                    catch (ChatNotFoundException e)
+                    {
+                        // skip
+                        Log.LogError($"Skip notify student due to ChatNotFoundException. Error {e.ToPrettyJson()}");
+                        break;
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        if (e.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                        {
+                            await Task.Delay(1000);
+                            Log.LogError($"Error 429 when trying to notify a student. Error {e.ToPrettyJson()}");
+                        }
+                        else
+                        {
+                            Log.LogError($"HttpError: {e.ToPrettyJson()}");
+                            break;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.LogError($"Error: {e.ToPrettyJson()}");
+                        break;
+                    }
+                }
+
+                // MessageSender.SendToUser(() => BotClient.SendTextMessageAsync(
+                //     student.Id,
+                //     message,
+                //     replyMarkup: Keyboards.SendFeedbackKeyboard(subjectName)));
             }
         }
 
