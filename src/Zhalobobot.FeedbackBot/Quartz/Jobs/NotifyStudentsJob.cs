@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Quartz;
 using Telegram.Bot;
@@ -23,12 +24,19 @@ namespace Zhalobobot.Bot.Quartz.Jobs
         private ITelegramBotClient BotClient { get; }
         private EntitiesCache Cache { get; }
         private ILogger<NotifyStudentsJob> Log { get; }
+        private IConfiguration Configuration { get; }
 
-        public NotifyStudentsJob(MessageSender messageSender, ITelegramBotClient botClient, EntitiesCache cache, ILogger<NotifyStudentsJob> log)
+        public NotifyStudentsJob(
+            MessageSender messageSender, 
+            ITelegramBotClient botClient, 
+            EntitiesCache cache, 
+            IConfiguration configuration,
+            ILogger<NotifyStudentsJob> log)
         {
             MessageSender = messageSender;
             BotClient = botClient;
             Cache = cache;
+            Configuration = configuration;
             Log = log;
         }
 
@@ -60,11 +68,24 @@ namespace Zhalobobot.Bot.Quartz.Jobs
 
             Log.LogInformation($"Selected students: {studentsToNotify.Select(s => s.Username).ToPrettyJson()}");
 
+            var message = string.Join("\n",
+                $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {subjectName}.",
+                "Пожалуйста, оставь обратную связь по нему :)");
+
+            var studentToIgnoreId = Configuration["StudentIdToIgnoreWhenDesign"];
+            
             foreach (var student in studentsToNotify)
             {
-                var message = string.Join("\n",
-                    $"Привет! Я догадываюсь, что у тебя закончилась пара по предмету {subjectName}.",
-                    "Пожалуйста, оставь обратную связь по нему :)");
+                if (subjectName == "Дизайн" && studentToIgnoreId != null && student.Id == long.Parse(studentToIgnoreId))
+                {
+                    Log.LogInformation("Skip notify for student.");
+                    continue;
+                }
+                if (studentToIgnoreId != null && student.Id == long.Parse(studentToIgnoreId))
+                {
+                    Log.LogInformation("Can't parse design..");
+                    continue;
+                }
                 
                 while (true)
                 {
