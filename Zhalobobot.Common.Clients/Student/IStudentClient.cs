@@ -12,5 +12,7 @@ namespace Zhalobobot.Common.Clients.Student
         Task<ZhalobobotResult<StudentData[]>> GetAllData();
         
         Task<ZhalobobotResult> Add(AddStudentRequest request);
+
+        Task<ZhalobobotResult> Update(UpdateStudentRequest request);
     }
 }

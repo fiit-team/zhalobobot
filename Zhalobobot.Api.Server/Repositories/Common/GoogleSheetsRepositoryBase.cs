@@ -51,5 +51,11 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                 .SetupRange(range)
                 .AddValues(values)
                 .ToAppendRequest();
+
+        protected SpreadsheetsResource.ValuesResource.UpdateRequest UpdateRequest(string range, IList<object> values)
+            => GoogleSheetsRequestBuilder.InitializeSpreadSheetId(SpreadSheetId, Resource)
+                .SetupRange(range)
+                .AddValues(values)
+                .ToUpdateRequest();
     }
 }

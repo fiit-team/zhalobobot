@@ -21,5 +21,8 @@ namespace Zhalobobot.Common.Clients.Student
 
         public Task<ZhalobobotResult> Add(AddStudentRequest request)
             => Method("add").CallAsync(request);
+
+        public Task<ZhalobobotResult> Update(UpdateStudentRequest request)
+            => Method("update").CallAsync(request);
     }
 }

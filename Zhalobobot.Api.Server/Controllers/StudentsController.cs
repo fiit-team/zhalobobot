@@ -31,5 +31,9 @@ namespace Zhalobobot.Api.Server.Controllers
         [HttpPost("add")]
         public async Task Add([FromBody] AddStudentRequest request)
             => await repository.Add(request.Student);
+
+        [HttpPost("update")]
+        public async Task Update([FromBody] UpdateStudentRequest request)
+            => await repository.Update(request.Student);
     }
 }

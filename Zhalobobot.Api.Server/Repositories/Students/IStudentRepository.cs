@@ -6,6 +6,8 @@ namespace Zhalobobot.Api.Server.Repositories.Students
     public interface IStudentRepository
     {
         Task Add(Student student);
+
+        Task Update(Student student);
         
         Task<Student[]> GetAll();
     }
