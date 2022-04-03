@@ -138,12 +138,16 @@ public static class ScheduleItemExtensions
     
     public static IEnumerable<ScheduleItem> For(this IEnumerable<ScheduleItem> items, Student student, WeekParity weekParity) 
         => items
-            .Where(i => FilterByWeekParityCourseGroupSubgroup(i, student, weekParity))
+            .Where(i => FilterByWeekParityCourseGroupSubgroupSpecialCourses(i, student, weekParity))
             .Distinct();
 
-    private static bool FilterByWeekParityCourseGroupSubgroup(ScheduleItem item, Student student, WeekParity weekParity)
+    private static bool FilterByWeekParityCourseGroupSubgroupSpecialCourses(ScheduleItem item, Student student, WeekParity weekParity)
     {
         if (item.EventTime.WeekParity != WeekParity.Both && item.EventTime.WeekParity != weekParity)
+            return false;
+
+        // todo: обработать случай, когда у студента могут быть другие курсы помимо спецкурсов
+        if (student.Course > Course.Second && !student.SpecialCourseNames.Contains(item.Subject.Name))
             return false;
         
         return item.Subject.Course == student.Course && item.Group == student.Group && item.Subgroup == student.Subgroup;
