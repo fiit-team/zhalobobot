@@ -64,7 +64,7 @@ namespace Zhalobobot.Bot.Quartz.Jobs
         {
             Log.LogInformation($"Course: {course.ToPrettyJson()}, Group: {group.ToPrettyJson()}, Subgroup: {subgroup.ToPrettyJson()}");
 
-            var studentsToNotify = GetStudentsToNotify(course, group, subgroup, studentsPercentToNotify);
+            var studentsToNotify = GetStudentsToNotify(course, group, subgroup, subjectName, studentsPercentToNotify);
 
             Log.LogInformation($"Selected students: {studentsToNotify.Select(s => s.Username).ToPrettyJson()}");
 
@@ -133,12 +133,20 @@ namespace Zhalobobot.Bot.Quartz.Jobs
             }
         }
 
-        private Student[] GetStudentsToNotify(Course course, Group group, Subgroup subgroup, int studentsPercentToNotify)
+        private Student[] GetStudentsToNotify(Course course, Group group, Subgroup subgroup, string subjectName, int studentsPercentToNotify)
         {
             if (studentsPercentToNotify == 0)
                 return Array.Empty<Student>();
 
             var students = Cache.Students.Get((course, group, subgroup));
+
+            // todo: обработать случай, когда у студента могут быть другие курсы помимо спецкурсов
+            if (course > Course.Second)
+            {
+                students = students
+                    .Where(s => s.SpecialCourseNames.Contains(subjectName))
+                    .ToList();
+            }
 
             var selectedStudentsCount = Math.Max(1, students.Count * studentsPercentToNotify / 100);
 
