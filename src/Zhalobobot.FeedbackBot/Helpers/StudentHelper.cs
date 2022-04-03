@@ -81,7 +81,7 @@ internal static class StudentHelper
     public static async Task<bool> HandleAddSpecialCourses(ITelegramBotClient botClient, long chatId, Course course, EntitiesCache cache, IConversationService conversationService)
     {
         conversationService.StartAddSpecialCoursesFeedback(chatId);
-        var subjects = cache.Subjects.Get(course).Select(s => s.Name).ToArray();
+        var subjects = cache.Subjects.Get(course).Select(s => s.Name).OrderBy(s => s).ToArray();
 
         await botClient.SendTextMessageAsync(chatId, "Выбери свои спецкурсы:",
             replyMarkup: SelectSpecialCoursesButtonsBuilder.Build(subjects, 4, 0));

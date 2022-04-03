@@ -129,7 +129,7 @@ namespace Zhalobobot.Bot.Services
 
             var action = message.Text.Trim() switch
             {
-                "/start" => StartUsage(BotClient, message),
+                "/start" => StartUsage(BotClient, message.Chat.Id),
                 Buttons.Alarm => HandleAlertFeedbackAsync(BotClient, message),
                 Buttons.Subjects => HandleSubjectsAsync(BotClient, message),
                 Buttons.GeneralFeedback => HandleGeneralFeedbackAsync(BotClient, message),
@@ -212,7 +212,19 @@ namespace Zhalobobot.Bot.Services
         private async Task<Message> HandleSubjectsAsync(ITelegramBotClient bot, Message message)
         {
             await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-            
+
+            var student = Cache.Students.Get(message.Chat.Id);
+
+            if (student.Course > Course.Second)
+            {
+                // todo: обработать случай, когда у студента могут быть другие курсы помимо спецкурсов
+                // а еще студенты могут ходить на спецкурсы во время учебы на 1-2 курсах
+                return await bot.SendTextMessageAsync(
+                    message.Chat.Id,
+                    "Выбери спецкурс",
+                    replyMarkup: Keyboards.GetSubjectsKeyboard(student.SpecialCourseNames));
+            }
+
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 "Выбери категорию",
@@ -255,8 +267,7 @@ namespace Zhalobobot.Bot.Services
             var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
             string text;
-            var student = Cache.Students.Get(message.Chat.Id); //todo: убрать после того, как добавим обработку 3го курса
-            var replyMarkup = Keyboards.DefaultKeyboard(student);
+            var replyMarkup = Keyboards.DefaultKeyboard();
 
             if (conversationStatus == ConversationStatus.AwaitingConfirmation)
             {
@@ -286,7 +297,7 @@ namespace Zhalobobot.Bot.Services
             
             ConversationService.StopConversation(message.Chat.Id);
 
-            await StartUsage(bot, message);
+            await StartUsage(bot, message.Chat.Id);
         }
 
         private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery)
@@ -323,12 +334,81 @@ namespace Zhalobobot.Bot.Services
                 case CallbackDataPrefix.ChooseScheduleRange:
                     await HandleChooseScheduleRange(chatId, data, messageId).ConfigureAwait(false);
                     break;
+                case CallbackDataPrefix.PaginationButton:
+                    await HandlePaginationButtonCallback(chatId, data, messageId);
+                    break;
+                case CallbackDataPrefix.PaginationItemButton:
+                    await HandlePaginationButtonItemCallback(chatId, data, messageId);
+                    break;
+                case CallbackDataPrefix.InternalDoNothing:
+                    break;
+                case CallbackDataPrefix.SubmitSpecialCourses:
+                    await HandleSubmitSpecialCoursesCallback(chatId, messageId);
+                    break;
                 default:
                 {
                     var message = $"Unknown callbackType: {callbackType}";
                     Logger.LogError(message);
                     throw new Exception(message);
                 }
+            }
+        }
+
+        private async Task HandleSubmitSpecialCoursesCallback(long chatId, int messageId)
+        {
+            var student = Cache.Students.Get(chatId);
+
+            var specialCourses = ConversationService.GetSelectedSpecialCourses(chatId).OrderBy(c => c).ToArray();
+            
+            student = student with { SpecialCourseNames = specialCourses };
+
+            Cache.Students.AddOrUpdate(student);
+            await Client.Student.Update(new UpdateStudentRequest(student));
+
+            await BotClient.EditMessageTextAsync(chatId, messageId, string.Join("\n", new[] { "Записал спецкурсы:" }.Concat(specialCourses)));
+            
+            ConversationService.StopConversation(chatId);
+
+            await StartUsage(BotClient, chatId);
+        }
+        
+        private async Task HandlePaginationButtonItemCallback(long chatId, string data, int messageId)
+        {
+            var items = data.Split(Strings.Separator);
+            var itemsPerPage = int.Parse(items[0]);
+            var currentPage = int.Parse(items[1]);
+            var position = int.Parse(items[2]);
+            var student = Cache.Students.Get(chatId);
+            var subjects = Cache.Subjects.All.FilterFor(student).Select(s => s.Name).OrderBy(s => s).ToArray();
+            var selectedSubject = subjects.Skip(itemsPerPage * currentPage).Take(itemsPerPage).ToArray()[position];
+            var selectedSpecialCourses = ConversationService.GetSelectedSpecialCourses(chatId);
+
+            if (!selectedSpecialCourses.Add(selectedSubject))
+                selectedSpecialCourses.Remove(selectedSubject);
+            ConversationService.SaveSelectedSpecialCourses(chatId, selectedSpecialCourses);
+
+            var subjectNames = subjects.Select(s => selectedSpecialCourses.Contains(s) ? $"✅ {s}" : s).ToArray();
+            
+            await BotClient.EditMessageTextAsync(chatId, messageId,
+                     string.Join("\n", new[]{"Выбранные спецкурсы:"}.Concat(subjectNames.Where(s => s.StartsWith("✅")).Select(s => s.Split("✅ ")[1]))), replyMarkup: SelectSpecialCoursesButtonsBuilder.Build(subjectNames, itemsPerPage, currentPage));
+        }
+
+        private async Task HandlePaginationButtonCallback(long chatId, string data, int messageId)
+        {
+            var items = data.Split(Strings.Separator);
+            var itemsPerPage = int.Parse(items[0]);
+            var currentPage = int.Parse(items[1]);
+            var selectedSpecialCourses = ConversationService.GetSelectedSpecialCourses(chatId);
+            var student = Cache.Students.Get(chatId);
+            var subjects =
+                Cache.Subjects.All.FilterFor(student).OrderBy(s => s.Name).Select(s => selectedSpecialCourses.Contains(s.Name) ? $"✅ {s.Name}" : s.Name).ToArray();
+            
+            try {
+                await BotClient.EditMessageReplyMarkupAsync(chatId, messageId, SelectSpecialCoursesButtonsBuilder.Build(subjects, itemsPerPage, currentPage));
+            }
+            catch (MessageIsNotModifiedException)
+            {
+                // pass
             }
         }
 
@@ -399,13 +479,20 @@ namespace Zhalobobot.Bot.Services
                 return;
             }
 
+            var studentData = Cache.StudentData.Find($"@{message.Chat.Username}");
+
+            var name = studentData == null
+                ? new Name(message.Chat.LastName, message.Chat.FirstName, null)
+                : studentData.Name;
+
             student = new Student(
                 chatId,
                 message.Chat.Username,
                 course,
                 group,
                 subgroup,
-                new Name(message.Chat.LastName, message.Chat.FirstName, null));
+                name, 
+                Array.Empty<string>());
 
             await Client.Student.Add(new AddStudentRequest(student));
             
@@ -414,9 +501,15 @@ namespace Zhalobobot.Bot.Services
             await BotClient.EditMessageTextAsync(
                 chatId,
                 message.MessageId,
-                $"Спасибо, записал тебе группу ФТ-{(int)course}0{(int)group}-{(int)subgroup}. Теперь можешь свободно пользоваться ботом!");
-            
-            await StartUsage(BotClient, message);
+                $"Записал в группу ФТ-{(int)course}0{(int)group}-{(int)subgroup}.");
+
+            if (student.Course < Course.Third)
+                await StartUsage(BotClient, message.Chat.Id);
+            else
+            {
+                // todo: обработать случай, когда у студента могут быть другие курсы помимо спецкурсов
+                await StudentHelper.HandleAddSpecialCourses(BotClient, chatId, course, Cache, ConversationService);
+            }
         }
 
         private async Task HandleFeedbackCallback(long chatId, string data, int messageId)
@@ -598,27 +691,22 @@ namespace Zhalobobot.Bot.Services
             return builder.ToString();
         }
 
-        private async Task<Message> StartUsage(ITelegramBotClient bot, Message message)
+        private async Task<Message> StartUsage(ITelegramBotClient bot, long chatId)
         {
-            var student = Cache.Students.Get(message.Chat.Id);
             var usage = new StringBuilder();
-
+            
+            usage.AppendLine($"{Buttons.Schedule} — узнать, в каком кабинете следующая пара и какую домашку делать на завтра");
+            usage.AppendLine();
             usage.AppendLine($"{Buttons.Subjects} — поставить оценку от 1 до 5 и оставить комментарий конкретному предмету");
             usage.AppendLine();
             usage.AppendLine($"{Buttons.GeneralFeedback} — выскажи всё, что лежит на душе: и хорошее, и плохое");
             usage.AppendLine();
             usage.AppendLine($"{Buttons.Alarm} — это красная кнопка. Если всё очень плохо — нажми");
-            
-            if (student.Course < Course.Third) //todo: убрать после того, как добавим обработку 3го курса
-            {
-                usage.AppendLine();
-                usage.AppendLine($"{Buttons.Schedule} — узнать, в каком кабинете следующая пара и какую домашку делать на завтра");
-            }
 
             return await bot.SendTextMessageAsync(
-                message.Chat.Id,
+                chatId,
                 usage.ToString(),
-                replyMarkup: Keyboards.DefaultKeyboard(student));
+                replyMarkup: Keyboards.DefaultKeyboard());
         }
 
         private async Task Usage(ITelegramBotClient bot, Message message)
@@ -627,7 +715,7 @@ namespace Zhalobobot.Bot.Services
                 message.Chat.Id,
                 "Попробуй нажать на кнопку");
 
-            await StartUsage(bot, message);
+            await StartUsage(bot, message.Chat.Id);
         }
     }
 }
