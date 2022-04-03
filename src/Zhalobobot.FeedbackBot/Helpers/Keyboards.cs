@@ -96,7 +96,10 @@ namespace Zhalobobot.Bot.Helpers
                 {
                     InlineKeyboardButton.WithCallbackData(
                         "Оставить обратную связь",
-                        string.Join(Strings.Separator, CallbackDataPrefix.Feedback, subjectName))                
+                        string.Join(Strings.Separator, CallbackDataPrefix.Feedback, subjectName)),
+                    InlineKeyboardButton.WithCallbackData(
+                        "Не был на паре",
+                        string.Join(Strings.Separator, CallbackDataPrefix.NotVisitedPair, subjectName)) 
                 }
             };
 

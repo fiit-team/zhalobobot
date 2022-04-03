@@ -345,6 +345,9 @@ namespace Zhalobobot.Bot.Services
                 case CallbackDataPrefix.SubmitSpecialCourses:
                     await HandleSubmitSpecialCoursesCallback(chatId, messageId);
                     break;
+                case CallbackDataPrefix.NotVisitedPair:
+                    await HandleNotVisitedPairCallback(chatId, messageId);
+                    break;
                 default:
                 {
                     var message = $"Unknown callbackType: {callbackType}";
@@ -352,6 +355,11 @@ namespace Zhalobobot.Bot.Services
                     throw new Exception(message);
                 }
             }
+        }
+
+        private async Task HandleNotVisitedPairCallback(long chatId, int messageId)
+        {
+            await BotClient.EditMessageTextAsync(chatId, messageId, "👌🏻");
         }
 
         private async Task HandleSubmitSpecialCoursesCallback(long chatId, int messageId)

@@ -14,6 +14,7 @@
         public const string PaginationItemButton = "PaginationItemButton";
         public const string InternalDoNothing = "InternalDoNothing";
         public const string SubmitSpecialCourses = "SubmitSpecialCourses";
+        public const string NotVisitedPair = "NotVisitedPair";
 
         public static string Nothing => $"{InternalDoNothing}{Strings.Separator}_";
     }
