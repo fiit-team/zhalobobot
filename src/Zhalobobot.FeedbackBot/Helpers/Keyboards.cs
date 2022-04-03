@@ -26,20 +26,15 @@ namespace Zhalobobot.Bot.Helpers
         //     ResizeKeyboard = true
         // };
 
-        public static ReplyKeyboardMarkup DefaultKeyboard(Student student) //todo: убрать после того, как добавим обработку 3го курса
+        public static ReplyKeyboardMarkup DefaultKeyboard()
         {
             var buttons = new List<KeyboardButton[]>
             {
+                new KeyboardButton[] { Buttons.Schedule },
                 new KeyboardButton[] { Buttons.Subjects },
                 new KeyboardButton[] { Buttons.GeneralFeedback },
                 new KeyboardButton[] { Buttons.Alarm }
             };
-
-            // todo: вернуть, когда починим расписание
-            if (student.Course < Course.Third)
-            {
-                buttons.Add(new KeyboardButton[] { Buttons.Schedule });
-            }
             
             return new ReplyKeyboardMarkup(buttons)
             {
