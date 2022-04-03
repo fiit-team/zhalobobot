@@ -10,5 +10,11 @@
         public const string AddCourseAndGroupAndSubgroup = "addCourseAndGroupAndSubgroup";
         public const string Feedback = "feedback";
         public const string ChooseScheduleRange = "chooseScheduleRange";
+        public const string PaginationButton = "PaginationButton";
+        public const string PaginationItemButton = "PaginationItemButton";
+        public const string InternalDoNothing = "InternalDoNothing";
+        public const string SubmitSpecialCourses = "SubmitSpecialCourses";
+
+        public static string Nothing => $"{InternalDoNothing}{Strings.Separator}_";
     }
 }
