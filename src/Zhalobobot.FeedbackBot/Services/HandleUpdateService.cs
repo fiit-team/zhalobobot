@@ -87,7 +87,7 @@ namespace Zhalobobot.Bot.Services
 
             try
             {
-                if (await HandleAddStudent())
+                if (!await StudentHelper.HaveEnoughDataToUseBot(update, BotClient, Client, Cache, ConversationService, BotOnCallbackQueryReceived, StartUsage))
                     return;
             }
             catch (CacheNotInitializedException)
@@ -110,43 +110,6 @@ namespace Zhalobobot.Bot.Services
             catch (Exception exception)
             {
                 await HandleErrorAsync(exception);
-            }
-
-            async Task<bool> HandleAddStudent()
-            {
-                if (update.Message is {} message)
-                {
-                    var student = Cache.Students.Find(message.Chat.Id);
-
-                    if (student == null)
-                    {
-                        if (Cache.StudentData.Find($"@{message.Chat.Username}") is { } data)
-                        {
-                            student = new Student(message.Chat.Id, message.Chat.Username, data.Course, data.Group, data.Subgroup, data.Name);
-                            Cache.Students.Add(student);
-                            await Client.Student.Add(new AddStudentRequest(student));
-                            await StartUsage(BotClient, message);
-                        }
-                        else if (update.Type == UpdateType.CallbackQuery)
-                            await BotOnCallbackQueryReceived(update.CallbackQuery);
-                        else
-                            await AddStudent();
-
-                        return true;
-                    }
-                
-                    async Task AddStudent()
-                    {
-                        await BotClient.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-                    
-                        await BotClient.SendTextMessageAsync(
-                            message.Chat.Id,
-                            "Привет! Мы с тобой еще не знакомы, так что ответь на пару моих вопросиков :)\nСначала укажи курс:",
-                            replyMarkup: Keyboards.AddCourseKeyboard);
-                    }
-                }
-
-                return false;
             }
         }
 
