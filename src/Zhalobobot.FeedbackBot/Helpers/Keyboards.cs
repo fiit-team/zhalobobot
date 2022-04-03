@@ -12,7 +12,7 @@ using Zhalobobot.Common.Models.Subject;
 
 namespace Zhalobobot.Bot.Helpers
 {
-    public static class Keyboards
+    internal static class Keyboards
     {
         // public static ReplyKeyboardMarkup DefaultKeyboard { get; } = new(
         //     new[]
@@ -151,14 +151,17 @@ namespace Zhalobobot.Bot.Helpers
         }
         
         public static InlineKeyboardMarkup GetSubjectsKeyboard(IEnumerable<Subject> subjects)
+            => GetSubjectsKeyboard(subjects.Select(s => s.Name));
+        
+        public static InlineKeyboardMarkup GetSubjectsKeyboard(IEnumerable<string> subjects)
         {
             var inlineKeyboard = new InlineKeyboardMarkup(
                 subjects
                     .Select(subject => new[]
                     {
                         InlineKeyboardButton.WithCallbackData(
-                            subject.Name.Slice(),
-                            string.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.Name.GetHashCode()))
+                            subject.Slice(),
+                            string.Join(Strings.Separator, CallbackDataPrefix.Subject, subject.GetHashCode()))
                     }));
 
             return inlineKeyboard;
