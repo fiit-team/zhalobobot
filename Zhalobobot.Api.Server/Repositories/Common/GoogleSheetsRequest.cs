@@ -60,6 +60,15 @@ namespace Zhalobobot.Api.Server.Repositories.Common
         
         public SpreadsheetsResource.ValuesResource.GetRequest ToGetRequest()
             => Resource.Values.Get(SpreadSheetId, Range);
-    }
 
+        public SpreadsheetsResource.ValuesResource.UpdateRequest ToUpdateRequest()
+        {
+            var body = new ValueRange { Values = Values };
+
+            var request = Resource.Values.Update(body, SpreadSheetId, Range);
+            request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+
+            return request;
+        } 
+    }
 }
