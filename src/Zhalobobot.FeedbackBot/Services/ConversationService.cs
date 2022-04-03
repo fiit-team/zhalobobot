@@ -111,6 +111,16 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"Subject feedback started successfully. ChatId {chatId}, Subject {subjectName}");
         }
 
+        public void StartAddSpecialCoursesFeedback(long chatId)
+        {
+            Conversations[chatId] = new Conversation
+            {
+                SelectedSpecialCourses = new HashSet<string>()
+            };
+            
+            Logger.LogInformation($"Add special courses started successfully. ChatId {chatId}.");
+        }
+
         public async Task SendFeedbackAsync(long chatId, int messageId)
         {
             if (!Conversations.TryGetValue(chatId, out var value))
@@ -177,6 +187,17 @@ namespace Zhalobobot.Bot.Services
             conversation.LastPollInfo = pollInfo;
         }
 
+        public void SaveSelectedSpecialCourses(long chatId, HashSet<string> selectedSpecialCourses)
+        {
+            if (!Conversations.TryGetValue(chatId, out var conversation))
+            {
+                Logger.LogError($"Chat not found. ChatId {chatId}");
+                throw new Exception($"Chat not found. ChatId {chatId}");
+            }
+
+            conversation.SelectedSpecialCourses = selectedSpecialCourses;
+        }
+
         public PollInfo GetLastPollInfo(long chatId)
         {
             if (!Conversations.TryGetValue(chatId, out var conversation))
@@ -187,6 +208,19 @@ namespace Zhalobobot.Bot.Services
 
             return conversation.LastPollInfo;
         }
+
+        public HashSet<string> GetSelectedSpecialCourses(long chatId)
+        {
+            if (!Conversations.TryGetValue(chatId, out var conversation))
+            {
+                Logger.LogError($"Chat not found. ChatId {chatId}");
+                throw new Exception($"Chat not found. ChatId {chatId}");
+            }
+
+            return conversation.SelectedSpecialCourses;
+        }
+
+        public bool HaveSelectedSpecialCourses(long chatId) => Conversations.TryGetValue(chatId, out _);
 
         public void ProcessPollAnswer(long chatId, ICollection<string> result, bool isLikedPoints = false)
         {

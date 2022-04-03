@@ -13,8 +13,13 @@ namespace Zhalobobot.Api.Server.Repositories.Common
 {
     public static class ParsingHelper
     {
-        public static Name ParseName(object lastName, object firstName, object middleName)
+        public static Name ParseName(object lastName, object firstName, object? middleName)
             => new(lastName as string ?? "", firstName as string ?? "", middleName as string);
+
+        public static string[] ParseSpecialCourseNames(object? specialCourses)
+            => specialCourses == null 
+                ? Array.Empty<string>() 
+                : (specialCourses as string ?? "").Split(';').Select(sc => sc.Trim()).ToArray();
 
         public static int? ParseNullableInt(object value)
             => int.TryParse(value as string, out var result) ? result : null;

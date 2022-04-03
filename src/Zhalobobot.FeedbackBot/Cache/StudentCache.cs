@@ -24,5 +24,13 @@ namespace Zhalobobot.Bot.Cache
         public Student Get(long chatId) => chatIdIndex.Get(chatId);
         public List<Student> Get((Course, Group, Subgroup) tuple) => courseGroupSubgroupIndex.GetOrCreate(tuple, _ => new List<Student>());
         public void Add(Student student) => chatIdIndex.Add(student.Id, student);
+
+        public void AddOrUpdate(Student student)
+        {
+            if (chatIdIndex.ContainsKey(student.Id))
+                chatIdIndex[student.Id] = student;
+            else
+                chatIdIndex.Add(student.Id, student);
+        }
     }
 }

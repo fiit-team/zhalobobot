@@ -9,5 +9,6 @@ namespace Zhalobobot.Common.Models.Student
         Course Course,
         Group Group,
         Subgroup Subgroup,
-        Name? Name);
+        Name? Name,
+        string[] SpecialCourseNames);
 }

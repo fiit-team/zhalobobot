@@ -9,5 +9,6 @@ namespace Zhalobobot.Bot.Models
         public Feedback Feedback { get; set; }
         public IList<Message> Messages { get; set; } = new List<Message>();
         public PollInfo LastPollInfo { get; set; }
+        public HashSet<string> SelectedSpecialCourses { get; set; } = new();
     }
 }
