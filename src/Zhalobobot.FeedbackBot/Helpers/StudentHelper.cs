@@ -73,9 +73,12 @@ internal static class StudentHelper
         }
 
         if (update.Type == UpdateType.CallbackQuery)
+        {
             await botOnCallbackQueryReceived(update.CallbackQuery);
+            return false;
+        }
 
-        return false;
+        return true;
     }
 
     public static async Task<bool> HandleAddSpecialCourses(ITelegramBotClient botClient, long chatId, Course course, EntitiesCache cache, IConversationService conversationService)
