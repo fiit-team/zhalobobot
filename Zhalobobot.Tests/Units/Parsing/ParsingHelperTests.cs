@@ -14,7 +14,7 @@ public class ParsingHelperTests
     [TestCaseSource(nameof(GetFlowData))]
     public void Should_parse_flow(string flow, (Course, Group, Subgroup?)[] result)
     {
-        ParsingHelper.ParseFlow(flow).Should().BeEquivalentTo(result);
+        ParsingHelper.ParseStudyGroups(flow).Should().BeEquivalentTo(result);
     }
 
     [TestCaseSource(nameof(GetDateOnlyRangeData))]

@@ -41,9 +41,9 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             {
                 var result = await GetRequest(scheduleRange).ExecuteAsync();
             
-                var checkbox = result.Values[0][0].ToString() ?? "";
+                var shouldUpdate = ParsingHelper.ParseBool(result.Values[0][0]);
             
-                if (checkbox.ToLower() != "true")
+                if (!shouldUpdate)
                     return (false, Array.Empty<ScheduleItem>()); //incorrect table or synchronized == false
 
                 var subjects = await SubjectRepository.GetAll();
@@ -76,7 +76,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             var subjectName = row[1] as string ?? throw new Exception("Invalid subject name");
             
             foreach (var date in dates)
-            foreach (var (course, group, subgroup) in ParsingHelper.ParseFlow(row[2]))
+            foreach (var (course, group, subgroup) in ParsingHelper.ParseStudyGroups(row[2]))
             {
                 var possibleSubgroups = subgroup.HasValue 
                     ? new[] { subgroup.Value } 
@@ -105,7 +105,7 @@ namespace Zhalobobot.Api.Server.Repositories.Schedule
             var subjectName = row[2] as string ?? throw new Exception();
             var semester = SemesterHelper.Current;
 
-            var flow = ParsingHelper.ParseFlow(row[3]).ToArray();
+            var flow = ParsingHelper.ParseStudyGroups(row[3]).ToArray();
             
             var startDayOrTime = ParsingHelper.ParseDateOnlyTimeOnly(row[8]);
             

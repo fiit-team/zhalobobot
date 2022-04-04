@@ -5,6 +5,8 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.Feedback;
+using Zhalobobot.Common.Models.FeedbackChat;
 using Zhalobobot.Common.Models.Subject;
 using Zhalobobot.Common.Models.UserCommon;
 using Group = Zhalobobot.Common.Models.Commons.Group;
@@ -15,6 +17,14 @@ namespace Zhalobobot.Api.Server.Repositories.Common
     {
         public static Name ParseName(object lastName, object firstName, object? middleName)
             => new(lastName as string ?? "", firstName as string ?? "", middleName as string);
+
+        public static bool ParseBool(object value)
+        {
+            if (value is not string str)
+                return false;
+
+            return str is "ИСТИНА" or "TRUE";
+        }
 
         public static string[] ParseSpecialCourseNames(object? specialCourses)
             => specialCourses == null 
@@ -54,7 +64,37 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                 "четверг" => DayOfWeek.Thursday,
                 "пятница" => DayOfWeek.Friday,
                 "суббота" => DayOfWeek.Saturday,
-                _ => throw new NotImplementedException()
+                "воскресенье" => DayOfWeek.Sunday,
+                _ => throw new ArgumentOutOfRangeException(nameof(value))
+            };
+        }
+
+        public static IEnumerable<string> ParseStringRange(object value, string delimiter)
+        {
+            return value is not string str 
+                ? Array.Empty<string>()
+                : str.Split(delimiter).Select(x => x.Trim());
+        }
+
+        public static IEnumerable<FeedbackType> ParseFeedbackTypeRange(object value, string delimiter)
+        {
+            var str = EnsureCorrectString(value);
+
+            str = str.ToLowerInvariant().Trim();
+
+            return str == "все" 
+                ? Enum.GetValues<FeedbackType>() 
+                : str.Split(delimiter).Select(s => ParseFeedbackType(s.Trim()));
+        }
+        
+        public static FeedbackType ParseFeedbackType(object value)
+        {
+            return (value as string ?? "").ToLower() switch
+            {
+                "общая" => FeedbackType.General,
+                "срочная" => FeedbackType.Urgent,
+                "предметная" => FeedbackType.Subject,
+                _ => throw new ArgumentOutOfRangeException(nameof(value))
             };
         }
 
@@ -118,7 +158,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private static readonly Regex CourseRegex = new(@"(?<course>[0-9])\s*курс", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        public static IEnumerable<(Course, Group, Subgroup?)> ParseFlow(object value)
+        public static IEnumerable<StudyGroup> ParseStudyGroups(object value)
         {
             var str = EnsureCorrectString(value);
 
@@ -129,7 +169,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                 foreach (var course in Enum.GetValues<Course>())
                 foreach (var group in Enum.GetValues<Group>())
                 foreach (var subgroup in Enum.GetValues<Subgroup>())
-                    yield return (course, group, subgroup);
+                    yield return new(course, group, subgroup);
                 yield break;
             }
 
@@ -141,7 +181,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                     var course = (Course)int.Parse(result.Groups["course"].Value);
                     foreach (var group in Enum.GetValues<Group>())
                     foreach (var subgroup in Enum.GetValues<Subgroup>())
-                        yield return (course, group, subgroup);
+                        yield return new(course, group, subgroup);
                 }
                 
                 result = CourseGroupSubgroupRegex.Match(part.Trim());
@@ -149,7 +189,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
                 {
                     var subgroup = result.Groups["subgroup"];
 
-                    yield return (
+                    yield return new(
                         (Course)int.Parse(result.Groups["course"].Value),
                         (Group)int.Parse(result.Groups["group"].Value),
                         subgroup.Success ? (Subgroup)int.Parse(subgroup.Value) : null

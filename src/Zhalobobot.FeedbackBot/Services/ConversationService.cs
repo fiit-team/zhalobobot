@@ -14,6 +14,7 @@ using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Feedback;
 using Zhalobobot.Common.Models.Feedback.Requests;
+using Zhalobobot.Common.Models.FeedbackChat;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Reply;
 using Zhalobobot.Common.Models.Reply.Requests;
@@ -263,36 +264,36 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
         }
 
-        private async Task ProcessFeedbackChatSending(FeedbackChatSettings settings, Feedback feedback, long chatId)
+        private async Task ProcessFeedbackChatSending(FeedbackChatData data, Feedback feedback, long chatId)
         {
-            Logger.LogInformation($"Start processing feedback for chat {settings.ChatId}. Feedback {feedback.ToPrettyJson()}. Settings {settings.ToPrettyJson()}");
+            Logger.LogInformation($"Start processing feedback for chat {data.ChatId}. Feedback {feedback.ToPrettyJson()}. Settings {data.ToPrettyJson()}");
 
-            var message = FormFeedbackMessage(feedback, settings);
+            var message = FormFeedbackMessage(feedback, data);
 
-            if (settings.FeedbackTypes.Any() && !settings.FeedbackTypes.Any(x => x == feedback.Type))
+            if (data.FeedbackTypes.Any() && data.FeedbackTypes.All(x => x != feedback.Type))
             {
-                Logger.LogInformation($"Failed FeedbackType Check. ChatId {settings.ChatId}");
+                Logger.LogInformation($"Failed FeedbackType Check. ChatId {data.ChatId}");
                 return;
             }
 
-            if (settings.Subjects.Any() && !settings.Subjects.Any(x => 
+            if (data.SubjectNames.Any() && !data.SubjectNames.Any(x => 
                 string.Equals(x, "Design") && feedback.Subject?.Name == "Дизайн" 
                 || string.Equals(x, "ProductDevelopment") && feedback.Subject?.Name == "Создание продукта"))
             {
-                Logger.LogInformation($"Failed Subject Check. ChatId {settings.ChatId}.");
+                Logger.LogInformation($"Failed Subject Check. ChatId {data.ChatId}.");
                 return;
             }
 
-            if (settings.StudentSettings.Any() && !settings.StudentSettings.Any(x =>
+            if (data.StudyGroups.Any() && !data.StudyGroups.Any(x =>
                 x.Course == feedback.Student.Course
-                && (!x.Group.HasValue || x.Group != feedback.Student.Group)
+                && x.Group != feedback.Student.Group
                 && (!x.Subgroup.HasValue || x.Subgroup != feedback.Student.Subgroup)))
             {
-                Logger.LogInformation($"Failed Student Check. ChatId {settings.ChatId}");
+                Logger.LogInformation($"Failed Student Check. ChatId {data.ChatId}");
                 return;
             }
 
-            await SendFeedback(message, chatId, settings.ChatId, feedback)
+            await SendFeedback(message, chatId, data.ChatId, feedback)
                 .ConfigureAwait(false);
         }
 
@@ -320,14 +321,14 @@ namespace Zhalobobot.Bot.Services
             Logger.LogInformation($"Send feedback to chat {feedbackChatId} successfully.");
         }
 
-        private string FormFeedbackMessage(Feedback feedback, FeedbackChatSettings settings)
+        private string FormFeedbackMessage(Feedback feedback, FeedbackChatData data)
         {
             var builder = new StringBuilder();
 
             builder.AppendLine("Кто-то оставил обратную связь!");
 
             builder.AppendLine();
-            builder.AppendLine(FormStudentInfo(feedback.Student, settings.IncludeFullStudentInfo));
+            builder.AppendLine(FormStudentInfo(feedback.Student, data.IncludeFullStudentInfo));
 
             if (!string.IsNullOrWhiteSpace(feedback.Message))
             {

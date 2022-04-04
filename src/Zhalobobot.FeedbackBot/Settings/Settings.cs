@@ -1,8 +1,10 @@
-﻿namespace Zhalobobot.Bot.Settings
+﻿using Zhalobobot.Common.Models.FeedbackChat;
+
+namespace Zhalobobot.Bot.Settings
 {
     public class Settings
     {
-        public FeedbackChatSettings[] FeedbackChatSettings { get; init; }
+        public FeedbackChatData[] FeedbackChatSettings { get; init; }
 
         public string ServerAddress { get; init; }
     }

@@ -5,6 +5,7 @@ using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Clients.Core.Extensions;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
+using Zhalobobot.Common.Models.FeedbackChat;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Reply;
 using Zhalobobot.Common.Models.Schedule;
@@ -21,6 +22,7 @@ namespace Zhalobobot.Bot.Cache
         private readonly EntityCacheContainer<Subject, SubjectCache> subjects;
         private readonly EntityCacheContainer<Reply, RepliesCache> replies;
         private readonly EntityCacheContainer<DayWithoutPairs, DaysWithoutPairsCache> daysWithoutPairs;
+        private readonly EntityCacheContainer<FeedbackChatDataDto, FeedbackChatDataCache> feedbackChatData;
 
         private readonly IEntityCacheContainer[] allContainersToUpdate;
 
@@ -31,7 +33,8 @@ namespace Zhalobobot.Bot.Cache
             subjects = new EntityCacheContainer<Subject, SubjectCache>(() => client.Subject.GetAll().GetResult(), items => new SubjectCache(items));
             studentsData = new EntityCacheContainer<StudentData, StudentDataCache>(() => client.Student.GetAllData().GetResult(), items => new StudentDataCache(items));
             daysWithoutPairs = new EntityCacheContainer<DayWithoutPairs, DaysWithoutPairsCache>(() => client.Schedule.GetDaysWithoutPairs().GetResult(), items => new DaysWithoutPairsCache(items));
-
+            feedbackChatData = new EntityCacheContainer<FeedbackChatDataDto, FeedbackChatDataCache>(() => client.FeedbackChat.GetAll().GetResult(), items => items.ShouldBeUpdated ? new FeedbackChatDataCache(items.Data) : FeedbackChatData);
+            
             replies = new EntityCacheContainer<Reply, RepliesCache>(() => client.Reply.GetAll().GetResult(), items => new RepliesCache(items));
             replies.Update(true).Wait();
 
@@ -41,7 +44,8 @@ namespace Zhalobobot.Bot.Cache
                 students,
                 subjects,
                 studentsData,
-                daysWithoutPairs
+                daysWithoutPairs,
+                feedbackChatData
             };
         }
 
@@ -62,6 +66,7 @@ namespace Zhalobobot.Bot.Cache
         public SubjectCache Subjects => subjects.Cache;
         public StudentDataCache StudentData => studentsData.Cache;
         private DaysWithoutPairsCache DaysWithoutPairs => daysWithoutPairs.Cache;
+        public FeedbackChatDataCache FeedbackChatData => feedbackChatData.Cache;
         
         public RepliesCache Replies => replies.Cache;
 
