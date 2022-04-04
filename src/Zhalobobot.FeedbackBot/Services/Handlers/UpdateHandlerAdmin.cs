@@ -57,7 +57,7 @@ namespace Zhalobobot.Bot.Services.Handlers
                 chat = update.CallbackQuery.Message.Chat;
             }
 
-            return Settings.FeedbackChatSettings.Any(x => x.ChatId == chat?.Id);
+            return Cache.FeedbackChatData.All.Any(x => x.ChatId == chat?.Id);
         }
 
         public async Task HandleUpdate(Update update)
