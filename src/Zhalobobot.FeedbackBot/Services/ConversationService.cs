@@ -29,7 +29,6 @@ namespace Zhalobobot.Bot.Services
     {
         private ITelegramBotClient BotClient { get; }
         private IZhalobobotApiClient Client { get; }
-        private Settings.Settings Settings { get; }
         private EntitiesCache Cache { get; }
         private ILogger Logger { get; }
 
@@ -39,13 +38,11 @@ namespace Zhalobobot.Bot.Services
         public ConversationService(
             ITelegramBotClient botClient,
             IZhalobobotApiClient client,
-            Settings.Settings settings,
             EntitiesCache cache,
             ILogger<ConversationService> logger)
         {
             BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             Client = client ?? throw new ArgumentNullException(nameof(client));
-            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             Cache = cache;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -255,7 +252,8 @@ namespace Zhalobobot.Bot.Services
             {
                 await Client.Feedback.AddFeedback(new AddFeedbackRequest(entity));
 
-                foreach (var feedbackChatInfo in Settings.FeedbackChatSettings)
+                var feedbackChatData = Cache.FeedbackChatData;
+                foreach (var feedbackChatInfo in feedbackChatData.All)
                 {
                     await ProcessFeedbackChatSending(feedbackChatInfo, entity, chatId);
                 }
