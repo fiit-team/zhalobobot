@@ -71,7 +71,7 @@ namespace Zhalobobot.Api.Server.Repositories.Common
 
         public static IEnumerable<string> ParseStringRange(object value, string delimiter)
         {
-            return value is not string str 
+            return value is not string str || str.Trim() == ""
                 ? Array.Empty<string>()
                 : str.Split(delimiter).Select(x => x.Trim());
         }
