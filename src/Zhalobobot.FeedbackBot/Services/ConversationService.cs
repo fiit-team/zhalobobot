@@ -274,9 +274,7 @@ namespace Zhalobobot.Bot.Services
                 return;
             }
 
-            if (data.SubjectNames.Any() && !data.SubjectNames.Any(x => 
-                string.Equals(x, "Design") && feedback.Subject?.Name == "Дизайн" 
-                || string.Equals(x, "ProductDevelopment") && feedback.Subject?.Name == "Создание продукта"))
+            if (data.SubjectNames.Any() && data.SubjectNames.All(x => x != feedback.Subject?.Name))
             {
                 Logger.LogInformation($"Failed Subject Check. ChatId {data.ChatId}.");
                 return;
