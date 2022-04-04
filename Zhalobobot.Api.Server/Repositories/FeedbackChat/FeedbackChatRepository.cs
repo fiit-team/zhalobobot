@@ -27,7 +27,7 @@ public class FeedbackChatRepository : GoogleSheetsRepositoryBase, IFeedbackChatR
         if (!shouldUpdate)
             return (false, Array.Empty<FeedbackChatData>()); //incorrect table or synchronized == false   
         
-        return (true, values.Values.Select(r => new FeedbackChatData(
+        return (true, values.Values.Skip(2).Select(r => new FeedbackChatData(
             ParsingHelper.ParseLong(r[0]),
             ParsingHelper.ParseFeedbackTypeRange(r[1], ";").ToArray(),
             ParsingHelper.ParseStringRange(r[2], ";").ToArray(),
