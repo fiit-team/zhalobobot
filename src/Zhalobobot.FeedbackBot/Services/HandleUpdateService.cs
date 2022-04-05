@@ -85,13 +85,22 @@ namespace Zhalobobot.Bot.Services
                 return;
             }
 
+            if (update.Type == UpdateType.MyChatMember && !await CheckIfChatAllowedElseLeave(update))
+            {
+                return;
+            }
+
             try
             {
                 if (!await StudentHelper.HaveEnoughDataToUseBot(update, BotClient, Client, Cache, ConversationService, BotOnCallbackQueryReceived, StartUsage))
+                {
+                    Logger.LogInformation($"User hasn't enough data to use bot.");
                     return;
+                }
             }
-            catch (CacheNotInitializedException)
+            catch (CacheNotInitializedException e)
             {
+                Logger.LogError(e.ToString());
                 return;
             }
 
@@ -111,6 +120,24 @@ namespace Zhalobobot.Bot.Services
             {
                 await HandleErrorAsync(exception);
             }
+        }
+
+        private async Task<bool> CheckIfChatAllowedElseLeave(Update update) 
+        {
+            if (update.MyChatMember.NewChatMember.Status != ChatMemberStatus.Member)
+            {
+                return false;
+            }
+
+            var chatId = update.MyChatMember.Chat.Id;
+            if (Cache.FeedbackChatData.All.All(x => x.ChatId != chatId))
+            {
+                await BotClient.SendTextMessageAsync(chatId, "Ваш чат не поддерживается администрацией ФИИТ.");
+                await BotClient.LeaveChatAsync(chatId);
+                return false;
+            }
+
+            return true;
         }
 
         private async Task BotOnMessageReceived(Message message)
