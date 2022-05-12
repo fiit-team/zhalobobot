@@ -270,7 +270,7 @@ namespace Zhalobobot.Bot.Services
 
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
-                "Выбери нужный вариант",
+                "Выбери нужный вариант\nТекущая неделя " + (DateHelper.CurrentWeekParity(IsFirstYearWeekOdd) == WeekParity.Even ? "четная" : "нечетная"),
                 replyMarkup: Keyboards.ChooseScheduleDayKeyboard(lastStudyWeekDay));
         }
 
