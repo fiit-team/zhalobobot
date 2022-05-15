@@ -187,11 +187,21 @@ namespace Zhalobobot.Bot.Services
             {
                 return false;
             }
+            
+            var messageBuilder = new MessageWithEntitiesStringBuilder();
+            messageBuilder.AppendLine("На твоё сообщение ответили:");
+            messageBuilder.AppendLine();
+            messageBuilder.AppendEntitiesLine(message.Text, message.Entities);
+            messageBuilder.AppendLine();
+            messageBuilder.AppendLine("Если хочешь продолжить общение, можешь ответить реплаем на это сообщение.");
+
+            var (messageText, entities) = messageBuilder.Build();
 
             var sentMessage = await BotClient.SendTextMessageAsync(
                 reply.ChatId,
-                BotMessageHelper.MessageReply(message.Text),
-                replyToMessageId: reply.MessageId);
+                messageText,
+                replyToMessageId: reply.MessageId,
+                entities: entities);
 
             var newReply = new Reply(
                 message.From.Id, message.From.Username, message.Chat.Id,

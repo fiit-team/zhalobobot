@@ -248,22 +248,22 @@ namespace Zhalobobot.Bot.Services
                 conversation.Messages = new List<Message> { new Message { MessageId = messageId } };
             }
 
-            foreach (var entity in conversation.Messages
-                .Select(message => feedback with { Message = message.Text, MessageId = message.MessageId }))
+            foreach (var (feedbackEntity, messageEntities) in conversation.Messages
+                .Select(message => (feedback with { Message = message.Text, MessageId = message.MessageId }, message.Entities)))
             {
-                await Client.Feedback.AddFeedback(new AddFeedbackRequest(entity));
+                await Client.Feedback.AddFeedback(new AddFeedbackRequest(feedbackEntity));
 
                 var feedbackChatData = Cache.FeedbackChatData;
                 foreach (var feedbackChatInfo in feedbackChatData.All)
                 {
-                    await ProcessFeedbackChatSending(feedbackChatInfo, entity, chatId);
+                    await ProcessFeedbackChatSending(feedbackChatInfo, feedbackEntity, chatId, messageEntities);
                 }
             }
 
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
         }
 
-        private async Task ProcessFeedbackChatSending(FeedbackChatData data, Feedback feedback, long chatId)
+        private async Task ProcessFeedbackChatSending(FeedbackChatData data, Feedback feedback, long chatId, IEnumerable<MessageEntity>? entities)
         {
             Logger.LogInformation($"Start processing feedback for chat {data.ChatId}. Feedback {feedback.ToPrettyJson()}. Settings {data.ToPrettyJson()}");
 
@@ -290,33 +290,29 @@ namespace Zhalobobot.Bot.Services
                 return;
             }
 
-            await SendFeedback(message, chatId, data.ChatId, feedback)
-                .ConfigureAwait(false);
-        }
-
-        private async Task SendFeedback(string message, long chatId, long feedbackChatId, Feedback feedback)
-        {
-            var replyMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton
-            {
-                Text = BotMessageHelper.StartReplyDialog,
-                CallbackData = CallbackDataPrefix.StartReplyDialog
-            });
-
-            var sentMessage = await BotClient.SendTextMessageAsync(
-                feedbackChatId,
+            await BotClient.SendTextMessageAsync(
+                data.ChatId,
                 message,
-                replyMarkup: replyMarkup,
                 parseMode: ParseMode.Html);
 
-            var reply = new Reply(
-                feedback.Student.Id, feedback.Student.Username,
-                chatId, feedback.MessageId, feedback.Message,
-                sentMessage.Chat.Id, sentMessage.MessageId);
+            if (!string.IsNullOrWhiteSpace(feedback.Message))
+            {
+                var replyMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton
+                {
+                    Text = BotMessageHelper.StartReplyDialog,
+                    CallbackData = CallbackDataPrefix.StartReplyDialog
+                });
+                var sentMessage = await BotClient.SendTextMessageAsync(data.ChatId, feedback.Message, entities: entities, replyMarkup: replyMarkup);
+                var reply = new Reply(
+                    feedback.Student.Id, feedback.Student.Username,
+                    chatId, feedback.MessageId, feedback.Message,
+                    sentMessage.Chat.Id, sentMessage.MessageId);
 
-            Cache.Replies.Add(reply);
-            await Client.Reply.Add(new AddReplyRequest(reply));
-
-            Logger.LogInformation($"Send feedback to chat {feedbackChatId} successfully.");
+                Cache.Replies.Add(reply);
+                await Client.Reply.Add(new AddReplyRequest(reply));
+            }
+            
+            Logger.LogInformation($"Send feedback to chat {chatId} successfully.");
         }
 
         private string FormFeedbackMessage(Feedback feedback, FeedbackChatData data)
@@ -339,14 +335,14 @@ namespace Zhalobobot.Bot.Services
                 }
                 if (!string.IsNullOrWhiteSpace(feedback.Message))
                 {
-                    builder.AppendLine($"И прокомментировал оценку так: <pre>{feedback.Message}</pre>");
+                    builder.AppendLine("И прокомментировал оценку так:");
                 }
             }
             else
             {
                 if (!string.IsNullOrWhiteSpace(feedback.Message))
                 {
-                    builder.AppendLine($"Оставил сообщение: <pre>{feedback.Message}</pre>");
+                    builder.AppendLine("Оставил сообщение:");
                 }
                 else
                 {

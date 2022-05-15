@@ -15,6 +15,4 @@ public static class BotMessageHelper
         message is StartReplyDialog or "Занять" // backward compability
         || (message.StartsWith("Занял") && !message.EndsWith(username))
         || (message.StartsWith(StopReplyDialogStartPart) && !message.EndsWith(username));
-    
-    public static string MessageReply(string reply) => $"На твоё сообщение ответили:\n\n{reply}\n\nЕсли хочешь продолжить общение, можешь ответить реплаем на это сообщение.";
 }

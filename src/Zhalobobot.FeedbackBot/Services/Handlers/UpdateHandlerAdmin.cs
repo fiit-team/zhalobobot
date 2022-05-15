@@ -110,12 +110,20 @@ namespace Zhalobobot.Bot.Services.Handlers
                 return;
             }
 
+            var messageBuilder = new MessageWithEntitiesStringBuilder();
+            messageBuilder.AppendLine("На твоё сообщение ответили:");
+            messageBuilder.AppendLine();
+            messageBuilder.AppendEntitiesLine(message.Text, message.Entities);
+            messageBuilder.AppendLine();
+            messageBuilder.AppendLine("Если хочешь продолжить общение, можешь ответить реплаем на это сообщение.");
+
+            var (messageText, entities) = messageBuilder.Build();
+            
             var sentMessage = await BotClient.SendTextMessageAsync(
                 reply.ChatId,
-                "На твоё сообщение ответили:\n\n" +
-                $"{message.Text}\n\n" +
-                $"Если хочешь продолжить общение, можешь ответить реплаем на это сообщение.",
-                replyToMessageId: reply.MessageId);
+                messageText,
+                replyToMessageId: reply.MessageId,
+                entities: entities);
 
             var newReply = new Reply(
                 message.From.Id, message.From.Username, message.Chat.Id,
