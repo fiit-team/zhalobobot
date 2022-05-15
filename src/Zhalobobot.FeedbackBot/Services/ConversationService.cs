@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
@@ -304,7 +305,8 @@ namespace Zhalobobot.Bot.Services
             var sentMessage = await BotClient.SendTextMessageAsync(
                 feedbackChatId,
                 message,
-                replyMarkup: replyMarkup);
+                replyMarkup: replyMarkup,
+                parseMode: ParseMode.Html);
 
             var reply = new Reply(
                 feedback.Student.Id, feedback.Student.Username,
@@ -320,57 +322,58 @@ namespace Zhalobobot.Bot.Services
         private string FormFeedbackMessage(Feedback feedback, FeedbackChatData data)
         {
             var builder = new StringBuilder();
-
-            builder.AppendLine("Кто-то оставил обратную связь!");
-
-            builder.AppendLine();
-            builder.AppendLine(FormStudentInfo(feedback.Student, data.IncludeFullStudentInfo));
-
-            if (!string.IsNullOrWhiteSpace(feedback.Message))
-            {
-                builder.AppendLine();
-                builder.AppendLine(feedback.Message);
-            }
-
+            
+            builder.Append(FormStudentInfo(feedback.Student, data.IncludeFullStudentInfo));
+            
             if (feedback.SubjectSurvey != null)
             {
-                builder.AppendLine();
-                builder.AppendLine($"{feedback.Subject!.Name}");
-
-                builder.AppendLine();
-                builder.AppendLine($"Оценка: {feedback.SubjectSurvey.Rating}");
-
-                var likedPoints = string.Join("; ", feedback.SubjectSurvey.LikedPoints);
-                var unlikedPoints = string.Join("; ", feedback.SubjectSurvey.UnlikedPoints);
-
-                if (!string.IsNullOrEmpty(likedPoints))
+                builder.AppendLine($"Оценил курс <code>{feedback.Subject!.Name}</code>");
+                builder.AppendLine($"На <code>{feedback.SubjectSurvey.Rating}</code> из 5");
+                if (feedback.SubjectSurvey.LikedPoints.Any())
                 {
-                    builder.AppendLine($"Что понравилось: {likedPoints}");
+                    builder.AppendLine($"Понравилось: <code>{string.Join("; ", feedback.SubjectSurvey.LikedPoints)}</code>");
                 }
-
-                if (!string.IsNullOrEmpty(unlikedPoints))
+                if (feedback.SubjectSurvey.UnlikedPoints.Any())
                 {
-                    builder.AppendLine($"Что не понравилось: {unlikedPoints}");
+                    builder.AppendLine($"Не понравилось: <code>{string.Join("; ", feedback.SubjectSurvey.UnlikedPoints)}</code>");
+                }
+                if (!string.IsNullOrWhiteSpace(feedback.Message))
+                {
+                    builder.AppendLine($"И прокомментировал оценку так: <pre>{feedback.Message}</pre>");
                 }
             }
-
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(feedback.Message))
+                {
+                    builder.AppendLine($"Оставил сообщение: <pre>{feedback.Message}</pre>");
+                }
+                else
+                {
+                    builder.AppendLine("Решил ничего не писать");
+                }
+            }
+            
             return builder.ToString();
         }
 
         private string FormStudentInfo(Student student, bool inludeFullStudentInfo = false)
         {
             var builder = new StringBuilder();
+            var course = $"ФТ-{(int)student.Course}0{(int)student.Group}-{(int)student.Subgroup}";
 
             if (inludeFullStudentInfo)
             {
                 builder.AppendLine($"{student.Name ?? Name.UnknownPerson}");
+                builder.AppendLine(course);
+                if (!string.IsNullOrEmpty(student.Username))
+                {
+                    builder.AppendLine($"@{student.Username}");
+                }
             }
-
-            builder.AppendLine($"ФТ-{(int)student.Course}0{(int)student.Group}-{(int)student.Subgroup}");
-
-            if (inludeFullStudentInfo && !string.IsNullOrEmpty(student.Username))
+            else
             {
-                builder.AppendLine($"@{student.Username}");
+                builder.AppendLine($"Кто-то из <code>{course}</code>");
             }
 
             return builder.ToString();
