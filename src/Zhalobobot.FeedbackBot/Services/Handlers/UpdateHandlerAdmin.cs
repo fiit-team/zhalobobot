@@ -5,8 +5,9 @@ using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Cache;
+using Zhalobobot.Bot.Helpers;
+using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Reply;
 using Zhalobobot.Common.Models.Reply.Requests;
@@ -89,8 +90,16 @@ namespace Zhalobobot.Bot.Services.Handlers
 
             var replyToMessage = message.ReplyToMessage;
 
-            if (message.ReplyToMessage is null)
+            if (replyToMessage is null)
             {
+                return;
+            }
+            
+            if (replyToMessage.ReplyMarkup.InlineKeyboard.SelectMany(b => b).Any(b => BotMessageHelper.IsReplyDialogNorForUser(b.Text, message.From.Username)))
+            {
+                // todo: добавить id пользователя в callback и сравнивать их, а не имена пользователей (т.к. они есть не всегда)
+                await BotClient.SendTextMessageAsync(replyToMessage.Chat.Id,
+                    "Не стал пересылать сообщение студенту");
                 return;
             }
 
@@ -115,7 +124,7 @@ namespace Zhalobobot.Bot.Services.Handlers
 
             await BotClient.SendTextMessageAsync(
                 reply.ChildChatId,
-                "Сообщение отправлено");
+                BotMessageHelper.SentMessage);
 
             Cache.Replies.Add(newReply);
             await Client.Reply.Add(new AddReplyRequest(newReply));
@@ -123,19 +132,22 @@ namespace Zhalobobot.Bot.Services.Handlers
 
         private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery)
         {
-            if (callbackQuery.Data == "alert-engaged")
+            if (callbackQuery.Data == CallbackDataPrefix.StopReplyDialog)
             {
+                if (callbackQuery.Message.ReplyMarkup is {} replyMarkup)
+                {
+                    await BotClient.EditMessageReplyMarkupAsync(
+                        callbackQuery.Message.Chat.Id,
+                        callbackQuery.Message.MessageId,
+                        Keyboards.GetDialogButton(callbackQuery.From.Username, replyMarkup.InlineKeyboard.First().First().Text));
+                }
                 return;
             }
 
             await BotClient.EditMessageReplyMarkupAsync(
                 callbackQuery.Message.Chat.Id,
                 callbackQuery.Message.MessageId,
-                replyMarkup: new InlineKeyboardMarkup(new InlineKeyboardButton()
-                {
-                    Text = $"Занял {callbackQuery.From.Username}",
-                    CallbackData = "alert-engaged"
-                }));
+                Keyboards.GetDialogButton(callbackQuery.From.Username));
         }
 
         private Task UnknownUpdateHandlerAsync(Update update)

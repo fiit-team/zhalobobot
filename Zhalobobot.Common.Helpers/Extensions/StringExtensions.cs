@@ -10,7 +10,9 @@
         public static (string First, string Second) SplitPair(this string text, char separator = '&')
         {
             var tokens = text.Split(new[] { separator }, 2);
-            return (tokens[0], tokens[1]);
+            return tokens.Length == 1 
+                ? (tokens[0], "") 
+                : (tokens[0], tokens[1]);
         }
 
         public static string PutInCenterOf(this string text, char surroundingChar, int length)

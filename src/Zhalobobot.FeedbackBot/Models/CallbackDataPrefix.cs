@@ -15,6 +15,8 @@
         public const string InternalDoNothing = "InternalDoNothing";
         public const string SubmitSpecialCourses = "SubmitSpecialCourses";
         public const string NotVisitedPair = "NotVisitedPair";
+        public const string StartReplyDialog = "alert-take";
+        public const string StopReplyDialog = "alert-engaged";
 
         public static string Nothing => $"{InternalDoNothing}{Strings.Separator}_";
     }

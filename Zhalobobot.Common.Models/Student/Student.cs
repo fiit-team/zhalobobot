@@ -11,4 +11,7 @@ namespace Zhalobobot.Common.Models.Student
         Subgroup Subgroup,
         Name? Name,
         string[] SpecialCourseNames);
+    // todo: переписать на dto-шки и сделать так, чтобы контроллер сервера их возвращал
+    // todo: выделить слой сервиса, который отвечает за бизнес-логику
+    // todo: сделать общий пересыльщик сообщений, который автоматически будет пересылать markdown
 }

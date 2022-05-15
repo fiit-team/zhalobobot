@@ -9,7 +9,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using Zhalobobot.Bot.Cache;
-using Zhalobobot.Bot.Settings;
+using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Models.Feedback;
@@ -297,8 +297,8 @@ namespace Zhalobobot.Bot.Services
         {
             var replyMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton
             {
-                Text = "Занять",
-                CallbackData = "alert-take"
+                Text = BotMessageHelper.StartReplyDialog,
+                CallbackData = CallbackDataPrefix.StartReplyDialog
             });
 
             var sentMessage = await BotClient.SendTextMessageAsync(

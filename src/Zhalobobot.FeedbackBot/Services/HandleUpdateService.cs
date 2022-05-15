@@ -70,12 +70,12 @@ namespace Zhalobobot.Bot.Services
                 try
                 {
                     await AdminHandler.HandleUpdate(update);
-                    return;
                 }
                 catch (Exception e)
                 {
                     Logger.LogError(e.Message);
                 }
+                return;
             }
             
             var chat = update.Message?.Chat;
@@ -132,7 +132,7 @@ namespace Zhalobobot.Bot.Services
             var chatId = update.MyChatMember.Chat.Id;
             if (Cache.FeedbackChatData.All.All(x => x.ChatId != chatId))
             {
-                await BotClient.SendTextMessageAsync(chatId, "Ваш чат не поддерживается администрацией ФИИТ.");
+                await BotClient.SendTextMessageAsync(chatId, BotMessageHelper.ChatIsNotSupported);
                 await BotClient.LeaveChatAsync(chatId);
                 return false;
             }
@@ -190,9 +190,7 @@ namespace Zhalobobot.Bot.Services
 
             var sentMessage = await BotClient.SendTextMessageAsync(
                 reply.ChatId,
-                "На твоё сообщение ответили:\n\n" +
-                $"{message.Text}\n\n" +
-                $"Если хочешь продолжить общение, можешь ответить реплаем на это сообщение.",
+                BotMessageHelper.MessageReply(message.Text),
                 replyToMessageId: reply.MessageId);
 
             var newReply = new Reply(
@@ -202,7 +200,7 @@ namespace Zhalobobot.Bot.Services
 
             await BotClient.SendTextMessageAsync(
                 reply.ChildChatId,
-                "Сообщение отправлено");
+                BotMessageHelper.SentMessage);
 
             Cache.Replies.Add(newReply);
             await Client.Reply.Add(new AddReplyRequest(newReply));

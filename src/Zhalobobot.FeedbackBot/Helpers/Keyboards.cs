@@ -120,7 +120,7 @@ namespace Zhalobobot.Bot.Helpers
 
             if (currentDay <= lastStudyWeekDay && currentDay != DayOfWeek.Sunday)
                 keyboard.Add(new [] { CreateButton("На сегодня", (int)currentDay) });
-
+            // todo: починить кнопки (сделать так, чтобы если в каком-то дне нет пар, пропускать его)
             if (currentDay == DayOfWeek.Sunday)
             {
                 keyboard.Add(new[] { CreateButton("На завтра", (int)ScheduleDay.NextMonday) });
@@ -163,6 +163,37 @@ namespace Zhalobobot.Bot.Helpers
                     }));
 
             return inlineKeyboard;
+        }
+
+        public static InlineKeyboardMarkup GetDialogButton(string username, string? previousMessageText = null)
+        {
+            var startReplyButton = new InlineKeyboardMarkup(new InlineKeyboardButton
+            {
+                Text = BotMessageHelper.StartReplyDialog,
+                CallbackData = CallbackDataPrefix.StartReplyDialog
+            });
+
+            if (previousMessageText is null or BotMessageHelper.StartReplyDialog)
+                return new InlineKeyboardMarkup(new InlineKeyboardButton
+                {
+                    Text = BotMessageHelper.StopReplyDialog(username),
+                    CallbackData = CallbackDataPrefix.StopReplyDialog
+                });
+
+            if (previousMessageText.StartsWith(BotMessageHelper.StopReplyDialogStartPart))
+            {
+                // todo: compare user telegram instead of username (because username can be empty)
+                var user = BotMessageHelper.GetUserFromReplyDialog(previousMessageText);
+
+                if (user != username)
+                    return new InlineKeyboardMarkup(new InlineKeyboardButton
+                    {
+                        Text = BotMessageHelper.StopReplyDialog(user),
+                        CallbackData = CallbackDataPrefix.StopReplyDialog
+                    });
+            }
+
+            return startReplyButton;
         }
     }
 }
