@@ -99,7 +99,7 @@ namespace Zhalobobot.Bot.Services.Handlers
             {
                 // todo: добавить id пользователя в callback и сравнивать их, а не имена пользователей (т.к. они есть не всегда)
                 await BotClient.SendTextMessageAsync(replyToMessage.Chat.Id,
-                    "Не стал пересылать сообщение студенту");
+                    @"Не стал пересылать сообщение студенту. Для ответа нужно предварительно нажать кнопку ""Начать общение""");
                 return;
             }
 
