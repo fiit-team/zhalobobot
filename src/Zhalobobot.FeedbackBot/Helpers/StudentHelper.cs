@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Zhalobobot.Bot.Api.Services;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Services;
 using Zhalobobot.Common.Clients.Core;
@@ -18,7 +19,7 @@ internal static class StudentHelper
     public static async Task<bool> HaveEnoughDataToUseBot(
         Update update,
         ITelegramBotClient botClient,
-        IZhalobobotApiClient client,
+        IZhalobobotServices client,
         EntitiesCache cache,
         IConversationService conversationService,
         Func<CallbackQuery, Task> botOnCallbackQueryReceived,

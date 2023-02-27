@@ -9,11 +9,13 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
+using Zhalobobot.Bot.Models.Exceptions;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Serialization;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.TelegramMessageQueue;
+using Zhalobobot.TelegramMessageQueue.Exceptions;
 
 namespace Zhalobobot.Bot.Quartz.Jobs
 {

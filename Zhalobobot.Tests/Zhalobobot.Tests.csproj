@@ -17,7 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Zhalobobot.Api.Server\Zhalobobot.Api.Server.csproj" />
+      <ProjectReference Include="..\src\Zhalobobot.FeedbackBot\Zhalobobot.FeedbackBot.csproj" />
       <ProjectReference Include="..\Zhalobobot.TelegramMessageQueue\Zhalobobot.TelegramMessageQueue.csproj" />
     </ItemGroup>
 

@@ -30,7 +30,7 @@ namespace Zhalobobot.Bot.Helpers
         {
             var buttons = new List<KeyboardButton[]>
             {
-                new KeyboardButton[] { Buttons.Schedule },
+                // new KeyboardButton[] { Buttons.Schedule },
                 new KeyboardButton[] { Buttons.Subjects },
                 new KeyboardButton[] { Buttons.GeneralFeedback },
                 new KeyboardButton[] { Buttons.Alarm }
@@ -167,16 +167,14 @@ namespace Zhalobobot.Bot.Helpers
 
         public static InlineKeyboardMarkup GetDialogButton(string username, string? previousMessageText = null)
         {
-            var startReplyButton = new InlineKeyboardMarkup(new InlineKeyboardButton
+            var startReplyButton = new InlineKeyboardMarkup(new InlineKeyboardButton(BotMessageHelper.StartReplyDialog)
             {
-                Text = BotMessageHelper.StartReplyDialog,
                 CallbackData = CallbackDataPrefix.StartReplyDialog
             });
 
             if (previousMessageText is null or BotMessageHelper.StartReplyDialog)
-                return new InlineKeyboardMarkup(new InlineKeyboardButton
+                return new InlineKeyboardMarkup(new InlineKeyboardButton(BotMessageHelper.StopReplyDialog(username))
                 {
-                    Text = BotMessageHelper.StopReplyDialog(username),
                     CallbackData = CallbackDataPrefix.StopReplyDialog
                 });
 
@@ -186,9 +184,8 @@ namespace Zhalobobot.Bot.Helpers
                 var user = BotMessageHelper.GetUserFromReplyDialog(previousMessageText);
 
                 if (user != username)
-                    return new InlineKeyboardMarkup(new InlineKeyboardButton
+                    return new InlineKeyboardMarkup(new InlineKeyboardButton(BotMessageHelper.StopReplyDialog(user))
                     {
-                        Text = BotMessageHelper.StopReplyDialog(user),
                         CallbackData = CallbackDataPrefix.StopReplyDialog
                     });
             }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using NUnit.Framework;
-using Zhalobobot.Api.Server.Repositories.Common;
+using Zhalobobot.Bot.Api.Repositories.Common;
 using Zhalobobot.Common.Models.Commons;
 
 namespace Zhalobobot.Tests.Units.Parsing;

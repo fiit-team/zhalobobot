@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Zhalobobot.Bot.Api.Services;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
@@ -17,7 +18,7 @@ namespace Zhalobobot.Bot.Services.Handlers
     public class UpdateHandlerAdmin : IUpdateHandler
     {
         private ITelegramBotClient BotClient { get; }
-        private IZhalobobotApiClient Client { get; }
+        private IZhalobobotServices Client { get; }
         private IConversationService ConversationService { get; }
         private IPollService PollService { get; }
         private IScheduleMessageService ScheduleMessageService { get; }
@@ -27,7 +28,7 @@ namespace Zhalobobot.Bot.Services.Handlers
 
         public UpdateHandlerAdmin(
             ITelegramBotClient botClient,
-            IZhalobobotApiClient client,
+            IZhalobobotServices client,
             IConversationService conversationService,
             IPollService pollService,
             IScheduleMessageService scheduleMessageService,

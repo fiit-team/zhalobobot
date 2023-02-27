@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -8,9 +9,11 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Zhalobobot.Bot.Api.Services;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
+using Zhalobobot.Bot.Models.Exceptions;
 using Zhalobobot.Bot.Schedule;
 using Zhalobobot.Bot.Services.Handlers;
 using Zhalobobot.Common.Clients.Core;
@@ -31,7 +34,7 @@ namespace Zhalobobot.Bot.Services
     public class HandleUpdateService
     {
         private ITelegramBotClient BotClient { get; }
-        private IZhalobobotApiClient Client { get; }
+        private IZhalobobotServices Client { get; }
         private IConversationService ConversationService { get; }
         private IPollService PollService { get; }
         private IScheduleMessageService ScheduleMessageService { get; }
@@ -43,7 +46,7 @@ namespace Zhalobobot.Bot.Services
         private bool IsFirstYearWeekOdd { get; }
 
         public HandleUpdateService(ITelegramBotClient botClient,
-            IZhalobobotApiClient client,
+            IZhalobobotServices client,
             IConversationService conversationService,
             IPollService pollService,
             IScheduleMessageService scheduleMessageService,
@@ -63,7 +66,19 @@ namespace Zhalobobot.Bot.Services
             AdminHandler = adminHandler;
         }
 
-        public async Task EchoAsync(Update update)
+        public Task PollingErrorHandler(ITelegramBotClient _, Exception exception, CancellationToken cancellationToken = default)
+        {
+            var errorMessage = exception switch
+            {
+                ApiRequestException apiRequestException => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
+                _                                       => exception.ToString()
+            };
+
+            Logger.LogInformation("HandleError: {ErrorMessage}", errorMessage);
+            return Task.CompletedTask;
+        }
+
+        public async Task HandleUpdateAsync(ITelegramBotClient _, Update update, CancellationToken cancellationToken = default)
         {
             if (AdminHandler.Accept(update))
             {
@@ -121,6 +136,65 @@ namespace Zhalobobot.Bot.Services
                 await HandleErrorAsync(exception);
             }
         }
+
+        // public async Task EchoAsync(Update update)
+        // {
+        //     if (AdminHandler.Accept(update))
+        //     {
+        //         try
+        //         {
+        //             await AdminHandler.HandleUpdate(update);
+        //         }
+        //         catch (Exception e)
+        //         {
+        //             Logger.LogError(e.Message);
+        //         }
+        //         return;
+        //     }
+        //     
+        //     var chat = update.Message?.Chat;
+        //     if (chat is not null && chat.Type != ChatType.Private)
+        //     {
+        //         // Временно не обрабатываем логику бота в группе.
+        //         return;
+        //     }
+        //
+        //     if (update.Type == UpdateType.MyChatMember && !await CheckIfChatAllowedElseLeave(update))
+        //     {
+        //         return;
+        //     }
+        //
+        //     try
+        //     {
+        //         if (!await StudentHelper.HaveEnoughDataToUseBot(update, BotClient, Client, Cache, ConversationService, BotOnCallbackQueryReceived, StartUsage))
+        //         {
+        //             Logger.LogInformation($"User hasn't enough data to use bot.");
+        //             return;
+        //         }
+        //     }
+        //     catch (CacheNotInitializedException e)
+        //     {
+        //         Logger.LogError(e.ToString());
+        //         return;
+        //     }
+        //
+        //     var handler = update.Type switch
+        //     {
+        //         UpdateType.Message => BotOnMessageReceived(update.Message),
+        //         UpdateType.CallbackQuery => BotOnCallbackQueryReceived(update.CallbackQuery),
+        //         UpdateType.PollAnswer => BotOnPollAnswerReceived(update.PollAnswer),
+        //         _ => UnknownUpdateHandlerAsync(update)
+        //     };
+        //
+        //     try
+        //     {
+        //         await handler;
+        //     }
+        //     catch (Exception exception)
+        //     {
+        //         await HandleErrorAsync(exception);
+        //     }
+        // }
 
         private async Task<bool> CheckIfChatAllowedElseLeave(Update update) 
         {

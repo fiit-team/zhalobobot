@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.FeedbackBot", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Common.Models", "Zhalobobot.Common.Models\Zhalobobot.Common.Models.csproj", "{DBED8A94-3800-4920-AF61-82CA9383B5C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Api.Server", "Zhalobobot.Api.Server\Zhalobobot.Api.Server.csproj", "{3DB1DCB1-AD60-49D1-8794-C2C9503AA68B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Common.Clients", "Zhalobobot.Common.Clients\Zhalobobot.Common.Clients.csproj", "{D36EE8A6-0E91-407E-8522-4F6F61C48820}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zhalobobot.Common.Helpers", "Zhalobobot.Common.Helpers\Zhalobobot.Common.Helpers.csproj", "{6A1E7456-A32F-4197-8863-6BB78706FF72}"
@@ -31,10 +29,6 @@ Global
 		{DBED8A94-3800-4920-AF61-82CA9383B5C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DBED8A94-3800-4920-AF61-82CA9383B5C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DBED8A94-3800-4920-AF61-82CA9383B5C5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3DB1DCB1-AD60-49D1-8794-C2C9503AA68B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3DB1DCB1-AD60-49D1-8794-C2C9503AA68B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3DB1DCB1-AD60-49D1-8794-C2C9503AA68B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3DB1DCB1-AD60-49D1-8794-C2C9503AA68B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D36EE8A6-0E91-407E-8522-4F6F61C48820}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D36EE8A6-0E91-407E-8522-4F6F61C48820}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D36EE8A6-0E91-407E-8522-4F6F61C48820}.Release|Any CPU.ActiveCfg = Release|Any CPU

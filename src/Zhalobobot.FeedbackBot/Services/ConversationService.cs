@@ -9,6 +9,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using Zhalobobot.Bot.Api.Services;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
@@ -29,7 +30,7 @@ namespace Zhalobobot.Bot.Services
     public class ConversationService : IConversationService
     {
         private ITelegramBotClient BotClient { get; }
-        private IZhalobobotApiClient Client { get; }
+        private IZhalobobotServices Client { get; }
         private EntitiesCache Cache { get; }
         private ILogger Logger { get; }
 
@@ -38,7 +39,7 @@ namespace Zhalobobot.Bot.Services
 
         public ConversationService(
             ITelegramBotClient botClient,
-            IZhalobobotApiClient client,
+            IZhalobobotServices client,
             EntitiesCache cache,
             ILogger<ConversationService> logger)
         {
@@ -251,7 +252,7 @@ namespace Zhalobobot.Bot.Services
             foreach (var (feedbackEntity, messageEntities) in conversation.Messages
                 .Select(message => (feedback with { Message = message.Text, MessageId = message.MessageId }, message.Entities)))
             {
-                await Client.Feedback.AddFeedback(new AddFeedbackRequest(feedbackEntity));
+                await Client.Feedback.Add(new AddFeedbackRequest(feedbackEntity));
 
                 var feedbackChatData = Cache.FeedbackChatData;
                 foreach (var feedbackChatInfo in feedbackChatData.All)
@@ -297,9 +298,8 @@ namespace Zhalobobot.Bot.Services
 
             if (!string.IsNullOrWhiteSpace(feedback.Message))
             {
-                var replyMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton
+                var replyMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton(BotMessageHelper.StartReplyDialog)
                 {
-                    Text = BotMessageHelper.StartReplyDialog,
                     CallbackData = CallbackDataPrefix.StartReplyDialog
                 });
                 var sentMessage = await BotClient.SendTextMessageAsync(data.ChatId, feedback.Message, entities: entities, replyMarkup: replyMarkup);

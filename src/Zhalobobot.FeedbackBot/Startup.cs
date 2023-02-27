@@ -5,6 +5,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Quartz;
 using Telegram.Bot;
+using Zhalobobot.Bot.Api.Repositories.Feedback;
+using Zhalobobot.Bot.Api.Repositories.FeedbackChat;
+using Zhalobobot.Bot.Api.Repositories.FiitStudentsData;
+using Zhalobobot.Bot.Api.Repositories.Replies;
+using Zhalobobot.Bot.Api.Repositories.Schedule;
+using Zhalobobot.Bot.Api.Repositories.Students;
+using Zhalobobot.Bot.Api.Repositories.Subjects;
+using Zhalobobot.Bot.Api.Services;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Settings;
 using Zhalobobot.Bot.Quartz.Extensions;
@@ -33,20 +41,19 @@ namespace Zhalobobot.Bot
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddHostedService<ConfigurePolling>();
+
+            services.AddHttpClient("tgpolling")
+                    .AddTypedClient<ITelegramBotClient>(httpClient
+                        => new TelegramBotClient(BotConfig.TelegramBotToken, httpClient));
+
+            ConfigureRepositories(services);
             RegisterQuartz(services, Configuration);
             RegisterServices(services);
             RegisterCache(services);
 
-            services.AddHostedService<ConfigureWebhook>();
-
-            services.AddHttpClient("tgwebhook")
-                    .AddTypedClient<ITelegramBotClient>(httpClient
-                        => new TelegramBotClient(BotConfig.TelegramBotToken, httpClient));
-
             services.AddSingleton(Settings);
-            
-            services.AddSingleton<IZhalobobotApiClient>(
-                new ZhalobobotApiClient(Settings.ServerAddress));
+
 
             services.AddControllers(options => options.UseDateOnlyTimeOnlyStringConverters())
                 .AddJsonOptions(options => options.UseDateOnlyTimeOnlyStringConverters())
@@ -64,16 +71,17 @@ namespace Zhalobobot.Bot
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    "tgwebhook",
-                    $"bot/{BotConfig.TelegramBotToken}",
-                    new { controller = "Webhook", action = "Post" });
+                // endpoints.MapControllerRoute(
+                //     "tgwebhook",
+                //     $"bot/{BotConfig.TelegramBotToken}",
+                //     new { controller = "Webhook", action = "Post" });
                 endpoints.MapControllers();
             });
         }
 
         private static void RegisterServices(IServiceCollection services)
-        {
+        {            
+            services.AddSingleton<IZhalobobotServices, ZhalobobotServices>();
             services.AddSingleton<IPollService, PollService>();
             services.AddSingleton<IConversationService, ConversationService>();
             services.AddSingleton<IScheduleMessageService, ScheduleMessageService>();
@@ -82,6 +90,7 @@ namespace Zhalobobot.Bot
             // todo: put MessageSenderSettings in MessageSender arguments
             services.AddSingleton<MessageSenderSettings>();
             services.AddSingleton<MessageSender>();
+            
         }
 
         private static void RegisterQuartz(IServiceCollection services, IConfiguration configuration)
@@ -90,10 +99,10 @@ namespace Zhalobobot.Bot
             {
                 q.UseMicrosoftDependencyInjectionJobFactory();
 
-                q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
+                // q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
                 
                 q.AddJobAndTrigger<UpdateCacheJob>(SimpleScheduleBuilder.Create().WithIntervalInMinutes(1).RepeatForever());
-                q.AddJobAndTrigger<UpdateScheduleMessageJob>("0 * * * * ?");
+                // q.AddJobAndTrigger<UpdateScheduleMessageJob>("0 * * * * ?");
             });
             
             services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
@@ -101,5 +110,16 @@ namespace Zhalobobot.Bot
 
         private static void RegisterCache(IServiceCollection services)
             => services.AddSingleton<EntitiesCache>();
+
+        private static void ConfigureRepositories(IServiceCollection services)
+        {
+            services.AddSingleton<IFeedbackRepository, FeedbackRepository>();
+            services.AddSingleton<IReplyRepository, ReplyRepository>();
+            services.AddSingleton<ISubjectRepository, SubjectRepository>();
+            services.AddSingleton<IScheduleRepository, ScheduleRepository>();
+            services.AddSingleton<IStudentRepository, StudentRepository>();
+            services.AddSingleton<IFiitStudentsDataRepository, FiitStudentsDataRepository>();
+            services.AddSingleton<IFeedbackChatRepository, FeedbackChatRepository>();
+        }
     }
 }

@@ -2,8 +2,10 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot.Exceptions;
 using Vostok.Commons.Time;
+using Zhalobobot.Bot.Models.Exceptions;
 using Zhalobobot.Common.Models.Serialization;
 using Zhalobobot.TelegramMessageQueue.Core;
+using Zhalobobot.TelegramMessageQueue.Exceptions;
 using Zhalobobot.TelegramMessageQueue.Settings;
 
 namespace Zhalobobot.TelegramMessageQueue;

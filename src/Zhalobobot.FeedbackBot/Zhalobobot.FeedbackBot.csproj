@@ -11,10 +11,11 @@
   <ItemGroup>
 	<PackageReference Include="DateOnlyTimeOnly.AspNet" Version="1.0.2" />
 	<PackageReference Include="Enums.NET" Version="4.0.0" />
+	<PackageReference Include="Google.Apis.Sheets.v4" Version="1.56.0.2371" />
 	<PackageReference Include="Quartz" Version="3.3.3" />
 	<PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.3.3" />
 	<PackageReference Include="Quartz.Extensions.Hosting" Version="3.3.3" />
-	<PackageReference Include="Telegram.Bot" Version="16.0.2" />
+	<PackageReference Include="Telegram.Bot" Version="18.0.0" />
 	<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.2" />
   </ItemGroup>
 
@@ -28,6 +29,10 @@
     <ProjectReference Include="..\..\Zhalobobot.Common.Clients\Zhalobobot.Common.Clients.csproj" />
     <ProjectReference Include="..\..\Zhalobobot.Common.Models\Zhalobobot.Common.Models.csproj" />
     <ProjectReference Include="..\..\Zhalobobot.TelegramMessageQueue\Zhalobobot.TelegramMessageQueue.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Api" />
   </ItemGroup>
 	
 </Project>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Zhalobobot.Bot.Api.Services;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Clients.Core.Extensions;
 using Zhalobobot.Common.Helpers.Extensions;
@@ -26,16 +27,16 @@ namespace Zhalobobot.Bot.Cache
 
         private readonly IEntityCacheContainer[] allContainersToUpdate;
 
-        public EntitiesCache(IZhalobobotApiClient client)
+        public EntitiesCache(IZhalobobotServices client)
         {
-            schedule = new EntityCacheContainer<Common.Models.Schedule.Schedule, ScheduleItemCache>(() => client.Schedule.GetAll().GetResult(), s => s.ShouldBeUpdated ? new ScheduleItemCache(s.Items) : ScheduleItems);
-            students = new EntityCacheContainer<Student, StudentCache>(() => client.Student.GetAll().GetResult(), items => new StudentCache(items));
-            subjects = new EntityCacheContainer<Subject, SubjectCache>(() => client.Subject.GetAll().GetResult(), items => new SubjectCache(items));
-            studentsData = new EntityCacheContainer<StudentData, StudentDataCache>(() => client.Student.GetAllData().GetResult(), items => new StudentDataCache(items));
-            daysWithoutPairs = new EntityCacheContainer<DayWithoutPairs, DaysWithoutPairsCache>(() => client.Schedule.GetDaysWithoutPairs().GetResult(), items => new DaysWithoutPairsCache(items));
-            feedbackChatData = new EntityCacheContainer<FeedbackChatDataDto, FeedbackChatDataCache>(() => client.FeedbackChat.GetAll().GetResult(), items => items.ShouldBeUpdated ? new FeedbackChatDataCache(items.Data) : FeedbackChatData);
+            schedule = new EntityCacheContainer<Common.Models.Schedule.Schedule, ScheduleItemCache>(() => client.Schedule.GetAll(), s => s.ShouldBeUpdated ? new ScheduleItemCache(s.Items) : ScheduleItems);
+            students = new EntityCacheContainer<Student, StudentCache>(() => client.Student.GetAll(), items => new StudentCache(items));
+            subjects = new EntityCacheContainer<Subject, SubjectCache>(() => client.Subject.GetAll(), items => new SubjectCache(items));
+            studentsData = new EntityCacheContainer<StudentData, StudentDataCache>(() => client.Student.GetAllData(), items => new StudentDataCache(items));
+            daysWithoutPairs = new EntityCacheContainer<DayWithoutPairs, DaysWithoutPairsCache>(() => client.Schedule.GetDaysWithoutPairs(), items => new DaysWithoutPairsCache(items));
+            feedbackChatData = new EntityCacheContainer<FeedbackChatDataDto, FeedbackChatDataCache>(() => client.FeedbackChat.GetAll(), items => items.ShouldBeUpdated ? new FeedbackChatDataCache(items.Data) : FeedbackChatData);
             
-            replies = new EntityCacheContainer<Reply, RepliesCache>(() => client.Reply.GetAll().GetResult(), items => new RepliesCache(items));
+            replies = new EntityCacheContainer<Reply, RepliesCache>(() => client.Reply.GetAll(), items => new RepliesCache(items));
             replies.Update(true).Wait();
 
             allContainersToUpdate = new IEntityCacheContainer[]
