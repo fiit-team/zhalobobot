@@ -204,7 +204,7 @@ namespace Zhalobobot.Bot.Services
             }
 
             var chatId = update.MyChatMember.Chat.Id;
-            if (Cache.FeedbackChatData.All.All(x => x.ChatId != chatId))
+            if (chatId < 0 && Cache.FeedbackChatData.All.All(x => x.ChatId != chatId))
             {
                 await BotClient.SendTextMessageAsync(chatId, BotMessageHelper.ChatIsNotSupported);
                 await BotClient.LeaveChatAsync(chatId);
