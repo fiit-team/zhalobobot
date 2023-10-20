@@ -3,20 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Vostok.Hosting.Abstractions;
+using Vostok.Hosting.Abstractions.Requirements;
 using Zhalobobot.Bot.Api.Repositories.Common;
+using Zhalobobot.Bot.Settings;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Student;
 
 namespace Zhalobobot.Bot.Api.Repositories.Students;
 
+[RequiresSecretConfiguration(typeof(BotSecrets))]
 public class StudentRepository : GoogleSheetsRepositoryBase, IStudentRepository
 {
     private string StudentsRange { get; }
 
-    public StudentRepository(IConfiguration configuration) 
-        : base(configuration, configuration["FeedbackSpreadSheetId"])
+    public StudentRepository(IVostokHostingEnvironment environment) 
+        : base(environment, environment.SecretConfigurationProvider.Get<BotSecrets>().FeedbackSpreadSheetId)
     {
-        StudentsRange = configuration["StudentsRange"];
+        StudentsRange = environment.SecretConfigurationProvider.Get<BotSecrets>().StudentsRange;
     }
 
     public async Task Add(Student student)

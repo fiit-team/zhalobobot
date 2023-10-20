@@ -248,23 +248,29 @@ namespace Zhalobobot.Bot.Services
             {
                 conversation.Messages = new List<Message> { new Message { MessageId = messageId } };
             }
+            
+            Logger.LogInformation($"Messages: {conversation.Messages.ToPrettyJson()}");
 
-            foreach (var (feedbackEntity, messageEntities) in conversation.Messages
-                .Select(message => (feedback with { Message = message.Text, MessageId = message.MessageId }, message.Entities)))
+            var firstMessage = true;
+            foreach (var message in conversation.Messages)
             {
-                await Client.Feedback.Add(new AddFeedbackRequest(feedbackEntity));
+                Logger.LogInformation($"Start working with {message.ToPrettyJson()}");
+                var newFeedback = feedback with { Message = message.Text, MessageId = message.MessageId };
+                await Client.Feedback.Add(new AddFeedbackRequest(newFeedback));
 
                 var feedbackChatData = Cache.FeedbackChatData;
                 foreach (var feedbackChatInfo in feedbackChatData.All)
                 {
-                    await ProcessFeedbackChatSending(feedbackChatInfo, feedbackEntity, chatId, messageEntities);
+                    await ProcessFeedbackChatSending(feedbackChatInfo, newFeedback, chatId, message.Entities, firstMessage);
                 }
+
+                firstMessage = false;
             }
 
             Logger.LogInformation($"Saved feedback in repository. ChatId {chatId}.");
         }
 
-        private async Task ProcessFeedbackChatSending(FeedbackChatData data, Feedback feedback, long chatId, IEnumerable<MessageEntity>? entities)
+        private async Task ProcessFeedbackChatSending(FeedbackChatData data, Feedback feedback, long chatId, IEnumerable<MessageEntity>? entities, bool firstMessage)
         {
             Logger.LogInformation($"Start processing feedback for chat {data.ChatId}. Feedback {feedback.ToPrettyJson()}. Settings {data.ToPrettyJson()}");
 
@@ -287,21 +293,44 @@ namespace Zhalobobot.Bot.Services
                 && x.Group != feedback.Student.Group
                 && (!x.Subgroup.HasValue || x.Subgroup != feedback.Student.Subgroup)))
             {
-                Logger.LogInformation($"Failed Student Check. ChatId {data.ChatId}");
+                Logger.LogInformation($"Failed Student Check. ChatId {data.ChatId}.");
                 return;
             }
 
-            await BotClient.SendTextMessageAsync(
-                data.ChatId,
-                message,
-                parseMode: ParseMode.Html);
+            var replyMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton(BotMessageHelper.StartReplyDialog)
+            {
+                CallbackData = CallbackDataPrefix.StartReplyDialog
+            });
+
+            if (string.IsNullOrWhiteSpace(feedback.Message))
+            {
+                var sentMessage = await BotClient.SendTextMessageAsync(
+                    data.ChatId,
+                    message,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: replyMarkup);
+
+                var reply = new Reply(
+                    feedback.Student.Id, feedback.Student.Username,
+                    chatId, feedback.MessageId, feedback.Message,
+                    sentMessage.Chat.Id, sentMessage.MessageId);
+
+                Cache.Replies.Add(reply);
+                await Client.Reply.Add(new AddReplyRequest(reply));
+            }
+            else
+            {
+                if (firstMessage)
+                {
+                    await BotClient.SendTextMessageAsync(
+                        data.ChatId,
+                        message,
+                        parseMode: ParseMode.Html);
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(feedback.Message))
             {
-                var replyMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton(BotMessageHelper.StartReplyDialog)
-                {
-                    CallbackData = CallbackDataPrefix.StartReplyDialog
-                });
                 var sentMessage = await BotClient.SendTextMessageAsync(data.ChatId, feedback.Message, entities: entities, replyMarkup: replyMarkup);
                 var reply = new Reply(
                     feedback.Student.Id, feedback.Student.Username,
@@ -312,7 +341,7 @@ namespace Zhalobobot.Bot.Services
                 await Client.Reply.Add(new AddReplyRequest(reply));
             }
             
-            Logger.LogInformation($"Send feedback to chat {chatId} successfully.");
+            Logger.LogInformation($"Send feedback to chat {data.ChatId} successfully.");
         }
 
         private string FormFeedbackMessage(Feedback feedback, FeedbackChatData data)

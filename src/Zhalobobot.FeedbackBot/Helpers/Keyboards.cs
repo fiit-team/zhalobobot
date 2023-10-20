@@ -26,15 +26,19 @@ namespace Zhalobobot.Bot.Helpers
         //     ResizeKeyboard = true
         // };
 
-        public static ReplyKeyboardMarkup DefaultKeyboard()
+        public static ReplyKeyboardMarkup DefaultKeyboard(Student student)
         {
-            var buttons = new List<KeyboardButton[]>
-            {
-                // new KeyboardButton[] { Buttons.Schedule },
+            var buttons = new List<KeyboardButton[]>();
+            // if (student.Course < Course.Third)
+            // {
+            //     buttons.Add(new KeyboardButton[] { Buttons.Schedule });
+            // }
+            
+            buttons.AddRange(new[] {
                 new KeyboardButton[] { Buttons.Subjects },
                 new KeyboardButton[] { Buttons.GeneralFeedback },
                 new KeyboardButton[] { Buttons.Alarm }
-            };
+            });
             
             return new ReplyKeyboardMarkup(buttons)
             {
@@ -103,50 +107,53 @@ namespace Zhalobobot.Bot.Helpers
                 }
             };
 
-        public static InlineKeyboardMarkup GetSubjectCategoryKeyboard =>  
-            new (Enum.GetValues<SubjectCategory>()
-                    .Select(category => new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData(
-                            category.AsString(EnumFormat.Description),
-                            string.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, category))
-                    }));
-
-        public static InlineKeyboardMarkup ChooseScheduleDayKeyboard(DayOfWeek lastStudyWeekDay)
+        public static InlineKeyboardMarkup GetSubjectCategoryKeyboard(IEnumerable<Subject> subjects)
         {
-            var currentDay = DateHelper.EkbTime.DayOfWeek;
-
-            var keyboard = new List<InlineKeyboardButton[]>();
-
-            if (currentDay <= lastStudyWeekDay && currentDay != DayOfWeek.Sunday)
-                keyboard.Add(new [] { CreateButton("На сегодня", (int)currentDay) });
-            // todo: починить кнопки (сделать так, чтобы если в каком-то дне нет пар, пропускать его)
-            if (currentDay == DayOfWeek.Sunday)
-            {
-                keyboard.Add(new[] { CreateButton("На завтра", (int)ScheduleDay.NextMonday) });
-                keyboard.Add(new[] { CreateButton("На следующую неделю", (int)ScheduleDay.NextWeek) });
-            }
-            else if (currentDay < lastStudyWeekDay)
-            {
-                keyboard.Add(new[] { CreateButton("На завтра", (int)currentDay + 1) });
-            }
-            else
-            {
-                keyboard.Add(new[] { CreateButton("На понедельник", (int)ScheduleDay.NextMonday) });
-                keyboard.Add(new[] { CreateButton("На следующую неделю", (int)ScheduleDay.NextWeek) });
-            }
-
-            if ((int)currentDay + 1 < (int)lastStudyWeekDay && currentDay != DayOfWeek.Sunday)
-                keyboard.Add(new [] { CreateButton("До конца недели", (int)ScheduleDay.UntilWeekEnd) });
-
-            keyboard.Add(new [] { CreateButton("На эту неделю", (int)ScheduleDay.FullWeek) });
-
-            return new InlineKeyboardMarkup(keyboard);
-
-            InlineKeyboardButton CreateButton(string text, int scheduleDay)
-                => InlineKeyboardButton.WithCallbackData(text,
-                    string.Join(Strings.Separator, CallbackDataPrefix.ChooseScheduleRange, $"{scheduleDay}"));
+            var set = subjects.Select(x => x.Category).ToHashSet();
+            return new InlineKeyboardMarkup(Enum.GetValues<SubjectCategory>().Where(set.Contains)
+                .Select(category => new[]
+                {
+                    InlineKeyboardButton.WithCallbackData(
+                        category.AsString(EnumFormat.Description),
+                        string.Join(Strings.Separator, CallbackDataPrefix.SubjectCategory, category))
+                }));
         }
+
+        // public static InlineKeyboardMarkup ChooseScheduleDayKeyboard(DayOfWeek lastStudyWeekDay)
+        // {
+        //     var currentDay = DateHelper.EkbTime.DayOfWeek;
+        //
+        //     var keyboard = new List<InlineKeyboardButton[]>();
+        //
+        //     if (currentDay <= lastStudyWeekDay && currentDay != DayOfWeek.Sunday)
+        //         keyboard.Add(new [] { CreateButton("На сегодня", (int)currentDay) });
+        //     // todo: починить кнопки (сделать так, чтобы если в каком-то дне нет пар, пропускать его)
+        //     if (currentDay == DayOfWeek.Sunday)
+        //     {
+        //         keyboard.Add(new[] { CreateButton("На завтра", (int)ScheduleDay.NextMonday) });
+        //         keyboard.Add(new[] { CreateButton("На следующую неделю", (int)ScheduleDay.NextWeek) });
+        //     }
+        //     else if (currentDay < lastStudyWeekDay)
+        //     {
+        //         keyboard.Add(new[] { CreateButton("На завтра", (int)currentDay + 1) });
+        //     }
+        //     else
+        //     {
+        //         keyboard.Add(new[] { CreateButton("На понедельник", (int)ScheduleDay.NextMonday) });
+        //         keyboard.Add(new[] { CreateButton("На следующую неделю", (int)ScheduleDay.NextWeek) });
+        //     }
+        //
+        //     if ((int)currentDay + 1 < (int)lastStudyWeekDay && currentDay != DayOfWeek.Sunday)
+        //         keyboard.Add(new [] { CreateButton("До конца недели", (int)ScheduleDay.UntilWeekEnd) });
+        //
+        //     keyboard.Add(new [] { CreateButton("На эту неделю", (int)ScheduleDay.FullWeek) });
+        //
+        //     return new InlineKeyboardMarkup(keyboard);
+        //
+        //     InlineKeyboardButton CreateButton(string text, int scheduleDay)
+        //         => InlineKeyboardButton.WithCallbackData(text,
+        //             string.Join(Strings.Separator, CallbackDataPrefix.ChooseScheduleRange, $"{scheduleDay}"));
+        // }
         
         public static InlineKeyboardMarkup GetSubjectsKeyboard(IEnumerable<Subject> subjects)
             => GetSubjectsKeyboard(subjects.Select(s => s.Name));

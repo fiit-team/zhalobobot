@@ -3,19 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Vostok.Hosting.Abstractions;
+using Vostok.Hosting.Abstractions.Requirements;
 using Zhalobobot.Bot.Api.Repositories.Common;
+using Zhalobobot.Bot.Settings;
 using Zhalobobot.Common.Models.FeedbackChat;
 
 namespace Zhalobobot.Bot.Api.Repositories.FeedbackChat;
 
+[RequiresSecretConfiguration(typeof(BotSecrets))]
 public class FeedbackChatRepository : GoogleSheetsRepositoryBase, IFeedbackChatRepository
 {
     private string FeedbackChatDataRange { get; }
 
-    public FeedbackChatRepository(IConfiguration configuration) 
-        : base(configuration, configuration["FeedbackSpreadSheetId"])
+    public FeedbackChatRepository(IVostokHostingEnvironment environment) 
+        : base(environment, environment.SecretConfigurationProvider.Get<BotSecrets>().FeedbackSpreadSheetId)
     {
-        FeedbackChatDataRange = configuration["FeedbackChatDataRange"];
+        FeedbackChatDataRange = environment.SecretConfigurationProvider.Get<BotSecrets>().FeedbackChatDataRange;
     }
 
     public async Task<(bool ShouldBeUpdated, IEnumerable<FeedbackChatData>)> GetAll()

@@ -21,7 +21,7 @@ namespace Zhalobobot.Bot.Services.Handlers
         private IZhalobobotServices Client { get; }
         private IConversationService ConversationService { get; }
         private IPollService PollService { get; }
-        private IScheduleMessageService ScheduleMessageService { get; }
+        // private IScheduleMessageService ScheduleMessageService { get; }
         private ILogger<UpdateHandlerAdmin> Logger { get; }
         private EntitiesCache Cache { get; }
         private Settings.Settings Settings { get; }
@@ -31,7 +31,7 @@ namespace Zhalobobot.Bot.Services.Handlers
             IZhalobobotServices client,
             IConversationService conversationService,
             IPollService pollService,
-            IScheduleMessageService scheduleMessageService,
+            // IScheduleMessageService scheduleMessageService,
             EntitiesCache cache,
             ILogger<UpdateHandlerAdmin> logger,
             Settings.Settings settings)
@@ -40,7 +40,7 @@ namespace Zhalobobot.Bot.Services.Handlers
             Client = client ?? throw new ArgumentNullException(nameof(client));
             ConversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
             PollService = pollService ?? throw new ArgumentNullException(nameof(pollService));
-            ScheduleMessageService = scheduleMessageService;
+            // ScheduleMessageService = scheduleMessageService;
             Cache = cache;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -96,7 +96,7 @@ namespace Zhalobobot.Bot.Services.Handlers
                 return;
             }
             
-            if (replyToMessage.ReplyMarkup.InlineKeyboard.SelectMany(b => b).Any(b => BotMessageHelper.IsReplyDialogNorForUser(b.Text, message.From.Username)))
+            if (replyToMessage.ReplyMarkup != null && replyToMessage.ReplyMarkup.InlineKeyboard.SelectMany(b => b).Any(b => BotMessageHelper.IsReplyDialogNorForUser(b.Text, message.From.Username)))
             {
                 // todo: добавить id пользователя в callback и сравнивать их, а не имена пользователей (т.к. они есть не всегда)
                 await BotClient.SendTextMessageAsync(replyToMessage.Chat.Id,
@@ -127,7 +127,7 @@ namespace Zhalobobot.Bot.Services.Handlers
                 entities: entities);
 
             var newReply = new Reply(
-                message.From.Id, message.From.Username, message.Chat.Id,
+                message.From.Id, message.From.Username ?? "", message.Chat.Id,
                 message.MessageId, message.Text,
                 sentMessage.Chat.Id, sentMessage.MessageId);
 

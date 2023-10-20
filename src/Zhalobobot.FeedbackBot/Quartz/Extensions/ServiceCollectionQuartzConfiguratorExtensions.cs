@@ -2,6 +2,8 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Configuration;
 using Quartz;
+using Vostok.Hosting.Abstractions.Requirements;
+using Zhalobobot.Bot.Settings;
 
 namespace Zhalobobot.Bot.Quartz.Extensions
 {
@@ -10,11 +12,9 @@ namespace Zhalobobot.Bot.Quartz.Extensions
         public static void AddJobAndTrigger<T>(
             this IServiceCollectionQuartzConfigurator quartz,
             string triggerName,
-            IConfiguration config)
+            string cronSchedule)
             where T : IJob
         {
-            var cronSchedule = config[$"Quartz:{triggerName}"];
-
             if (string.IsNullOrEmpty(cronSchedule))
                 throw new ValidationException($"No Quartz.NET Cron schedule found in configuration at Quartz:{triggerName}");
 

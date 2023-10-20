@@ -9,7 +9,7 @@
         public const string AddCourseAndGroup = "addCourseAndGroup";
         public const string AddCourseAndGroupAndSubgroup = "addCourseAndGroupAndSubgroup";
         public const string Feedback = "feedback";
-        public const string ChooseScheduleRange = "chooseScheduleRange";
+        // public const string ChooseScheduleRange = "chooseScheduleRange";
         public const string PaginationButton = "PaginationButton";
         public const string PaginationItemButton = "PaginationItemButton";
         public const string InternalDoNothing = "InternalDoNothing";

@@ -3,24 +3,25 @@ using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Vostok.Hosting.Abstractions;
+using Vostok.Hosting.Abstractions.Requirements;
 using Zhalobobot.Bot.Api.Repositories.Common;
+using Zhalobobot.Bot.Settings;
 using Zhalobobot.Common.Models.Helpers;
 
 namespace Zhalobobot.Bot.Api.Repositories.Feedback;
 
+[RequiresSecretConfiguration(typeof(BotSecrets))]
 public class FeedbackRepository : GoogleSheetsRepositoryBase, IFeedbackRepository
 {
-    private IConfiguration Configuration { get; }
     private ILogger<FeedbackRepository> Logger { get; }
     private string FeedbackRange { get; }
 
-    public FeedbackRepository(
-        IConfiguration configuration, ILogger<FeedbackRepository> logger)
-        : base(configuration, configuration["FeedbackSpreadSheetId"])
+    public FeedbackRepository(IVostokHostingEnvironment environment, ILogger<FeedbackRepository> logger)
+        : base(environment, environment.SecretConfigurationProvider.Get<BotSecrets>().FeedbackSpreadSheetId)
     {
-        Configuration = configuration;
         Logger = logger;
-        FeedbackRange = configuration["FeedbackRange"];
+        FeedbackRange = environment.SecretConfigurationProvider.Get<BotSecrets>().FeedbackRange;
     }
 
     public async Task Add(Zhalobobot.Common.Models.Feedback.Feedback feedback)

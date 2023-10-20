@@ -1,22 +1,25 @@
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+using Vostok.Hosting.Abstractions;
+using Vostok.Hosting.Abstractions.Requirements;
 using Zhalobobot.Bot.Api.Repositories.Common;
+using Zhalobobot.Bot.Settings;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Helpers;
 using Zhalobobot.Common.Models.Subject;
 
 namespace Zhalobobot.Bot.Api.Repositories.Subjects;
 
+[RequiresSecretConfiguration(typeof(BotSecrets))]
 public class SubjectRepository : GoogleSheetsRepositoryBase, ISubjectRepository
 {
     private string SubjectsRange { get; }
 
-    public SubjectRepository(IConfiguration configuration)
-        : base(configuration, configuration["ScheduleSpreadSheetId"])
+    public SubjectRepository(IVostokHostingEnvironment environment)
+        : base(environment, environment.SecretConfigurationProvider.Get<BotSecrets>().ScheduleSpreadSheetId)
     {
-        SubjectsRange = configuration["SubjectsRange"];
+        SubjectsRange = environment.SecretConfigurationProvider.Get<BotSecrets>().SubjectsRange;
     }
 
     public async Task<Subject[]> GetAll()

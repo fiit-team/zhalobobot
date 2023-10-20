@@ -2,20 +2,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Vostok.Hosting.Abstractions;
+using Vostok.Hosting.Abstractions.Requirements;
 using Zhalobobot.Bot.Api.Repositories.Common;
+using Zhalobobot.Bot.Settings;
 using Zhalobobot.Common.Models.Commons;
 using Zhalobobot.Common.Models.Student;
 using Zhalobobot.Common.Models.UserCommon;
 
 namespace Zhalobobot.Bot.Api.Repositories.FiitStudentsData;
 
+[RequiresSecretConfiguration(typeof(BotSecrets))]
 public class FiitStudentsDataRepository : GoogleSheetsRepositoryBase, IFiitStudentsDataRepository
 {
     private string StudentsDataRange { get; }
-    public FiitStudentsDataRepository(IConfiguration configuration) 
-        : base(configuration, configuration["FiitStudentsDataSpreadSheetId"])
+    public FiitStudentsDataRepository(IVostokHostingEnvironment environment) 
+        : base(environment, environment.SecretConfigurationProvider.Get<BotSecrets>().FiitStudentsDataSpreadSheetId)
     {
-        StudentsDataRange = configuration["StudentsDataRange"];
+        StudentsDataRange = environment.SecretConfigurationProvider.Get<BotSecrets>().StudentsDataRange;
     }
 
     public async Task<IEnumerable<StudentData>> GetAll()

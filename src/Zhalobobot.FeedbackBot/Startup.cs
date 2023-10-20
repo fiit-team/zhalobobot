@@ -9,7 +9,7 @@ using Zhalobobot.Bot.Api.Repositories.Feedback;
 using Zhalobobot.Bot.Api.Repositories.FeedbackChat;
 using Zhalobobot.Bot.Api.Repositories.FiitStudentsData;
 using Zhalobobot.Bot.Api.Repositories.Replies;
-using Zhalobobot.Bot.Api.Repositories.Schedule;
+// using Zhalobobot.Bot.Api.Repositories.Schedule;
 using Zhalobobot.Bot.Api.Repositories.Students;
 using Zhalobobot.Bot.Api.Repositories.Subjects;
 using Zhalobobot.Bot.Api.Services;
@@ -17,26 +17,26 @@ using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Settings;
 using Zhalobobot.Bot.Quartz.Extensions;
 using Zhalobobot.Bot.Quartz.Jobs;
-using Zhalobobot.Bot.Schedule;
+// using Zhalobobot.Bot.Schedule;
 using Zhalobobot.Bot.Services;
 using Zhalobobot.Bot.Services.Handlers;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.TelegramMessageQueue;
-using Zhalobobot.TelegramMessageQueue.Settings;
+// using Zhalobobot.TelegramMessageQueue.Settings;
 
 namespace Zhalobobot.Bot
 {
     public class Startup
     {
-        public IConfiguration Configuration { get; }
+        public BotSecrets Secrets { get; }
         private BotConfiguration BotConfig { get; }
         private Settings.Settings Settings { get; }
 
-        public Startup(IConfiguration configuration)
+        public Startup(BotSecrets secrets)
         {
-            Configuration = configuration;
-            BotConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>();
-            Settings = configuration.GetSection("Settings").Get<Settings.Settings>();
+            Secrets = secrets;
+            BotConfig = secrets.BotConfiguration;
+            Settings = secrets.Settings;
         }
 
         public void ConfigureServices(IServiceCollection services)
@@ -48,7 +48,7 @@ namespace Zhalobobot.Bot
                         => new TelegramBotClient(BotConfig.TelegramBotToken, httpClient));
 
             ConfigureRepositories(services);
-            RegisterQuartz(services, Configuration);
+            RegisterQuartz(services);
             RegisterServices(services);
             RegisterCache(services);
 
@@ -84,22 +84,22 @@ namespace Zhalobobot.Bot
             services.AddSingleton<IZhalobobotServices, ZhalobobotServices>();
             services.AddSingleton<IPollService, PollService>();
             services.AddSingleton<IConversationService, ConversationService>();
-            services.AddSingleton<IScheduleMessageService, ScheduleMessageService>();
+            // services.AddSingleton<IScheduleMessageService, ScheduleMessageService>();
             services.AddScoped<UpdateHandlerAdmin>();
             services.AddScoped<HandleUpdateService>();
             // todo: put MessageSenderSettings in MessageSender arguments
-            services.AddSingleton<MessageSenderSettings>();
-            services.AddSingleton<MessageSender>();
+            // services.AddSingleton<MessageSenderSettings>();
+            // services.AddSingleton<MessageSender>();
             
         }
 
-        private static void RegisterQuartz(IServiceCollection services, IConfiguration configuration)
+        private void RegisterQuartz(IServiceCollection services)
         {
             services.AddQuartz(q =>
             {
                 q.UseMicrosoftDependencyInjectionJobFactory();
 
-                // q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", configuration);
+                // q.AddJobAndTrigger<NotifyStudentsJob>("NotifyDuringStudyYearTrigger", Secrets.Quartz.NotifyDuringStudyYearTrigger);
                 
                 q.AddJobAndTrigger<UpdateCacheJob>(SimpleScheduleBuilder.Create().WithIntervalInMinutes(1).RepeatForever());
                 // q.AddJobAndTrigger<UpdateScheduleMessageJob>("0 * * * * ?");
@@ -116,7 +116,7 @@ namespace Zhalobobot.Bot
             services.AddSingleton<IFeedbackRepository, FeedbackRepository>();
             services.AddSingleton<IReplyRepository, ReplyRepository>();
             services.AddSingleton<ISubjectRepository, SubjectRepository>();
-            services.AddSingleton<IScheduleRepository, ScheduleRepository>();
+            // services.AddSingleton<IScheduleRepository, ScheduleRepository>();
             services.AddSingleton<IStudentRepository, StudentRepository>();
             services.AddSingleton<IFiitStudentsDataRepository, FiitStudentsDataRepository>();
             services.AddSingleton<IFeedbackChatRepository, FeedbackChatRepository>();

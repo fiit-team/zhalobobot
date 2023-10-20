@@ -9,13 +9,16 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Vostok.Hosting.Abstractions;
+using Vostok.Hosting.Abstractions.Requirements;
 using Zhalobobot.Bot.Api.Services;
 using Zhalobobot.Bot.Cache;
 using Zhalobobot.Bot.Helpers;
 using Zhalobobot.Bot.Models;
 using Zhalobobot.Bot.Models.Exceptions;
-using Zhalobobot.Bot.Schedule;
+// using Zhalobobot.Bot.Schedule;
 using Zhalobobot.Bot.Services.Handlers;
+using Zhalobobot.Bot.Settings;
 using Zhalobobot.Common.Clients.Core;
 using Zhalobobot.Common.Helpers.Extensions;
 using Zhalobobot.Common.Models.Commons;
@@ -31,13 +34,14 @@ using Zhalobobot.Common.Models.Reply.Requests;
 
 namespace Zhalobobot.Bot.Services
 {
+    [RequiresSecretConfiguration(typeof(BotSecrets))]
     public class HandleUpdateService
     {
         private ITelegramBotClient BotClient { get; }
         private IZhalobobotServices Client { get; }
         private IConversationService ConversationService { get; }
         private IPollService PollService { get; }
-        private IScheduleMessageService ScheduleMessageService { get; }
+        // private IScheduleMessageService ScheduleMessageService { get; }
         private ILogger<HandleUpdateService> Logger { get; }
         private EntitiesCache Cache { get; }
 
@@ -49,20 +53,20 @@ namespace Zhalobobot.Bot.Services
             IZhalobobotServices client,
             IConversationService conversationService,
             IPollService pollService,
-            IScheduleMessageService scheduleMessageService,
+            // IScheduleMessageService scheduleMessageService,
             EntitiesCache cache,
             ILogger<HandleUpdateService> logger, 
-            IConfiguration configuration,
+            IVostokHostingEnvironment environment,
             UpdateHandlerAdmin adminHandler)
         {
             BotClient = botClient ?? throw new ArgumentNullException(nameof(botClient));
             Client = client ?? throw new ArgumentNullException(nameof(client));
             ConversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
             PollService = pollService ?? throw new ArgumentNullException(nameof(pollService));
-            ScheduleMessageService = scheduleMessageService;
+            // ScheduleMessageService = scheduleMessageService;
             Cache = cache;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            IsFirstYearWeekOdd = bool.Parse(configuration["IsFirstYearWeekOdd"]);
+            IsFirstYearWeekOdd = environment.SecretConfigurationProvider.Get<BotSecrets>().IsFirstYearWeekOdd;
             AdminHandler = adminHandler;
         }
 
@@ -234,7 +238,7 @@ namespace Zhalobobot.Bot.Services
                 Buttons.Alarm => HandleAlertFeedbackAsync(BotClient, message),
                 Buttons.Subjects => HandleSubjectsAsync(BotClient, message),
                 Buttons.GeneralFeedback => HandleGeneralFeedbackAsync(BotClient, message),
-                Buttons.Schedule => HandleScheduleAsync(BotClient, message),
+                // Buttons.Schedule => HandleScheduleAsync(BotClient, message),
                 Buttons.Submit => SendFeedbackAsync(BotClient, message),
                 Buttons.MainMenu => CancelFeedbackAsync(BotClient, message),
                 _ => conversationStatus == ConversationStatus.Default
@@ -337,24 +341,24 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 message.Chat.Id,
                 "Выбери категорию",
-                replyMarkup: Keyboards.GetSubjectCategoryKeyboard);
+                replyMarkup: Keyboards.GetSubjectCategoryKeyboard(Cache.Subjects.Get(student.Course)));
         }
 
-        private async Task<Message> HandleScheduleAsync(ITelegramBotClient bot, Message message)
-        {
-            var student = Cache.Students.Get(message.Chat.Id);
-
-            var lastStudyWeekDay = Cache
-                .ActualWeekSchedule(student, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd), DateHelper.MondayDate)
-                .LastStudyWeekDay();
-
-            await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-
-            return await bot.SendTextMessageAsync(
-                message.Chat.Id,
-                "Выбери нужный вариант\nТекущая неделя " + (DateHelper.CurrentWeekParity(IsFirstYearWeekOdd) == WeekParity.Even ? "четная" : "нечетная"),
-                replyMarkup: Keyboards.ChooseScheduleDayKeyboard(lastStudyWeekDay));
-        }
+        // private async Task<Message> HandleScheduleAsync(ITelegramBotClient bot, Message message)
+        // {
+        //     var student = Cache.Students.Get(message.Chat.Id);
+        //
+        //     var lastStudyWeekDay = Cache
+        //         .ActualWeekSchedule(student, DateHelper.CurrentWeekParity(IsFirstYearWeekOdd), DateHelper.MondayDate)
+        //         .LastStudyWeekDay();
+        //
+        //     await bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
+        //
+        //     return await bot.SendTextMessageAsync(
+        //         message.Chat.Id,
+        //         "Выбери нужный вариант\nТекущая неделя " + (DateHelper.CurrentWeekParity(IsFirstYearWeekOdd) == WeekParity.Even ? "четная" : "нечетная"),
+        //         replyMarkup: Keyboards.ChooseScheduleDayKeyboard(lastStudyWeekDay));
+        // }
 
         private async Task SaveFeedbackAsync(ITelegramBotClient bot, Message message)
         {
@@ -366,7 +370,8 @@ namespace Zhalobobot.Bot.Services
 
             await bot.SendTextMessageAsync(
                 message.Chat.Id,
-                text);
+                text,
+                replyMarkup: Keyboards.SubmitKeyboard);
         }
 
         private async Task SendFeedbackAsync(ITelegramBotClient bot, Message message)
@@ -375,8 +380,9 @@ namespace Zhalobobot.Bot.Services
 
             var conversationStatus = ConversationService.GetConversationStatus(message.Chat.Id);
 
+            var student = Cache.Students.Get(message.Chat.Id);
             string text;
-            var replyMarkup = Keyboards.DefaultKeyboard();
+            var replyMarkup = Keyboards.DefaultKeyboard(student);
 
             if (conversationStatus == ConversationStatus.AwaitingConfirmation)
             {
@@ -440,9 +446,9 @@ namespace Zhalobobot.Bot.Services
                 case CallbackDataPrefix.Feedback:
                     await HandleFeedbackCallback(chatId, data, messageId).ConfigureAwait(false);
                     break;
-                case CallbackDataPrefix.ChooseScheduleRange:
-                    await HandleChooseScheduleRange(chatId, data, messageId).ConfigureAwait(false);
-                    break;
+                // case CallbackDataPrefix.ChooseScheduleRange:
+                    // await HandleChooseScheduleRange(chatId, data, messageId).ConfigureAwait(false);
+                    // break;
                 case CallbackDataPrefix.PaginationButton:
                     await HandlePaginationButtonCallback(chatId, data, messageId);
                     break;
@@ -663,35 +669,35 @@ namespace Zhalobobot.Bot.Services
             await StartPoll(chatId, status == ConversationStatus.AwaitingLikedPointsPollAnswer);
         }
 
-        public async Task HandleChooseScheduleRange(long chatId, string data, int messageId)
-        {
-            var student = Cache.Students.Get(chatId);
-            
-            var scheduleDay = (ScheduleDay)int.Parse(data);
-            
-            var actualSchedule = Cache
-                .ActualWeekSchedule(
-                    student, 
-                    scheduleDay.IsCurrentWeek() 
-                        ? DateHelper.CurrentWeekParity(IsFirstYearWeekOdd) 
-                        : DateHelper.NextWeekParity(IsFirstYearWeekOdd),
-                    scheduleDay.IsCurrentWeek() 
-                        ? DateHelper.MondayDate
-                        : DateHelper.NextMondayDate
-                 )
-                .ToArray();
-            
-            var formattedMessage = ScheduleMessageFormatter.Format(actualSchedule, scheduleDay, out var whenDelete);
-
-            if (whenDelete.HasValue)
-                ScheduleMessageService.AddMessageToUpdate(chatId, (data, messageId, whenDelete.Value));
-
-            await BotClient.EditMessageTextAsync(
-                chatId,
-                messageId,
-                $"<pre>{formattedMessage}</pre>", 
-                ParseMode.Html);
-        }
+        // public async Task HandleChooseScheduleRange(long chatId, string data, int messageId)
+        // {
+        //     var student = Cache.Students.Get(chatId);
+        //     
+        //     var scheduleDay = (ScheduleDay)int.Parse(data);
+        //     
+        //     var actualSchedule = Cache
+        //         .ActualWeekSchedule(
+        //             student, 
+        //             scheduleDay.IsCurrentWeek() 
+        //                 ? DateHelper.CurrentWeekParity(IsFirstYearWeekOdd) 
+        //                 : DateHelper.NextWeekParity(IsFirstYearWeekOdd),
+        //             scheduleDay.IsCurrentWeek() 
+        //                 ? DateHelper.MondayDate
+        //                 : DateHelper.NextMondayDate
+        //          )
+        //         .ToArray();
+        //     
+        //     var formattedMessage = ScheduleMessageFormatter.Format(actualSchedule, scheduleDay, out var whenDelete);
+        //
+        //     if (whenDelete.HasValue)
+        //         ScheduleMessageService.AddMessageToUpdate(chatId, (data, messageId, whenDelete.Value));
+        //
+        //     await BotClient.EditMessageTextAsync(
+        //         chatId,
+        //         messageId,
+        //         $"<pre>{formattedMessage}</pre>", 
+        //         ParseMode.Html);
+        // }
 
         private async Task StartSubjectFeedback(long chatId, string subject)
         {
@@ -811,9 +817,14 @@ namespace Zhalobobot.Bot.Services
         private async Task<Message> StartUsage(ITelegramBotClient bot, long chatId)
         {
             var usage = new StringBuilder();
-            
-            usage.AppendLine($"{Buttons.Schedule} — узнать, в каком кабинете следующая пара и какую домашку делать на завтра");
-            usage.AppendLine();
+            var student = Cache.Students.Get(chatId);
+
+            // if (student.Course < Course.Third)
+            // {
+            //     usage.AppendLine($"{Buttons.Schedule} — узнать, в каком кабинете следующая пара и какую домашку делать на завтра");
+            //     usage.AppendLine();
+            // }
+
             usage.AppendLine($"{Buttons.Subjects} — поставить оценку от 1 до 5 и оставить комментарий конкретному предмету");
             usage.AppendLine();
             usage.AppendLine($"{Buttons.GeneralFeedback} — выскажи всё, что лежит на душе: и хорошее, и плохое");
@@ -823,7 +834,7 @@ namespace Zhalobobot.Bot.Services
             return await bot.SendTextMessageAsync(
                 chatId,
                 usage.ToString(),
-                replyMarkup: Keyboards.DefaultKeyboard());
+                replyMarkup: Keyboards.DefaultKeyboard(student));
         }
 
         private async Task Usage(ITelegramBotClient bot, Message message)

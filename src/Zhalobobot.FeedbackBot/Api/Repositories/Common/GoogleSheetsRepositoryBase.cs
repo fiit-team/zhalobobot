@@ -2,18 +2,20 @@ using System.Collections.Generic;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
-using Microsoft.Extensions.Configuration;
-using Zhalobobot.Bot.Api.Models;
+using Vostok.Hosting.Abstractions;
+using Vostok.Hosting.Abstractions.Requirements;
+using Zhalobobot.Bot.Settings;
 using Zhalobobot.Common.Models.Serialization;
 
 namespace Zhalobobot.Bot.Api.Repositories.Common;
 
+[RequiresSecretConfiguration(typeof(BotSecrets))]
 public abstract class GoogleSheetsRepositoryBase
 {
     private SpreadsheetsResource Resource { get; }
     private string SpreadSheetId { get; }
 
-    protected GoogleSheetsRepositoryBase(IConfiguration configuration, string spreadSheetId)
+    protected GoogleSheetsRepositoryBase(IVostokHostingEnvironment environment, string spreadSheetId)
     {
         SpreadSheetId = spreadSheetId;
         Resource = GetSpreadsheetsResource();
@@ -23,7 +25,7 @@ public abstract class GoogleSheetsRepositoryBase
             var scopes = new[] { SheetsService.Scope.Spreadsheets };
 
             var credential = GoogleCredential
-                .FromJson(configuration.GetSection("CREDENTIALS").Get<Credentials>().ToJson())
+                .FromJson(environment.SecretConfigurationProvider.Get<BotSecrets>().Credentials.ToJson())
                 .CreateScoped(scopes);
 
             var service = new SheetsService(new BaseClientService.Initializer
